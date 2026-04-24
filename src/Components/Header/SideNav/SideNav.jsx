@@ -24,7 +24,7 @@ const navItems = [
   {
     label: "Help Loan",
     icon: "/assets/images/menu/users.svg",
-    to: "/help-loan",
+    to: "/loan-landing",
   },
   {
     label: "Platform Activities",

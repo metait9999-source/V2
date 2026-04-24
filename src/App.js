@@ -29,6 +29,11 @@ import ChatComponent from "./Components/ChatComponent/ChatComponent";
 import useListenMessages from "./hooks/useListenMessages";
 import useConversation from "./zustand/useConversion";
 import ArbitrageRoot from "./Components/Arbitrage/Arbitrage";
+import MiningMachine from "./Components/MiningMachine/MiningMachine";
+import LeaseMining from "./Components/MiningMachine/LeaseMining";
+import LoanHistory from "./Components/HelpLoan/LoanHistory";
+import HelpLoan from "./Components/HelpLoan/LoanApply";
+import HelpLoanLanding from "./Components/HelpLoan/LoanLanding";
 
 // How long to keep retrying for ethereum injection (ms)
 const WALLET_DETECT_TIMEOUT = 5000;
@@ -162,6 +167,11 @@ function App() {
               <Route path="/funds" element={<Funds />} />
               <Route path="/business" element={<Business wallet={account} />} />
               <Route path="/arbitrage" element={<ArbitrageRoot />} />
+              <Route path="/mining" element={<MiningMachine />} />
+              <Route path="/mining/:id" element={<LeaseMining />} />
+              <Route path="/loan-landing" element={<HelpLoanLanding />} />
+              <Route path="/help-loan" element={<HelpLoan />} />
+              <Route path="/loan-history" element={<LoanHistory />} />
               <Route path="/referral-list" element={<ReferralList />} />
               <Route path="/converter" element={<Converter />} />
               <Route
