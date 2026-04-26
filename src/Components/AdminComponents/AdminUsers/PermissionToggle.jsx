@@ -4,55 +4,58 @@ import { API_BASE_URL } from "../../../api/getApiURL";
 
 const PermissionToggle = ({ userId, permissionId, permissionName }) => {
   const [hasPermission, setHasPermission] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchPermissionStatus = async () => {
       try {
         const response = await axios.get(
-          `${API_BASE_URL}/permissions/user/${userId}`
+          `${API_BASE_URL}/permissions/user/${userId}`,
         );
-        const userPermissions = response.data.permissions;
-        console.log("User permissions: ", userPermissions);
-
-        // Check if the user has this specific permission
-        const permissionExists = userPermissions.some(
-          (permission) => permission.permissionId === permissionId
+        const permissionExists = response.data.permissions.some(
+          (p) => p.permissionId === permissionId,
         );
         setHasPermission(permissionExists);
-      } catch (error) {
-        console.error("Error fetching permissions:", error);
+      } catch {
+        console.error("Error fetching permissions");
       }
     };
-
     fetchPermissionStatus();
   }, [userId, permissionId]);
 
-  // Function to handle toggling the permission
   const handleToggle = async () => {
+    setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/permissions/toggle`, {
         userId,
         permissionId,
       });
-      setHasPermission(!hasPermission);
-    } catch (error) {
-      console.error("Error toggling permission:", error);
+      setHasPermission((prev) => !prev);
+    } catch {
+      console.error("Error toggling permission");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-between gap-10 min-w-[400px] items-center space-x-2">
-      <label className="text-gray-70 text-lg">{permissionName}</label>
+    <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:border-indigo-100 hover:bg-indigo-50/20 transition-all">
+      <span className="text-[13.5px] font-medium text-gray-700">
+        {permissionName}
+      </span>
+
+      {/* Toggle switch */}
       <button
         onClick={handleToggle}
-        className={`transition duration-300 ease-in-out ${
-          hasPermission ? "bg-green-500" : "bg-red-500"
-        } w-14 h-8 rounded-full relative`}
+        disabled={loading}
+        aria-label={`Toggle ${permissionName}`}
+        className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-all duration-300 focus:outline-none
+          ${hasPermission ? "bg-indigo-600" : "bg-gray-300"}
+          ${loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <span
-          className={`w-6 h-6 bg-white absolute top-1 transition duration-300 ease-in-out ${
-            hasPermission ? "left-7" : "left-1"
-          } rounded-full`}
+          className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300
+            ${hasPermission ? "left-6" : "left-1"}`}
         />
       </button>
     </div>

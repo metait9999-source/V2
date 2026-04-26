@@ -1,120 +1,143 @@
-import React, { useEffect, useState } from 'react';
-import useSettings from '../../../hooks/useSettings';
-import { useUpdateSettings } from '../../../hooks/useUpdateSettings';
-import { toast } from 'react-toastify';
+import React, { useEffect, useState } from "react";
+import useSettings from "../../../hooks/useSettings";
+import { useUpdateSettings } from "../../../hooks/useUpdateSettings";
+import { toast } from "react-toastify";
+import { MdOutlineContactPage, MdOutlineEmail } from "react-icons/md";
+import { IoLogoWhatsapp } from "react-icons/io";
+import { FiSave } from "react-icons/fi";
+
+const inputCls =
+  "w-full pl-10 pr-4 py-2.5 text-[13.5px] bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400 focus:bg-white transition-all";
 
 const Contact = () => {
-    const {settings} = useSettings();
-    const {updateSettings,success} = useUpdateSettings();
-    const [email,setEmail] = useState(null);
-    const [whatsapp,setWatsapp] = useState(null);
-    useEffect(()=>{
-        if(settings){
-            setEmail(settings?.email);
-            setWatsapp(settings?.whatsapp);
-        }
-    },[settings])
+  const { settings } = useSettings();
+  const { updateSettings, success } = useUpdateSettings();
+  const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
 
-    const handleChane =(e)=>{
-        if(e.target.name==='email'){
-            setEmail(e.target.value);
-        }else{
-            setWatsapp(e.target.value);
-        }
+  useEffect(() => {
+    if (settings) {
+      setEmail(settings?.email ?? "");
+      setWhatsapp(settings?.whatsapp ?? "");
     }
-    const handleSubmit = (e)=>{
-        e.preventDefault();
-        const updatedData = {
-            email,
-            whatsapp
-        }
-        updateSettings(updatedData);
-        if(success===true){
-            toast.success("Saved successfully");
-        }
+  }, [settings]);
+
+  const handleChange = (e) => {
+    if (e.target.name === "email") {
+      setEmail(e.target.value);
+    } else {
+      setWhatsapp(e.target.value);
     }
+  };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    updateSettings({ email, whatsapp });
+    if (success === true) {
+      toast.success("Contact info saved successfully!");
+    }
+  };
 
-    return (
-        <div>
-            <div className="flex flex-col items-center gap-4 p-6 rounded-md shadow-md sm:py-8 sm:px-12 bg-white text-black w-full min-h-[90vh]">
-                    
-
-                    <h2 className="text-2xl font-semibold leading-tight tracking-wide">Contact</h2>
-                    
-                    <div className="w-full mx-auto p-6 bg-white ">
-                        <form 
-                        onSubmit={handleSubmit} 
-                        >
-                            <div className='grid grid-cols-2 gap-4'>
-                         
-                         
-                            
-                            <div className="mb-4 w-full">
-                                <label className="block text-gray-700 font-bold mb-2" htmlFor="whatsapp">
-                                What's app
-                                </label>
-                                <input
-                                    type="text"
-                                    id="whatsapp"
-                                    name="whatsapp"
-                                    value={whatsapp}
-                                    onChange={handleChane}
-                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter whats app number"
-                                    required
-                                />
-                            </div>
-
-                            <div className="mb-4 w-full">
-                                <label className="block text-gray-700 font-bold mb-2" htmlFor="email">
-                               Email
-                                </label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value={email}
-                                    onChange={handleChane}
-                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter email"
-                                    required
-                                />
-                            </div>
-
-                           
-                            </div>
-                            <div className="mb-4 flex justify-end">
-                                <button
-                                    type="submit"
-                                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"
-                                >
-                                    Save
-                                </button>
-                            </div>
-                            
-                        </form>
-                       
-                    </div>                   
-                </div> 
-
-
+  return (
+    <div className="flex flex-col gap-5">
+      {/* ── Page header ── */}
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 flex-shrink-0">
+          <MdOutlineContactPage size={19} className="text-white" />
         </div>
-//          <script type="text/javascript">
-// var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-// (function(){
-// var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-// s1.async=true;
-// s1.src='https://embed.tawk.to/66c8bd2050c10f7a009fbebc/1i6025ju4';
-// s1.charset='UTF-8';
-// s1.setAttribute('crossorigin','*');
-// s0.parentNode.insertBefore(s1,s0);
-// })();
-// </script> 
-    );
-    
+        <div>
+          <h1 className="text-gray-900 font-bold text-[17px] leading-tight">
+            Contact
+          </h1>
+          <p className="text-gray-400 text-[12px]">
+            Manage your platform contact details
+          </p>
+        </div>
+      </div>
+
+      {/* ── Card ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden max-w-2xl">
+        {/* Card header */}
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100">
+          <MdOutlineContactPage
+            size={16}
+            className="text-indigo-500 flex-shrink-0"
+          />
+          <h2 className="text-[14px] font-bold text-gray-900">
+            Contact Information
+          </h2>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+            {/* WhatsApp */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="whatsapp"
+                className="text-[11.5px] font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                WhatsApp Number
+              </label>
+              <div className="relative">
+                <IoLogoWhatsapp
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none"
+                />
+                <input
+                  type="text"
+                  id="whatsapp"
+                  name="whatsapp"
+                  value={whatsapp}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="+1 234 567 8900"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="email"
+                className="text-[11.5px] font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Email Address
+              </label>
+              <div className="relative">
+                <MdOutlineEmail
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none"
+                />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="admin@example.com"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Save button */}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-[13px] font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-md shadow-indigo-200"
+            >
+              <FiSave size={14} />
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default Contact;
-
-

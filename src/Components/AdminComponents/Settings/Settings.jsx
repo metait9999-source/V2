@@ -5,23 +5,39 @@ import { API_BASE_URL } from "../../../api/getApiURL";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import { toast } from "react-toastify";
 import UpdateTimer from "./UpdateTImer";
+import { IoSettingsSharp } from "react-icons/io5";
+import { MdOutlineTimer, MdOutlineWarning } from "react-icons/md";
+import { FiPlus, FiEdit2, FiSave, FiTrash2 } from "react-icons/fi";
+
+const FormField = ({ label, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[11.5px] font-semibold text-gray-500 uppercase tracking-wider">
+      {label}
+    </label>
+    {children}
+  </div>
+);
+
+const inputCls =
+  "w-full px-3.5 py-2.5 text-[13.5px] bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400 focus:bg-white transition-all";
+
+const selectCls =
+  "w-full px-3.5 py-2.5 text-[13.5px] bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400 focus:bg-white transition-all appearance-none cursor-pointer";
 
 const Settings = () => {
   const { adminUser, setLoading } = useUser();
-  // const { timerProfits } = useTimerProfit();
   const [timerProfits, setTimerProfits] = useState([]);
   const [refreshData, setRefreshData] = useState(false);
-
-  const [refreshSetting, setRefreSetting] = useState(false);
+  const [refreshSetting, setRefreshSetting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTimer, setSelectedTimer] = useState("");
+  const [selectedTimer, setSelectedTimer] = useState(null);
   const [timerDetails, setTimerDetails] = useState(null);
   const [isMore, setIsMore] = useState(false);
 
   const [formData, setFormData] = useState({
-    referral_registration_status: "",
+    referral_registration_status: "enabled",
     referral_registration_bonus: "",
-    referral_deposit_bonus_status: "",
+    referral_deposit_bonus_status: "enabled",
     referral_deposit_bonus: "",
     trade_amount_limit: "",
     deposit_limit: "",
@@ -34,29 +50,22 @@ const Settings = () => {
     mini_usdt: "",
   });
 
-  const [error, setError] = useState(null);
-
   useEffect(() => {
-    const fetchTimerProftis = async () => {
+    const fetchTimerProfits = async () => {
       setLoading(true);
       try {
         const response = await fetch(`${API_BASE_URL}/timerprofits`);
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
         const data = await response.json();
         setTimerProfits(data);
       } catch (err) {
-        setError(err.message);
+        console.error(err.message);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchTimerProftis();
-    if (refreshData) {
-      fetchTimerProftis();
-    }
+    fetchTimerProfits();
   }, [refreshData, setLoading]);
 
   useEffect(() => {
@@ -64,117 +73,76 @@ const Settings = () => {
       setLoading(true);
       try {
         const response = await fetch(`${API_BASE_URL}/settings`);
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
         const data = await response.json();
         setFormData(data);
       } catch (err) {
-        setError(err.message);
+        console.error(err.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchSettings();
-    if (refreshSetting) {
-      fetchSettings();
-    }
   }, [refreshSetting, setLoading]);
-
-  const [responseMessage, setResponseMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const openMore = (user) => {
-    setTimerDetails(user);
-    setIsMore(true);
-  };
-
-  const closeMore = () => {
-    setIsMore(false);
-    setTimerDetails(null);
-  };
-
-  const handleUpdateSuccess = () => {
-    setRefreshData(!refreshData);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleTimerChange = (e) => {
     const { name, value } = e.target;
-    setTimerData({
-      ...timerData,
-      [name]: value,
-    });
+    setTimerData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const updatedData = {
-      referral_registration_status: formData.referral_registration_status,
-      referral_registration_bonus: formData.referral_registration_bonus,
-      referral_deposit_bonus_status: formData.referral_deposit_bonus_status,
-      referral_deposit_bonus: formData.referral_deposit_bonus,
-      trade_amount_limit: formData.trade_amount_limit,
-      deposit_limit: formData.deposit_limit,
-      withdrawal_limit: formData.withdrawal_limit,
-    };
     try {
-      const response = await axios.put(`${API_BASE_URL}/settings`, updatedData);
+      await axios.put(`${API_BASE_URL}/settings`, {
+        referral_registration_status: formData.referral_registration_status,
+        referral_registration_bonus: formData.referral_registration_bonus,
+        referral_deposit_bonus_status: formData.referral_deposit_bonus_status,
+        referral_deposit_bonus: formData.referral_deposit_bonus,
+        trade_amount_limit: formData.trade_amount_limit,
+        deposit_limit: formData.deposit_limit,
+        withdrawal_limit: formData.withdrawal_limit,
+      });
       toast.success("Settings saved successfully!");
-      setRefreSetting(!refreshSetting);
-    } catch (error) {
-      toast.error("Failed to saved settings.");
-      console.error("There was an error!", error);
+      setRefreshSetting((p) => !p);
+    } catch {
+      toast.error("Failed to save settings.");
     }
   };
 
   const handleTimerProfitSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/timerprofits`,
-        timerData
-      );
+      await axios.post(`${API_BASE_URL}/timerprofits`, timerData);
       toast.success("Timer profit added successfully!");
-      setRefreshData(!refreshData);
-    } catch (error) {
-      toast.error("Failed to add Timer profit.");
-      console.error("There was an error!", error);
+      setTimerData({ timer: "", profit: "", mini_usdt: "" });
+      setRefreshData((p) => !p);
+    } catch {
+      toast.error("Failed to add timer profit.");
     }
   };
 
   const handleDelete = async (timerId) => {
     try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/timerprofits/${timerId}`
-      );
-      console.log("Delete response: ", response);
-      setTimerProfits((prevDeposits) =>
-        prevDeposits.filter((deposit) => deposit.id !== timerId)
-      );
-      toast.success("Delete Successful");
-    } catch (error) {
-      console.error("There was an error deleting the timer profit: ", error);
-      toast.error("Delete Failed");
+      await axios.delete(`${API_BASE_URL}/timerprofits/${timerId}`);
+      setTimerProfits((prev) => prev.filter((t) => t.id !== timerId));
+      toast.success("Deleted successfully");
+    } catch {
+      toast.error("Delete failed");
     }
   };
 
   const handleReset = async () => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/reset`);
-      console.log("Delete response: ", response);
-      toast.success("Reset Successful");
-    } catch (error) {
-      console.error("There was an error deleting the timer profit: ", error);
-      toast.error("Delete Failed");
+      await axios.post(`${API_BASE_URL}/reset`);
+      toast.success("Reset successful");
+    } catch {
+      toast.error("Reset failed");
     }
   };
 
@@ -182,299 +150,308 @@ const Settings = () => {
     setSelectedTimer(timerId);
     setIsModalOpen(true);
   };
-
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTimer(null);
   };
-
   const confirmDelete = () => {
-    if (selectedTimer) {
-      handleDelete(selectedTimer);
-    }
+    if (selectedTimer) handleDelete(selectedTimer);
     closeModal();
+  };
+  const openMore = (timer) => {
+    setTimerDetails(timer);
+    setIsMore(true);
+  };
+  const closeMore = () => {
+    setIsMore(false);
+    setTimerDetails(null);
   };
 
   return (
-    <div>
-      <div className="grid grid-cols-2 gap-4 items-center justify-center w-full">
-        <div className="flex flex-col items-center gap-4 rounded-md shadow-md sm:py-8 sm:px-12 bg-white text-black w-full min-h-[90vh]">
-          <div>
-            <h2 className="text-2xl font-semibold leading-tight tracking-wide">
+    <div className="flex flex-col gap-6">
+      {/* ── Page header ── */}
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 flex-shrink-0">
+          <IoSettingsSharp size={17} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-gray-900 font-bold text-[17px] leading-tight">
+            Settings
+          </h1>
+          <p className="text-gray-400 text-[12px]">
+            Manage platform configuration
+          </p>
+        </div>
+      </div>
+
+      {/* ── Two column layout ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* ── General Features ── */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100">
+            <IoSettingsSharp
+              size={16}
+              className="text-indigo-500 flex-shrink-0"
+            />
+            <h2 className="text-[14px] font-bold text-gray-900">
               General Features
             </h2>
-            <div className="w-full mx-auto p-6 bg-white ">
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="referral_registration_status"
-                    >
-                      Referal Registration Status
-                    </label>
-                    <select
-                      id="referral_registration_status"
-                      name="referral_registration_status"
-                      value={formData.referral_registration_status}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="enabled">Enabled</option>
-                      <option value="disabled">Disabled</option>
-                    </select>
-                  </div>
-
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="referral_registration_bonus"
-                    >
-                      Referral Registration Bonus (USD)
-                    </label>
-                    <input
-                      type="number"
-                      id="referral_registration_bonus"
-                      name="referral_registration_bonus"
-                      value={formData.referral_registration_bonus}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter registration bonus"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="referral_deposit_bonus_status"
-                    >
-                      Referral Deposit Bonus Status
-                    </label>
-                    <select
-                      id="referral_deposit_bonus_status"
-                      name="referral_deposit_bonus_status"
-                      value={formData.referral_deposit_bonus_status}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="enabled">Enabled</option>
-                      <option value="disabled">Disabled</option>
-                    </select>
-                  </div>
-
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="referral_deposit_bonus"
-                    >
-                      Referral Deposit Bonus (%)
-                    </label>
-                    <input
-                      type="number"
-                      id="referral_deposit_bonus"
-                      name="referral_deposit_bonus"
-                      value={formData.referral_deposit_bonus}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter referal deposit bonus"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="trade_amount_limit"
-                    >
-                      Trade Amount Limit
-                    </label>
-                    <input
-                      type="number"
-                      id="trade_amount_limit"
-                      name="trade_amount_limit"
-                      value={formData.trade_amount_limit}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter trade amount limit"
-                    />
-                  </div>
-
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="deposit_limit"
-                    >
-                      Deposit Limit
-                    </label>
-                    <input
-                      type="number"
-                      id="deposit_limit"
-                      name="deposit_limit"
-                      value={formData.deposit_limit}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter deposit limit"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-4 w-full">
-                    <label
-                      className="block text-gray-700 font-bold mb-2"
-                      htmlFor="withdrawal_limit"
-                    >
-                      Withdrawal Limit
-                    </label>
-                    <input
-                      type="number"
-                      id="withdrawal_limit"
-                      name="withdrawal_limit"
-                      value={formData.withdrawal_limit}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter withdraw limit"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                  >
-                    Save Setting
-                  </button>
-                </div>
-
-                {responseMessage && (
-                  <p className="mt-4 text-center text-green-500">
-                    {responseMessage}
-                  </p>
-                )}
-              </form>
-            </div>
           </div>
-        </div>
-        <div className="flex flex-col items-center gap-4 p-6 rounded-md shadow-md sm:py-8 sm:px-12 bg-white text-black w-full min-h-[90vh]">
-          <h2 className="text-2xl font-semibold leading-tight tracking-wide">
-            Timer Profit
-          </h2>
 
-          <div className="w-full mx-auto p-6 bg-white ">
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Referral Registration Status">
+                <select
+                  name="referral_registration_status"
+                  value={formData.referral_registration_status}
+                  onChange={handleChange}
+                  className={selectCls}
+                  required
+                >
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </FormField>
+
+              <FormField label="Registration Bonus (USD)">
+                <input
+                  type="number"
+                  name="referral_registration_bonus"
+                  value={formData.referral_registration_bonus}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="e.g. 10"
+                  required
+                />
+              </FormField>
+
+              <FormField label="Referral Deposit Bonus Status">
+                <select
+                  name="referral_deposit_bonus_status"
+                  value={formData.referral_deposit_bonus_status}
+                  onChange={handleChange}
+                  className={selectCls}
+                  required
+                >
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </FormField>
+
+              <FormField label="Referral Deposit Bonus (%)">
+                <input
+                  type="number"
+                  name="referral_deposit_bonus"
+                  value={formData.referral_deposit_bonus}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="e.g. 5"
+                  required
+                />
+              </FormField>
+
+              <FormField label="Trade Amount Limit">
+                <input
+                  type="number"
+                  name="trade_amount_limit"
+                  value={formData.trade_amount_limit}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="e.g. 1000"
+                />
+              </FormField>
+
+              <FormField label="Deposit Limit">
+                <input
+                  type="number"
+                  name="deposit_limit"
+                  value={formData.deposit_limit}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="e.g. 5000"
+                  required
+                />
+              </FormField>
+
+              <FormField label="Withdrawal Limit">
+                <input
+                  type="number"
+                  name="withdrawal_limit"
+                  value={formData.withdrawal_limit}
+                  onChange={handleChange}
+                  className={inputCls}
+                  placeholder="e.g. 2000"
+                  required
+                />
+              </FormField>
+            </div>
+
+            <div className="flex justify-end mt-5">
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-[13px] font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-md shadow-indigo-200"
+              >
+                <FiSave size={14} />
+                Save Settings
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* ── Timer Profit ── */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100">
+            <MdOutlineTimer
+              size={17}
+              className="text-indigo-500 flex-shrink-0"
+            />
+            <h2 className="text-[14px] font-bold text-gray-900">
+              Timer Profit
+            </h2>
+          </div>
+
+          <div className="p-6">
+            {/* Add timer form */}
             <form onSubmit={handleTimerProfitSubmit}>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="mb-4 w-full">
-                  <label
-                    className="block text-gray-700 font-bold mb-2"
-                    htmlFor="timer"
-                  >
-                    Delivery Time
-                  </label>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <FormField label="Delivery Time">
                   <input
                     type="text"
-                    id="timer"
                     name="timer"
                     value={timerData.timer}
                     onChange={handleTimerChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter time"
+                    className={inputCls}
+                    placeholder="e.g. 60s"
                     required
                   />
-                </div>
-
-                <div className="mb-4 w-full">
-                  <label
-                    className="block text-gray-700 font-bold mb-2"
-                    htmlFor="profit"
-                  >
-                    Profit Level
-                  </label>
+                </FormField>
+                <FormField label="Profit Level">
                   <input
                     type="number"
-                    id="profit"
                     name="profit"
                     value={timerData.profit}
                     onChange={handleTimerChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter profit level"
+                    className={inputCls}
+                    placeholder="e.g. 85"
                     required
                   />
-                </div>
-
-                <div className="mb-4 w-full">
-                  <label
-                    className="block text-gray-700 font-bold mb-2"
-                    htmlFor="mini_usdt"
-                  >
-                    Minimum USDT
-                  </label>
+                </FormField>
+                <FormField label="Min. USDT">
                   <input
                     type="number"
-                    id="mini_usdt"
                     name="mini_usdt"
                     value={timerData.mini_usdt}
                     onChange={handleTimerChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Minimum USDT"
+                    className={inputCls}
+                    placeholder="e.g. 10"
                     required
                   />
-                </div>
+                </FormField>
               </div>
-              <div className="mb-4 flex justify-end">
+              <div className="flex justify-end mb-5">
                 <button
                   type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-md shadow-emerald-200"
                 >
-                  Add Item
+                  <FiPlus size={14} />
+                  Add Timer
                 </button>
               </div>
             </form>
-            <table className="min-w-full border border-gray-300">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="py-2 px-4 border-b">Time</th>
-                  <th className="py-2 px-4 border-b">Profit</th>
-                  <th className="py-2 px-4 border-b">Minimum USDT</th>
-                  <th className="py-2 px-4 border-b">Action</th>
-                </tr>
-              </thead>
-              <tbody className="text-center">
-                {timerProfits?.map((timerProfit, index) => (
-                  <tr key={index} className="hover:bg-gray-100">
-                    <td className="py-2 px-4 border-b">{timerProfit.timer}</td>
-                    <td className="py-2 px-4 border-b">
-                      {timerProfit?.profit}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      {timerProfit?.mini_usdt}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      <button
-                        onClick={() => openMore(timerProfit)}
-                        className={`text-xs text-white py-1 px-2 rounded bg-blue-600 hover:bg-blue-700 `}
+
+            {/* Timer table */}
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <table className="min-w-full text-[13px]">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    {["Time", "Profit", "Min. USDT", "Action"].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider"
                       >
-                        Edit
-                      </button>
-                    </td>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {timerProfits.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-10 text-center text-gray-400 text-[13px]"
+                      >
+                        No timer profits added yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    timerProfits.map((tp, i) => (
+                      <tr
+                        key={tp.id ?? i}
+                        className="hover:bg-gray-50/60 transition-colors"
+                      >
+                        <td className="px-4 py-3 text-gray-700 font-medium">
+                          {tp.timer}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {tp.profit}%
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {tp.mini_usdt} USDT
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => openMore(tp)}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+                            >
+                              <FiEdit2 size={11} />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => openModal(tp.id)}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors"
+                            >
+                              <FiTrash2 size={11} />
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ── Danger Zone (superadmin only) ── */}
       {adminUser?.role === "superadmin" && (
-        <div className="flex flex-col items-center gap-4 p-6 rounded-md shadow-md sm:py-8 sm:px-12 bg-white text-black w-full mt-5">
-          <h2 className="text-center text-red-400">Danger Zone</h2>
-          <p>If you click here everything will be deleted. Are you sure?</p>
-          <div className="mb-4 flex justify-center">
+        <div className="bg-white rounded-2xl border border-red-200 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-6 py-4 border-b border-red-100 bg-red-50/50">
+            <MdOutlineWarning
+              size={17}
+              className="text-red-500 flex-shrink-0"
+            />
+            <h2 className="text-[14px] font-bold text-red-600">Danger Zone</h2>
+          </div>
+          <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-[13.5px] font-semibold text-gray-800">
+                Reset All Data
+              </p>
+              <p className="text-[12px] text-gray-400 mt-0.5">
+                This will permanently delete all data. This action cannot be
+                undone.
+              </p>
+            </div>
             <button
               onClick={handleReset}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold px-4 rounded focus:outline-none focus:shadow-outline"
+              className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 text-white text-[13px] font-semibold hover:bg-red-700 active:scale-[0.98] transition-all shadow-md shadow-red-200"
             >
               Reset All Data
             </button>
@@ -495,7 +472,7 @@ const Settings = () => {
         onClose={closeMore}
         details={timerDetails}
         role={adminUser?.role}
-        onUpdateSuccess={handleUpdateSuccess}
+        onUpdateSuccess={() => setRefreshData((p) => !p)}
       />
     </div>
   );

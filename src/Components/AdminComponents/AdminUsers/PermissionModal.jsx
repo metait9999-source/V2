@@ -3,6 +3,8 @@ import axios from "axios";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import PermissionToggle from "./PermissionToggle";
 import { useUser } from "../../../context/UserContext";
+import { IoClose } from "react-icons/io5";
+import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 const PermissionModal = ({ isOpen, onClose, onUpdateSuccess, details }) => {
   const { setLoading: setLoader } = useUser();
@@ -10,18 +12,17 @@ const PermissionModal = ({ isOpen, onClose, onUpdateSuccess, details }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     const fetchPermissions = async () => {
+      setLoading(true);
       try {
         const response = await axios.get(`${API_BASE_URL}/permissions`);
         setPermissions(response.data);
-      } catch (error) {
-        console.error("Error fetching user permissions:", error);
+      } catch {
+        console.error("Error fetching permissions");
       } finally {
         setLoading(false);
       }
     };
-
     fetchPermissions();
   }, [details]);
 
@@ -32,39 +33,53 @@ const PermissionModal = ({ isOpen, onClose, onUpdateSuccess, details }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative flex flex-col items-center max-w-lg gap-4 p-6 rounded-md shadow-md sm:py-8 sm:px-12 bg-white text-black">
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 bg-gray-900 hover:bg-gray-700 rounded-full"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 512 512"
-            fill="currentColor"
-            className="flex-shrink-0 w-6 h-6 mt-2"
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200">
+              <MdOutlineAdminPanelSettings size={17} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-bold text-gray-900 leading-tight">
+                Admin Permissions
+              </h2>
+              <p className="text-[11px] text-gray-400">{details?.name}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 border border-gray-200 hover:border-red-200 transition-all"
           >
-            <polygon points="427.314 107.313 404.686 84.687 256 233.373 107.314 84.687 84.686 107.313 233.373 256 84.686 404.687 107.314 427.313 256 278.627 404.686 427.313 427.314 404.687 278.627 256 427.314 107.313"></polygon>
-          </svg>
-        </button>
+            <IoClose size={17} />
+          </button>
+        </div>
 
-        <h2 className="text-2xl font-semibold leading-tight tracking-wide">
-          Admin Permissions
-        </h2>
-
-        <div className="max-w-md mx-auto mt-2 p-6 bg-white ">
-          <div className="space-y-4 overflow-y-auto">
-            {permissions?.map((permission) => (
+        {/* Permissions list */}
+        <div className="p-5 max-h-[70vh] overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+          {loading ? (
+            <div className="py-10 text-center text-gray-400 text-[13px]">
+              Loading permissions…
+            </div>
+          ) : permissions?.length === 0 ? (
+            <div className="py-10 text-center text-gray-400 text-[13px]">
+              No permissions found.
+            </div>
+          ) : (
+            permissions?.map((permission) => (
               <PermissionToggle
                 key={permission.id}
-                userId={details.id}
+                userId={details?.id}
                 permissionName={permission.label}
                 permissionId={permission.id}
               />
-            ))}
-          </div>
+            ))
+          )}
         </div>
-        <div className="mb-4"></div>
       </div>
     </div>
   );

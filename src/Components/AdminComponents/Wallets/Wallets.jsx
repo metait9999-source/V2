@@ -5,11 +5,12 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import { useUser } from "../../../context/UserContext";
+import { FaWallet } from "react-icons/fa";
+import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
 
 const Wallets = () => {
   const [wallets, setWallets] = useState([]);
   const { setLoading } = useUser();
-  const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWalletId, setSelectedWalletId] = useState(null);
 
@@ -18,34 +19,26 @@ const Wallets = () => {
       setLoading(true);
       try {
         const response = await fetch(`${API_BASE_URL}/wallets`);
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
         const data = await response.json();
         setWallets(data);
       } catch (err) {
-        setError(err.message);
+        console.error(err.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchWalletInfo();
   }, [setLoading]);
 
   const handleDelete = async (walletID) => {
     try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/wallets/${walletID}`
-      );
-      console.log("Delete response: ", response);
-      setWallets((prevWallets) =>
-        prevWallets.filter((wallet) => wallet.id !== walletID)
-      );
-      toast.success("Delete Successful");
-    } catch (error) {
-      console.error("There was an error deleting the wallet: ", error);
-      toast.error("Delete Failed");
+      await axios.delete(`${API_BASE_URL}/wallets/${walletID}`);
+      setWallets((prev) => prev.filter((w) => w.id !== walletID));
+      toast.success("Wallet deleted successfully");
+    } catch {
+      toast.error("Delete failed");
     }
   };
 
@@ -53,83 +46,164 @@ const Wallets = () => {
     setSelectedWalletId(walletID);
     setIsModalOpen(true);
   };
-
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedWalletId(null);
   };
-
   const confirmDelete = () => {
-    if (selectedWalletId) {
-      handleDelete(selectedWalletId);
-    }
+    if (selectedWalletId) handleDelete(selectedWalletId);
     closeModal();
-  };
-  const handleEdit = () => {
-    console.log("deleting ");
   };
 
   return (
-    <div className="h-[80vh] overflow-x-auto overflow-y-auto">
-      <Link to="/cradmin/new-wallet">
-        <button className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded mr-2 mb-2">
-          Add New
-        </button>
-      </Link>
-      <table className="min-w-full border border-gray-300">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="py-2 px-4 border-b">#</th>
-            {/* <th className="py-2 px-4 border-b">Coin ID</th> */}
-            <th className="py-2 px-4 border-b">Coin Symbol</th>
+    <div className="flex flex-col gap-5">
+      {/* ── Page header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 flex-shrink-0">
+            <FaWallet size={16} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-gray-900 font-bold text-[17px] leading-tight">
+              Wallets
+            </h1>
+            <p className="text-gray-400 text-[12px]">
+              {wallets.length} wallet{wallets.length !== 1 ? "s" : ""}{" "}
+              configured
+            </p>
+          </div>
+        </div>
+        <Link to="/cradmin/new-wallet">
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-[13px] font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-md shadow-indigo-200">
+            <FiPlus size={15} />
+            Add New Wallet
+          </button>
+        </Link>
+      </div>
 
-            <th className="py-2 px-4 border-b">Coin Name</th>
-            <th className="py-2 px-4 border-b">Wallet Network</th>
-            <th className="py-2 px-4 border-b">Wallet Address</th>
-            <th className="py-2 px-4 border-b">Wallet QR</th>
-            <th className="py-2 px-4 border-b">Status</th>
-            <th className="py-2 px-4 border-b">Action</th>
-          </tr>
-        </thead>
-        <tbody className="text-center">
-          {wallets?.map((wallet, index) => (
-            <tr key={wallet.id}>
-              <td className="py-2 px-4 border-b">{index + 1}</td>
-              {/* <td className="py-2 px-4 border-b">{wallet.coin_id}</td> */}
-              <td className="py-2 px-4 border-b">{wallet?.coin_symbol}</td>
-              <td className="py-2 px-4 border-b">{wallet?.coin_name}</td>
-              <td className="py-2 px-4 border-b">{wallet.wallet_network}</td>
-              <td className="py-2 px-4 border-b">
-                {wallet.wallet_address.slice(0, 10)}..
-              </td>
-              <td className="py-2 px-4 border-b">
-                <div className="bg-white w-[40px] h-[40px]">
-                  <img
-                    src={`${API_BASE_URL}/${wallet?.wallet_qr}`}
-                    className="w-full h-full object-cover"
-                    alt="qr"
-                  />
-                </div>
-              </td>
-              <td className="py-2 px-4 border-b">{wallet.status}</td>
-              <td className="py-2 px-4 border-b">
-                <Link to={"/cradmin/edit-wallet"} state={{ wallet }}>
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded mr-2">
-                    Edit
-                  </button>
-                </Link>
+      {/* ── Table card ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-[13px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {[
+                  "#",
+                  "Symbol",
+                  "Coin Name",
+                  "Network",
+                  "Address",
+                  "QR Code",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {wallets.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="py-16 text-center text-gray-400 text-[13px]"
+                  >
+                    No wallets found. Add one to get started.
+                  </td>
+                </tr>
+              ) : (
+                wallets.map((wallet, index) => (
+                  <tr
+                    key={wallet.id}
+                    className="hover:bg-gray-50/60 transition-colors"
+                  >
+                    {/* # */}
+                    <td className="px-4 py-3 text-gray-400 font-medium">
+                      {index + 1}
+                    </td>
 
-                <button
-                  onClick={() => openModal(wallet.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                    {/* Symbol */}
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {wallet?.coin_symbol}
+                      </span>
+                    </td>
+
+                    {/* Coin Name */}
+                    <td className="px-4 py-3 text-gray-800 font-medium whitespace-nowrap">
+                      {wallet?.coin_name}
+                    </td>
+
+                    {/* Network */}
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      {wallet?.wallet_network}
+                    </td>
+
+                    {/* Address */}
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-[12px] text-gray-500">
+                        {wallet.wallet_address.slice(0, 12)}…
+                      </span>
+                    </td>
+
+                    {/* QR Code */}
+                    <td className="px-4 py-3">
+                      <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                        <img
+                          src={`${API_BASE_URL}/${wallet?.wallet_qr}`}
+                          className="w-full h-full object-cover"
+                          alt="QR"
+                        />
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border
+                        ${
+                          wallet.status === "active"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-gray-100 text-gray-500 border-gray-200"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${wallet.status === "active" ? "bg-emerald-500" : "bg-gray-400"}`}
+                        />
+                        {wallet.status}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <Link to="/cradmin/edit-wallet" state={{ wallet }}>
+                          <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors">
+                            <FiEdit2 size={11} />
+                            Edit
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => openModal(wallet.id)}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors"
+                        >
+                          <FiTrash2 size={11} />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <DeleteModal
         isOpen={isModalOpen}
@@ -138,8 +212,6 @@ const Wallets = () => {
         title="Wallet"
         description="This action cannot be undone."
       />
-
-      {/* <Pagination page={page} totalPages={totalPages} setPage={setPage} /> */}
     </div>
   );
 };

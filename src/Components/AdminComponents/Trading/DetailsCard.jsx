@@ -1,59 +1,129 @@
-import React from 'react';
+import React from "react";
+import { IoClose } from "react-icons/io5";
+import {
+  MdOutlineTag,
+  MdOutlineSwapHoriz,
+  MdOutlineTrendingUp,
+  MdOutlineAccountBalanceWallet,
+  MdOutlineAttachMoney,
+  MdOutlineShowChart,
+  MdOutlineTimer,
+  MdOutlineBarChart,
+} from "react-icons/md";
+
+const Field = ({ icon: Icon, label, value, highlight }) => (
+  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-gray-50 border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group">
+    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shadow-sm group-hover:border-indigo-200 transition-colors">
+      <Icon size={15} className="text-indigo-500" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-[10.5px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-1">
+        {label}
+      </p>
+      <p
+        className={`text-[13.5px] font-semibold truncate leading-tight
+        ${
+          highlight === "buy"
+            ? "text-emerald-600"
+            : highlight === "sell"
+              ? "text-red-500"
+              : "text-gray-800"
+        }`}
+      >
+        {value ?? "—"}
+      </p>
+    </div>
+  </div>
+);
 
 const DetailsCard = ({ isOpen, onClose, details }) => {
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="relative flex flex-col items-center max-w-lg gap-4 p-6 rounded-md shadow-md sm:py-8 sm:px-12 bg-white text-black">
-            <button onClick={onClose} className="absolute top-2 right-2 bg-gray-900 hover:bg-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="flex-shrink-0 w-6 h-6">
-                    <polygon points="427.314 107.313 404.686 84.687 256 233.373 107.314 84.687 84.686 107.313 233.373 256 84.686 404.687 107.314 427.313 256 278.627 404.686 427.313 427.314 404.687 278.627 256 427.314 107.313"></polygon>
-                </svg>
-            </button>
-            
-            <h2 className="text-2xl font-semibold leading-tight tracking-wide">Trade Details</h2>
-            <div className="grid grid-cols-4 gap-4">
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Order ID</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.order_id}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Market Type</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.order_type}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Order Position</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.order_position}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Wallet Coin</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.wallet_coin_name}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Amount</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.amount}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Profit Amount</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.profit_amount}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Delivery Time</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.delivery_time}</h2>
-                </div>
-                <div>
-                    <p className="flex-1 text-start text-gray-500">Profit Level</p>
-                    <h2 className="text-lg font-semibold leading-tight tracking-wide">{details?.profit_level}</h2>
-                </div>
-            
+  const fields = [
+    { icon: MdOutlineTag, label: "Order ID", value: details?.order_id },
+    {
+      icon: MdOutlineSwapHoriz,
+      label: "Market Type",
+      value: details?.order_type,
+    },
+    {
+      icon: MdOutlineTrendingUp,
+      label: "Position",
+      value: details?.order_position,
+      highlight: details?.order_position,
+    },
+    {
+      icon: MdOutlineAccountBalanceWallet,
+      label: "Wallet Coin",
+      value: details?.wallet_coin_name,
+    },
+    { icon: MdOutlineAttachMoney, label: "Amount", value: details?.amount },
+    {
+      icon: MdOutlineShowChart,
+      label: "Profit Amount",
+      value: details?.profit_amount,
+    },
+    {
+      icon: MdOutlineTimer,
+      label: "Delivery Time",
+      value: details?.delivery_time,
+    },
+    {
+      icon: MdOutlineBarChart,
+      label: "Profit Level",
+      value: details?.profit_level,
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl shadow-black/10 border border-gray-200 overflow-hidden">
+        {/* ── Modal header ── */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200">
+              <MdOutlineTrendingUp size={17} className="text-white" />
             </div>
-            
-            
+            <div>
+              <h2 className="text-[15px] font-bold text-gray-900 leading-tight">
+                Trade Details
+              </h2>
+              <p className="text-[11px] text-gray-400">
+                Order #{details?.order_id}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 border border-gray-200 hover:border-red-200 transition-all"
+            aria-label="Close"
+          >
+            <IoClose size={17} />
+          </button>
         </div>
-            
+
+        {/* ── Fields grid ── */}
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {fields.map((f) => (
+            <Field key={f.label} {...f} />
+          ))}
         </div>
-    );
+
+        {/* ── Footer ── */}
+        <div className="px-5 pb-5">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-[13px] font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-md shadow-indigo-200"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DetailsCard;

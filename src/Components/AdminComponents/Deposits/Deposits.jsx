@@ -8,238 +8,283 @@ import ImageViewer from "./ImageViewer";
 import { useUser } from "../../../context/UserContext";
 import Pagination from "../../Pagination/Pagination";
 import { useSocketContext } from "../../../context/SocketContext";
+import { PiHandDepositFill } from "react-icons/pi";
+import { FiSearch, FiEdit2, FiTrash2 } from "react-icons/fi";
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    pending: "bg-amber-50 text-amber-700 border-amber-200",
+    rejected: "bg-red-50 text-red-600 border-red-200",
+  };
+  const dot = {
+    approved: "bg-emerald-500",
+    pending: "bg-amber-500",
+    rejected: "bg-red-500",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border capitalize ${map[status] ?? "bg-gray-100 text-gray-500 border-gray-200"}`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot[status] ?? "bg-gray-400"}`}
+      />
+      {status}
+    </span>
+  );
+};
 
 const Deposits = () => {
   const [deposits, setDeposits] = useState([]);
   const { setLoading } = useUser();
-  const [/*error,*/ setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDepositId, setSelectedTradeId] = useState(null);
+  const [selectedDepositId, setSelectedDepositId] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isImgView, setIsImgView] = useState(false);
   const [depositDetail, setDepositDetail] = useState(null);
   const [refreshDeposit, setRefreshDeposit] = useState(false);
   const { socket } = useSocketContext();
-  useEffect(() => {
-    const fetchDepositInfo = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(`${API_BASE_URL}/deposits`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setDeposits(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDepositInfo();
-    if (refreshDeposit) {
-      console.log("Getting refresh call");
-
-      fetchDepositInfo();
-    }
-  }, [refreshDeposit, setLoading, setError]);
-
-  const handleDelete = async (depositID) => {
-    try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/deposits/${depositID}`
-      );
-      console.log("Delete response: ", response);
-      setDeposits((prevDeposits) =>
-        prevDeposits.filter((deposit) => deposit.id !== depositID)
-      );
-      toast.success("Delete Successful");
-    } catch (error) {
-      console.error("There was an error deleting the deposit: ", error);
-      toast.error("Delete Failed");
-    }
-  };
-
-  const openModal = (tradeId) => {
-    setSelectedTradeId(tradeId);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedTradeId(null);
-  };
-
-  const confirmDelete = () => {
-    if (selectedDepositId) {
-      handleDelete(selectedDepositId);
-    }
-    closeModal();
-  };
-  const openDetailsModal = (trade) => {
-    setDepositDetail(trade);
-    setIsDetailsModalOpen(true);
-  };
-
-  const closeDetailsModal = () => {
-    setIsDetailsModalOpen(false);
-    setDepositDetail(null);
-  };
-  const openImageViewer = (deposit) => {
-    setIsImgView(true);
-    setDepositDetail(deposit);
-  };
-
-  const closeImgViewer = () => {
-    setIsImgView(false);
-    setDepositDetail(null);
-  };
-
-  const handleUpdateSuccess = () => {
-    setRefreshDeposit(!refreshDeposit);
-  };
-
-  // filtering and pagination
   const [filteredDeposits, setFilteredDeposits] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const tradesPerPage = 25;
 
   useEffect(() => {
-    const filtered = deposits
-      ?.reverse()
-      .filter((trade) =>
-        trade.user_uuid.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    setFilteredDeposits(filtered);
-    setPage(1); // Reset to first page on search
-  }, [searchTerm, deposits]);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredDeposits.length / tradesPerPage);
-
-  // Get current page's data
-  const indexOfLastTrade = page * tradesPerPage;
-  const indexOfFirstTrade = indexOfLastTrade - tradesPerPage;
-  const currentDeposits = filteredDeposits.slice(
-    indexOfFirstTrade,
-    indexOfLastTrade
-  );
-
-  // Handle search input change
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const formatWalletAddress = (address) => {
-    return address?.match(/.{1,14}/g)?.map((segment, index) => (
-      <span key={index} style={{ display: "block" }}>
-        {segment}
-      </span>
-    ));
-  };
-
-  useEffect(() => {
-    const handleUpdateDeposit = (data) => {
-      if (data) {
-        setRefreshDeposit(!refreshDeposit);
+    const fetchDepositInfo = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/deposits`);
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        setDeposits(data);
+      } catch (err) {
+        console.error(err.message);
+      } finally {
+        setLoading(false);
       }
     };
-    socket?.on("newDeposit", handleUpdateDeposit);
-    return () => socket?.off("newDeposit", handleUpdateDeposit);
-  }, [socket, setRefreshDeposit, refreshDeposit]);
+    fetchDepositInfo();
+  }, [refreshDeposit, setLoading]);
 
-  const getFormattedDeliveryTime = (createdAt) => {
-    const date = new Date(createdAt);
+  useEffect(() => {
+    const handler = (data) => {
+      if (data) setRefreshDeposit((p) => !p);
+    };
+    socket?.on("newDeposit", handler);
+    return () => socket?.off("newDeposit", handler);
+  }, [socket, refreshDeposit]);
 
-    // Convert date to local time string
-    const localDateTime = date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
+  useEffect(() => {
+    const filtered = [...deposits]
+      .reverse()
+      .filter((d) =>
+        d.user_uuid.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    setFilteredDeposits(filtered);
+    setPage(1);
+  }, [searchTerm, deposits]);
 
-    return localDateTime.replace(",", "");
+  const totalPages = Math.ceil(filteredDeposits.length / tradesPerPage);
+  const currentDeposits = filteredDeposits.slice(
+    (page - 1) * tradesPerPage,
+    page * tradesPerPage,
+  );
+
+  const handleDelete = async (depositID) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/deposits/${depositID}`);
+      setDeposits((prev) => prev.filter((d) => d.id !== depositID));
+      toast.success("Deposit deleted successfully");
+    } catch {
+      toast.error("Delete failed");
+    }
   };
 
-  return (
-    <div className="h-[80vh] overflow-x-auto overflow-y-auto">
-      <input
-        type="text"
-        placeholder="Search by UUID"
-        value={searchTerm}
-        onChange={handleSearchChange}
-        className="mb-4 p-2 border border-gray-300 rounded"
-      />
-      <table className="min-w-full border border-gray-300">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="py-2 px-4 border-b">#</th>
-            <th className="py-2 px-4 border-b">UUID</th>
-            <th className="py-2 px-4 border-b">Wallet</th>
+  const confirmDelete = () => {
+    if (selectedDepositId) handleDelete(selectedDepositId);
+    setIsModalOpen(false);
+    setSelectedDepositId(null);
+  };
 
-            <th className="py-2 px-4 border-b">Amount</th>
-            <th className="py-2 px-4 border-b">Documets</th>
-            <th className="py-2 px-4 border-b">Wallet Address</th>
-            <th className="py-2 px-4 border-b">Deposit Date</th>
-            <th className="py-2 px-4 border-b">Status</th>
-            <th className="py-2 px-4 border-b">Action</th>
-          </tr>
-        </thead>
-        <tbody className="text-center">
-          {currentDeposits?.map((deposit, index) => (
-            <tr key={deposit.id}>
-              <td className="py-2 px-4 border-b">{index + 1}</td>
-              <td className="py-2 px-4 border-b">{deposit?.user_uuid}</td>
-              <td className="py-2 px-4 border-b">{deposit?.coin_name}</td>
-              <td className="py-2 px-4 border-b">{deposit?.amount}</td>
-              <td
-                onClick={() => openImageViewer(deposit)}
-                className="py-2 px-4 border-b"
-              >
-                <div className="bg-white w-[40px] h-[40px] border-2 overflow-hidden">
-                  <img
-                    src={`${API_BASE_URL}/${deposit?.documents}`}
-                    className="w-full h-full object-cover"
-                    alt="Documents"
-                  />
-                </div>
-              </td>
-              <td className="py-2 px-4 border-b">
-                {formatWalletAddress(deposit?.wallet_from)}
-              </td>
-              <td className="py-2 px-4 border-b">
-                {getFormattedDeliveryTime(deposit?.created_at)}
-              </td>
-              <td className="py-2 px-4 border-b">{deposit.status}</td>
-              <td className="py-2 px-4 border-b">
-                {deposit.status === "pending" && (
-                  <button
-                    onClick={() => openDetailsModal(deposit)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded mr-2"
+  const getFormattedDate = (createdAt) =>
+    new Date(createdAt)
+      .toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+      .replace(",", "");
+
+  const formatWalletAddress = (address) =>
+    address ? `${address.slice(0, 8)}…${address.slice(-6)}` : "—";
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* ── Page header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 flex-shrink-0">
+            <PiHandDepositFill size={17} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-gray-900 font-bold text-[17px] leading-tight">
+              Deposits
+            </h1>
+            <p className="text-gray-400 text-[12px]">
+              {filteredDeposits.length} total deposits
+            </p>
+          </div>
+        </div>
+        <div className="relative w-full sm:w-64">
+          <FiSearch
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
+          <input
+            type="text"
+            placeholder="Search by UUID…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-gray-200 rounded-xl shadow-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* ── Table card ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-[13px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {[
+                  "#",
+                  "UUID",
+                  "Coin",
+                  "Amount",
+                  "Document",
+                  "Wallet From",
+                  "Date",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap"
                   >
-                    Edit
-                  </button>
-                )}
-                <button
-                  onClick={() => openModal(deposit.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {currentDeposits.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="py-16 text-center text-gray-400 text-[13px]"
+                  >
+                    No deposits found.
+                  </td>
+                </tr>
+              ) : (
+                currentDeposits.map((deposit, index) => (
+                  <tr
+                    key={deposit.id}
+                    className="hover:bg-gray-50/60 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-400 font-medium">
+                      {(page - 1) * tradesPerPage + index + 1}
+                    </td>
+
+                    <td className="px-4 py-3 font-mono text-[11.5px] text-gray-500 whitespace-nowrap">
+                      {deposit?.user_uuid}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap">
+                        {deposit?.coin_name}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800 font-semibold whitespace-nowrap">
+                      {deposit?.amount}
+                    </td>
+
+                    {/* Thumbnail — click to open full viewer */}
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => {
+                          setDepositDetail(deposit);
+                          setIsImgView(true);
+                        }}
+                        className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 hover:border-indigo-300 hover:shadow-md transition-all flex-shrink-0 block"
+                      >
+                        <img
+                          src={`${API_BASE_URL}/${deposit?.documents}`}
+                          alt="doc"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    </td>
+
+                    <td className="px-4 py-3 font-mono text-[11.5px] text-gray-500 whitespace-nowrap">
+                      {formatWalletAddress(deposit?.wallet_from)}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-500 text-[11.5px] whitespace-nowrap">
+                      {getFormattedDate(deposit?.created_at)}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <StatusBadge status={deposit.status} />
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        {deposit.status === "pending" && (
+                          <button
+                            onClick={() => {
+                              setDepositDetail(deposit);
+                              setIsDetailsModalOpen(true);
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors whitespace-nowrap"
+                          >
+                            <FiEdit2 size={11} />
+                            Edit
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedDepositId(deposit.id);
+                            setIsModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors whitespace-nowrap"
+                        >
+                          <FiTrash2 size={11} />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+
       <DeleteModal
         isOpen={isModalOpen}
-        onClose={closeModal}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedDepositId(null);
+        }}
         onConfirm={confirmDelete}
         title="Deposit"
         description="This action cannot be undone."
@@ -247,18 +292,21 @@ const Deposits = () => {
       <DepositModal
         title="Deposit"
         isOpen={isDetailsModalOpen}
-        onClose={closeDetailsModal}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setDepositDetail(null);
+        }}
         details={depositDetail}
-        onUpdateSuccess={handleUpdateSuccess}
+        onUpdateSuccess={() => setRefreshDeposit((p) => !p)}
       />
-
       <ImageViewer
         isOpen={isImgView}
-        onClose={closeImgViewer}
+        onClose={() => {
+          setIsImgView(false);
+          setDepositDetail(null);
+        }}
         details={depositDetail}
       />
-
-      <Pagination page={page} totalPages={totalPages} setPage={setPage} />
     </div>
   );
 };
