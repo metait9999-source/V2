@@ -66,7 +66,9 @@ const MoreActionModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API_BASE_URL}/users/${details.id}`, formData);
+      const payload = { ...formData };
+      if (!payload.password) delete payload.password;
+      await axios.put(`${API_BASE_URL}/users/${details.id}`, payload);
       toast.success("User updated successfully!");
       onClose();
       onUpdateSuccess();
