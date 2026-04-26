@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import BalanceModal from "./BalanceModal";
 import { useUser } from "../../../context/UserContext";
 import Pagination from "../../Pagination/Pagination";

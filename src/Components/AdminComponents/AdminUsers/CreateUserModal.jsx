@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../../../api/getApiURL";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { IoClose } from "react-icons/io5";
 import { FaUserPlus } from "react-icons/fa";
 import { FiSave } from "react-icons/fi";

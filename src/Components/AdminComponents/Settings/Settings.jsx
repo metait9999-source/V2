@@ -3,7 +3,7 @@ import { useUser } from "../../../context/UserContext";
 import axios from "axios";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import DeleteModal from "../DeleteModal/DeleteModal";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import UpdateTimer from "./UpdateTImer";
 import { IoSettingsSharp } from "react-icons/io5";
 import { MdOutlineTimer, MdOutlineWarning } from "react-icons/md";

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import DepositModal from "./DepositModal";
 import ImageViewer from "./ImageViewer";

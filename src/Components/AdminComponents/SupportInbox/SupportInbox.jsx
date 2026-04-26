@@ -10,7 +10,7 @@ import { ImAttachment } from "react-icons/im";
 import useConversation from "../../../zustand/useConversion";
 import useGetMessages from "../../../hooks/useGetMessages";
 import useListenMessages from "../../../hooks/useListenMessages";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 const SupportInbox = () => {
   const { adminUser } = useUser();
@@ -87,7 +87,7 @@ const SupportInbox = () => {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/messages/send`,
-        formData
+        formData,
       );
       setMessages([...messages, response?.data]);
       setReplyText("");
@@ -105,8 +105,8 @@ const SupportInbox = () => {
       prevConversations.map((c) =>
         c.conversation_id === conv.conversation_id
           ? { ...c, unread_count: 0 }
-          : c
-      )
+          : c,
+      ),
     );
     scrollToBottom();
   };
@@ -136,7 +136,7 @@ const SupportInbox = () => {
 
   // Filter messages by selected conversation ID
   const filteredMessages = messages?.filter(
-    (msg) => msg.conversation_id === selectedConversation?.conversation_id
+    (msg) => msg.conversation_id === selectedConversation?.conversation_id,
   );
 
   // Show full-screen image
@@ -153,11 +153,11 @@ const SupportInbox = () => {
   const handleDelete = async (convID) => {
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/conversation/${convID}`
+        `${API_BASE_URL}/conversation/${convID}`,
       );
       console.log("Delete response: ", response);
       setConversations((prevConversations) =>
-        prevConversations.filter((conv) => conv.conversation_id !== convID)
+        prevConversations.filter((conv) => conv.conversation_id !== convID),
       );
       toast.success("Delete Successful");
     } catch (error) {
@@ -174,7 +174,7 @@ const SupportInbox = () => {
     try {
       const response = await axios.put(
         `${API_BASE_URL}/users/${user.user1_id}`,
-        updatedUser
+        updatedUser,
       );
       toast.success("User updated successfully");
       console.log("Data successfully submitted:", response);
@@ -271,7 +271,7 @@ const SupportInbox = () => {
                                 alt=""
                                 onClick={() =>
                                   handleImageClick(
-                                    `${API_BASE_URL}/${msg?.message_image}`
+                                    `${API_BASE_URL}/${msg?.message_image}`,
                                   )
                                 }
                               />
@@ -303,7 +303,7 @@ const SupportInbox = () => {
                                 alt=""
                                 onClick={() =>
                                   handleImageClick(
-                                    `${API_BASE_URL}/${msg?.message_image}`
+                                    `${API_BASE_URL}/${msg?.message_image}`,
                                   )
                                 }
                               />

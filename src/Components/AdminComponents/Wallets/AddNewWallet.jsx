@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import { FaWallet } from "react-icons/fa";
 import { FiSave, FiArrowLeft, FiUpload, FiX } from "react-icons/fi";

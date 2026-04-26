@@ -6,7 +6,7 @@ import { useLocation } from "react-router";
 import { API_BASE_URL } from "../../api/getApiURL";
 import useFetchLatestDeposit from "../../hooks/useFetchLatestDeposit";
 import { useFetchUserBalance } from "../../hooks/useFetchUserBalance";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { useUpdateUserBalance } from "../../hooks/useUpdateUserBalance";
 import useCryptoTradeConverter from "../../hooks/userCryptoTradeConverter";
 import useSettings from "../../hooks/useSettings";

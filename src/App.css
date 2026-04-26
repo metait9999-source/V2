@@ -47,7 +47,7 @@ button {
 }
 
 body {
-  font-size: 12px;
+  font-size: 15px;
 }
 
 a {
@@ -2370,59 +2370,6 @@ table.dataTable {
 
 #main-menu .menu-popup .menu-box .know-collapse .know .know-item .page_item a {
   color: #969799;
-}
-
-.ssb-toast--top {
-  top: 20%;
-}
-.ssb-toast--html,
-.ssb-toast--text {
-  width: -webkit-fit-content;
-  width: fit-content;
-  padding: 1.13333vw 2.2vw;
-}
-.ssb-toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-  -webkit-flex-direction: column;
-  flex-direction: column;
-  -webkit-box-align: center;
-  -webkit-align-items: center;
-  align-items: center;
-  -webkit-box-pack: center;
-  -webkit-justify-content: center;
-  justify-content: center;
-  box-sizing: content-box;
-  color: #fff;
-  font-size: 3.73333vw;
-  white-space: pre-wrap;
-  text-align: center;
-  word-break: break-all;
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 2.13333vw;
-  -webkit-transform: translate3d(-50%, -50%, 0);
-  transform: translate3d(-50%, -50%, 0);
-}
-
-.ssb-toast--html .ssb-toast__text,
-.ssb-toast--text .ssb-toast__text {
-  margin-top: 0;
-}
-.ssb-toast--text .ssb-toast__text {
-  word-break: break-word;
-}
-.ssb-toast--html .ssb-toast__text,
-.ssb-toast--text .ssb-toast__text {
-  margin-top: 0;
-}
-.ssb-toast__text {
-  margin-top: 2.13333vw;
 }
 
 .input_warning {

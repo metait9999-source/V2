@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { API_BASE_URL } from "../api/getApiURL";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import useConversation from "../zustand/useConversion";
 
 const useGetMessages = () => {
@@ -14,7 +14,7 @@ const useGetMessages = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${API_BASE_URL}/messages/${selectedConversation.conversation_id}/user/0`
+        `${API_BASE_URL}/messages/${selectedConversation.conversation_id}/user/0`,
       );
       const data = await res.json();
       if (data.error) throw new Error(data.error);

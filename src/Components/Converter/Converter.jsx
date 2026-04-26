@@ -4,7 +4,7 @@ import useCryptoTradeConverter from "../../hooks/userCryptoTradeConverter";
 import useWallets from "../../hooks/useWallets";
 import { useUser } from "../../context/UserContext";
 import { useUpdateUserBalance } from "../../hooks/useUpdateUserBalance";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 const Converter = () => {
   const { user } = useUser();
@@ -21,7 +21,7 @@ const Converter = () => {
 
   useEffect(() => {
     const filteredWallets = wallets.filter(
-      (wallet) => wallet.coin_id !== selectedWallet?.coin_id
+      (wallet) => wallet.coin_id !== selectedWallet?.coin_id,
     );
     setFilterWallets(filteredWallets);
     setFilterWalletsSelect(filteredWallets[0]);
@@ -109,7 +109,7 @@ const Converter = () => {
           try {
             const convertedCoin = await convertUSDTToCoin(
               wallet?.coin_amount,
-              wallet.coin_id
+              wallet.coin_id,
             );
             newCoinValues[wallet.coin_id] = convertedCoin;
           } catch (error) {

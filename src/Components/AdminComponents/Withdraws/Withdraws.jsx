@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import DepositModal from "../Deposits/DepositModal";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import { useUser } from "../../../context/UserContext";
 import Pagination from "../../Pagination/Pagination";

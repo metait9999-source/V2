@@ -3,7 +3,7 @@ import Header from "../Header/Header";
 import { useUser } from "../../context/UserContext";
 import axios from "axios";
 import { API_BASE_URL } from "../../api/getApiURL";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 const Profile = (props) => {
   const { user, setLoading } = useUser();

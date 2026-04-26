@@ -1,31 +1,93 @@
 import React, { useEffect, useState } from "react";
 import imgNoData from "../../Assets/images/img_nodata.png";
-import iconMenuArrow from "../../Assets/images/icon_menu_arrow.svg";
-import iconClose from "../../Assets/images/icon_close.svg";
 import Header from "../Header/Header";
 import { useUser } from "../../context/UserContext";
 import { API_BASE_URL } from "../../api/getApiURL";
+import { IoClose } from "react-icons/io5";
+import { MdTrendingUp, MdTrendingDown, MdAccessTime } from "react-icons/md";
+import { RiArrowRightSLine } from "react-icons/ri";
+import { BsClockHistory, BsLightningChargeFill } from "react-icons/bs";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const parseDuration = (duration) => {
   const durationMap = {
-    S: 1000, // seconds
-    H: 60 * 60 * 1000, // hours
-    D: 24 * 60 * 60 * 1000, // days
-    W: 7 * 24 * 60 * 60 * 1000, // weeks
-    M: 30 * 24 * 60 * 60 * 1000, // months (approx)
-    Y: 365 * 24 * 60 * 60 * 1000, // years (approx)
+    S: 1000,
+    H: 60 * 60 * 1000,
+    D: 24 * 60 * 60 * 1000,
+    W: 7 * 24 * 60 * 60 * 1000,
+    M: 30 * 24 * 60 * 60 * 1000,
+    Y: 365 * 24 * 60 * 60 * 1000,
   };
-
-  // Extract the number and the unit from the duration string
   const match = duration.match(/^(\d+)([SHDWMY])$/);
   if (match) {
     const [, number, unit] = match;
     return parseInt(number, 10) * (durationMap[unit] || 0);
   }
-
-  // Default to 0 if the duration format is not recognized
   return 0;
 };
+
+const getFormattedDeliveryTime = (createdAt) => {
+  return new Date(createdAt)
+    .toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    })
+    .replace(",", "");
+};
+
+const extractUnit = (deliveryTime) => {
+  const match = deliveryTime.match(/[SHDWMY]/);
+  return match ? match[0] : null;
+};
+
+const calculateDeliveryPrice = (
+  isProfit,
+  orderPosition,
+  deliveryTime,
+  purchasePrice,
+) => {
+  const unit = extractUnit(deliveryTime);
+  let price = parseFloat(purchasePrice);
+  const deltas = {
+    S: [90, 30],
+    H: [350, 150],
+    D: [550, 350],
+    W: [850, 550],
+    M: [1850, 850],
+    Y: [5850, 5850],
+  };
+  const [gain, loss] = deltas[unit] || [0, 0];
+
+  if (isProfit) {
+    if (orderPosition === "buy")
+      price +=
+        price > 50
+          ? gain
+          : unit === "S"
+            ? 2
+            : unit === "H"
+              ? 5
+              : unit === "D"
+                ? 8
+                : unit === "W"
+                  ? 12
+                  : unit === "M"
+                    ? 20
+                    : 25;
+    else price -= price > 50 ? loss : 0.05;
+  } else {
+    price -= price > 50 ? loss : 0.05;
+  }
+  return price.toFixed(2);
+};
+
+// ─── Countdown ────────────────────────────────────────────────────────────────
 
 const Countdown = ({
   createdTime,
@@ -42,66 +104,108 @@ const Countdown = ({
     const createdAt = new Date(createdTime);
 
     const updateTimer = () => {
-      const endTime = new Date(createdAt.getTime() + deliveryTime);
-      const now = new Date();
-      const diff = endTime - now;
-
+      const diff = new Date(createdAt.getTime() + deliveryTime) - new Date();
       if (diff <= 0) {
         setTimeLeft("00:00:00");
         setStatus("finished");
-        const filteredItems = runningOrders.filter((item) => item.id !== id);
-        setRunningOrders(filteredItems);
+        setRunningOrders((prev) => prev.filter((item) => item.id !== id));
         return;
       }
-
-      const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(
-        2,
-        "0"
-      );
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = String(
+        Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      ).padStart(2, "0");
       const minutes = String(
-        Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
       ).padStart(2, "0");
       const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(
         2,
-        "0"
+        "0",
       );
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const months = Math.floor(days / 30);
       const years = Math.floor(days / 365);
 
-      let timeString = "";
-
-      if (years > 0) {
-        const remainingMonths = Math.floor((days % 365) / 30);
-        timeString = `${years}y ${remainingMonths}mo ${hours}h ${minutes}m ${seconds}s`;
-      } else if (months > 0) {
-        const remainingDays = days % 30;
-        timeString = `${months}mo ${remainingDays}d ${hours}h ${minutes}m ${seconds}s`;
-      } else if (days > 0) {
-        timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-      } else if (hours > 0) {
-        timeString = `${hours}h ${minutes}m ${seconds}s`;
-      } else if (minutes > 0) {
-        timeString = `${hours}h ${minutes}m ${seconds}s`;
-      } else {
-        timeString = `${hours}h ${minutes}m ${seconds}s`;
-      }
-
-      setTimeLeft(timeString);
+      if (years > 0)
+        setTimeLeft(
+          `${years}y ${Math.floor((days % 365) / 30)}mo ${hours}h ${minutes}m ${seconds}s`,
+        );
+      else if (months > 0)
+        setTimeLeft(
+          `${months}mo ${days % 30}d ${hours}h ${minutes}m ${seconds}s`,
+        );
+      else if (days > 0)
+        setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      else setTimeLeft(`${hours}:${minutes}:${seconds}`);
     };
 
-    // Initial call to set the countdown immediately
     updateTimer();
-
-    // Set interval to update countdown every second
-    const timerInterval = setInterval(updateTimer, 1000);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(timerInterval);
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
   }, [createdTime, duration, setStatus, id, runningOrders, setRunningOrders]);
 
-  return <div>{timeLeft}</div>;
+  return (
+    <span className="font-mono tracking-wider text-orange-500 text-[13px] font-bold">
+      {timeLeft}
+    </span>
+  );
 };
+
+// ─── Empty State (always uses imgNoData) ──────────────────────────────────────
+
+const EmptyState = ({ label = "No Data" }) => (
+  <div className="flex flex-col items-center justify-center py-16 gap-3">
+    <img
+      src={imgNoData}
+      alt="No Data"
+      className="w-32 h-32 object-contain opacity-70"
+    />
+    <p className="text-[13.5px] font-semibold text-gray-400">{label}</p>
+  </div>
+);
+
+// ─── Coin Image ───────────────────────────────────────────────────────────────
+
+const CoinImg = ({ order }) => {
+  const src =
+    order?.order_type === "metal" || order?.order_type === "forex"
+      ? `./assets/images/coins/${order?.trade_coin_id?.toLowerCase()}-logo.png`
+      : `./assets/images/coins/${order?.trade_coin_symbol?.toLowerCase()}-logo.png`;
+  return (
+    <img
+      src={src}
+      alt={order?.coin_name}
+      className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 bg-gray-100"
+      onError={(e) => {
+        e.target.style.display = "none";
+      }}
+    />
+  );
+};
+
+// ─── Detail Row ───────────────────────────────────────────────────────────────
+
+const DetailRow = ({ label, value, highlight, isProfit }) => (
+  <div
+    className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all
+    ${
+      highlight
+        ? isProfit
+          ? "bg-emerald-50 border-emerald-100"
+          : "bg-red-50 border-red-100"
+        : "bg-gray-50 border-gray-100"
+    }`}
+  >
+    <span className="text-[12px] text-gray-400 font-medium">{label}</span>
+    <span
+      className={`text-[13px] font-bold tracking-wide
+      ${highlight ? (isProfit ? "text-emerald-500" : "text-red-500") : "text-gray-800"}`}
+    >
+      {value}
+    </span>
+  </div>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const ProfitStatistics = () => {
   const [activeTab, setActiveTab] = useState("active");
@@ -114,418 +218,253 @@ const ProfitStatistics = () => {
 
   const switchTab = (tab) => {
     setActiveTab(tab);
-    if (tab === "finished") {
-      setStatus("finished");
-    } else {
-      setStatus("running");
-    }
-  };
-
-  const openPopup = (order) => {
-    setSelectedOrder(order);
-    setShowPopup(true);
-  };
-
-  const closePopup = () => {
-    setShowPopup(false);
-  };
-
-  const getFormattedDeliveryTime = (createdAt) => {
-    const date = new Date(createdAt);
-
-    // Convert date to local time string
-    const localDateTime = date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
-
-    return localDateTime.replace(",", "");
+    setStatus(tab === "finished" ? "finished" : "running");
   };
 
   useEffect(() => {
     setLoading(true);
     if (user?.id) {
-      async function fetchMarketData() {
+      (async () => {
         try {
-          const response = await fetch(
-            `${API_BASE_URL}/tradeorder/user/${user?.id}?status=${status}`
+          const res = await fetch(
+            `${API_BASE_URL}/tradeorder/user/${user?.id}?status=${status}`,
           );
-          const data = await response.json();
-          if (response.status !== 404) {
-            if (status === "finished") {
-              setOrders(data);
-            } else {
-              setRunningOrders(data);
-            }
+          const data = await res.json();
+          if (res.status !== 404) {
+            status === "finished" ? setOrders(data) : setRunningOrders(data);
           }
-          setLoading(false);
-        } catch (error) {
-          console.error("Error fetching market data:", error);
+        } catch (err) {
+          console.error(err);
+        } finally {
           setLoading(false);
         }
-      }
-      fetchMarketData();
+      })();
     }
   }, [setLoading, user, status]);
 
-  const extractUnit = (deliveryTime) => {
-    const match = deliveryTime.match(/[SHDWMY]/);
-    return match ? match[0] : null;
-  };
+  const tabs = [
+    { key: "active", label: "Active Orders", icon: BsLightningChargeFill },
+    { key: "finished", label: "Finished", icon: BsClockHistory },
+  ];
 
-  const calculateDeliveryPrice = (
-    isProfit,
-    orderPosition,
-    deliveryTime,
-    purchasePrice
-  ) => {
-    const unit = extractUnit(deliveryTime);
-    let deliveryPrice = parseFloat(purchasePrice);
-
-    if (isProfit) {
-      if (orderPosition === "buy") {
-        if (deliveryPrice > 50) {
-          if (unit === "S") {
-            deliveryPrice += 90;
-          } else if (unit === "H") {
-            deliveryPrice += 350;
-          } else if (unit === "D") {
-            deliveryPrice += 550;
-          } else if (unit === "W") {
-            deliveryPrice += 850;
-          } else if (unit === "M") {
-            deliveryPrice += 1850;
-          } else if (unit === "Y") {
-            deliveryPrice += 5850;
-          }
-        } else {
-          if (unit === "S") {
-            deliveryPrice += 2;
-          } else if (unit === "H") {
-            deliveryPrice += 5;
-          } else if (unit === "D") {
-            deliveryPrice += 8;
-          } else if (unit === "W") {
-            deliveryPrice += 12;
-          } else if (unit === "M") {
-            deliveryPrice += 20;
-          } else if (unit === "Y") {
-            deliveryPrice += 25;
-          }
-        }
-      } else {
-        if (deliveryPrice > 50) {
-          if (unit === "S") {
-            deliveryPrice -= 30;
-          } else if (unit === "H") {
-            deliveryPrice -= 150;
-          } else if (unit === "D") {
-            deliveryPrice -= 350;
-          } else if (unit === "W") {
-            deliveryPrice -= 550;
-          } else if (unit === "M") {
-            deliveryPrice -= 850;
-          } else if (unit === "Y") {
-            deliveryPrice -= 5850;
-          }
-        } else {
-          deliveryPrice -= 0.05;
-        }
-      }
-    } else {
-      if (deliveryPrice > 50) {
-        if (unit === "S") {
-          deliveryPrice -= 30;
-        } else if (unit === "H") {
-          deliveryPrice -= 150;
-        } else if (unit === "D") {
-          deliveryPrice -= 350;
-        } else if (unit === "W") {
-          deliveryPrice -= 550;
-        } else if (unit === "M") {
-          deliveryPrice -= 850;
-        } else if (unit === "Y") {
-          deliveryPrice -= 5850;
-        }
-      } else {
-        deliveryPrice -= 0.05;
-      }
-    }
-
-    return deliveryPrice;
-  };
   return (
-    <div
-      className="profit"
-      style={{ backgroundColor: "white", height: "100vh" }}
-    >
+    <div className="min-h-screen bg-gray-50">
       <Header pageTitle="Profit Statistics" />
 
-      <div className="switch_container">
-        <div className="switch_content">
-          <div
-            className={`switch_item ${activeTab === "active" ? "active" : ""}`}
-            onClick={() => switchTab("active")}
-          >
-            Active Order
-          </div>
-          <div
-            className={`switch_item ${
-              activeTab === "finished" ? "active" : ""
-            }`}
-            onClick={() => switchTab("finished")}
-          >
-            Finished Order
-          </div>
+      {/* Tab switcher */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm px-4 pt-4 pb-0">
+        <div className="flex gap-1 max-w-lg mx-auto">
+          {tabs.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => switchTab(key)}
+              className={`relative flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-semibold rounded-t-xl transition-all duration-200 focus:outline-none
+                ${
+                  activeTab === key
+                    ? "text-indigo-600 bg-indigo-50/60"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                }`}
+            >
+              <Icon size={14} />
+              {label}
+              <span
+                className={`absolute bottom-0 left-4 right-4 h-[2.5px] rounded-full transition-all duration-300
+                ${activeTab === key ? "bg-indigo-500 opacity-100" : "opacity-0"}`}
+              />
+            </button>
+          ))}
         </div>
       </div>
 
-      <div id="profit-active_order">
-        <div className="main_container">
-          <div className="main_content">
-            <div>
-              {activeTab === "active" ? (
-                runningOrders?.length === 0 ? (
-                  <div
-                    className="no_data_content ff_NunitoSemiBold"
-                    style={{ minHeight: "calc(-260px + 100vh)" }}
-                  >
-                    <img
-                      src={imgNoData}
-                      alt="No Data"
-                      className="img_no_data"
-                    />
-                    <div>No Data</div>
+      {/* Content */}
+      <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
+        {/* Active Orders */}
+        {activeTab === "active" &&
+          (runningOrders.length === 0 ? (
+            <EmptyState label="No Active Orders" />
+          ) : (
+            runningOrders.map((order) => (
+              <div
+                key={order.id}
+                className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CoinImg order={order} />
+                    <div>
+                      <p className="text-[14px] font-bold text-gray-800 tracking-wide">
+                        {order?.trade_coin_symbol}/{order?.coin_symbol}
+                      </p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {getFormattedDeliveryTime(order.created_at)}
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="profit-history">
-                    {runningOrders?.map((order) => {
-                      return (
-                        <div className="profit-content" key={order.id}>
-                          <div className="profit-details">
-                            <div className="profit-coin-details flex">
-                              {order?.order_type === "metal" ||
-                              order?.order_type === "forex" ? (
-                                <img
-                                  className="coin-symbol"
-                                  src={`./assets/images/coins/${order?.trade_coin_id?.toLowerCase()}-logo.png`}
-                                  alt={order.coin_name}
-                                />
-                              ) : (
-                                <img
-                                  className="coin-symbol"
-                                  src={`./assets/images/coins/${order?.trade_coin_symbol?.toLowerCase()}-logo.png`}
-                                  alt={order.coin_name}
-                                />
-                              )}
-                              <span className="coin-name ff_NunitoSemiBold">
-                                {order?.trade_coin_symbol}/{order?.coin_symbol}
-                              </span>
-                              <span className="profit-date ff_NunitoRegular">
-                                {getFormattedDeliveryTime(order.created_at)}
-                              </span>
-                            </div>
-                            <div className="profit-details-amount">
-                              <div className="flex gap-5">
-                                <span className="text-[15px]">Running</span>
-                                <span className="text-[15px]">
-                                  <Countdown
-                                    createdTime={getFormattedDeliveryTime(
-                                      order.created_at
-                                    )}
-                                    duration={order.delivery_time}
-                                    setStatus={setStatus}
-                                    setRunningOrders={setRunningOrders}
-                                    id={order?.id}
-                                    runningOrders={runningOrders}
-                                  />
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              ) : orders?.length === 0 ? (
-                <div
-                  className="no_data_content ff_NunitoSemiBold"
-                  style={{ minHeight: "calc(-260px + 100vh)" }}
-                >
-                  <img src={imgNoData} alt="No Data" className="img_no_data" />
-                  <div>No Data</div>
-                </div>
-              ) : (
-                <div className="profit-history">
-                  {orders?.map((order) => {
-                    return (
-                      <div
-                        className="profit-content profit-content-pop"
-                        key={order.id}
-                        onClick={() => openPopup(order)}
-                      >
-                        <div className="profit-details">
-                          <div className="profit-coin-details">
-                            {order?.order_type === "metal" ||
-                            order?.order_type === "forex" ? (
-                              <img
-                                className="coin-symbol"
-                                src={`./assets/images/coins/${order?.trade_coin_id?.toLowerCase()}-logo.png`}
-                                alt={order.coin_name}
-                              />
-                            ) : (
-                              <img
-                                className="coin-symbol"
-                                src={`./assets/images/coins/${order?.trade_coin_symbol?.toLowerCase()}-logo.png`}
-                                alt={order.coin_name}
-                              />
-                            )}
-                            <span className="coin-name ff_NunitoSemiBold">
-                              {order?.trade_coin_symbol}/{order?.coin_symbol}
-                            </span>
-                            <span className="profit-date ff_NunitoRegular">
-                              {getFormattedDeliveryTime(order?.created_at)}
-                            </span>
-                          </div>
-                          <div className="profit-details-amount">
-                            <span className="profit-text">
-                              {order?.is_profit ? "Profit" : "Loss"}
-                            </span>
-                            <span
-                              className="profit-amount"
-                              style={{
-                                color: order?.is_profit ? "green" : "red",
-                              }}
-                            >
-                              US$ {order?.profit_amount}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="profit-icon">
-                          <img src={iconMenuArrow} alt="Details" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {showPopup && selectedOrder && (
-        <div className="popup_container">
-          <div className="ssb-overlay" style={{ zIndex: 2016 }}></div>
-          <div
-            className="ssb-popup ssb-popup--round ssb-popup--bottom"
-            style={{ width: "100%", height: "100%", zIndex: 2017 }}
-          >
-            <div id="profit-history" className="profit-history-wrapper">
-              <div className="history">
-                <div className="title fs-18 fc-353F52">
-                  <span>History</span>
-                  <img
-                    src={iconClose}
-                    alt="Close"
-                    className="icon_close"
-                    onClick={closePopup}
-                  />
-                </div>
-                <div className="history_info">
-                  <div className="history-coin-details">
-                    <img
-                      src={`/assets/images/coins/${selectedOrder?.trade_coin_symbol?.toLowerCase()}-logo.png`}
-                      alt={selectedOrder.coin_name}
-                      className="coin_logo"
-                      id="coin_logo"
-                    />
-                    <span className="ff_NunitoSemiBold" id="trade_symbol">
-                      {selectedOrder?.trade_coin_symbol}/
-                      {selectedOrder?.coin_symbol}
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-500 text-[11px] font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                      Running
                     </span>
-                    <span className="ff_NunitoRegular" id="trade_entry">
-                      {getFormattedDeliveryTime(selectedOrder.created_at)}
-                    </span>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Purchase Amount</div>
-                    <div className="history-value" id="amount">
-                      {selectedOrder.amount}
-                    </div>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Direction</div>
-                    <div className="history-value" id="direction">
-                      {selectedOrder.order_position}
-                    </div>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Purchase price</div>
-                    <div className="history-value" id="purchase_price">
-                      {selectedOrder.purchase_price}
-                    </div>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Contract</div>
-                    <div className="history-value" id="contract">
-                      {selectedOrder.delivery_time}
-                    </div>
-                  </div>
-                  <div
-                    className={`history-content p-2 rounded-md ${
-                      selectedOrder.is_profit ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  >
-                    <div className="history-label" id="profit_status">
-                      {selectedOrder.is_profit ? "Profit" : "Loss"}
-                    </div>
-                    <div className="history-value" id="profit_amount">
-                      {selectedOrder.profit_amount}
-                    </div>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Delivery Price</div>
-                    <div className="history-value" id="delivery_price">
-                      {calculateDeliveryPrice(
-                        selectedOrder?.is_profit,
-                        selectedOrder.order_position,
-                        selectedOrder.delivery_time,
-                        selectedOrder.purchase_price
-                      )}
-                    </div>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Delivery time</div>
-                    <div className="history-value" id="delivery_time">
-                      {getFormattedDeliveryTime(selectedOrder.created_at)}
-                    </div>
-                  </div>
-                  <div className="history-content">
-                    <div className="history-label">Status</div>
-                    <div className="history-value" id="status">
-                      Finished
+                    <div className="flex items-center gap-1 text-gray-400">
+                      <MdAccessTime size={11} />
+                      <Countdown
+                        createdTime={getFormattedDeliveryTime(order.created_at)}
+                        duration={order.delivery_time}
+                        setStatus={setStatus}
+                        setRunningOrders={setRunningOrders}
+                        id={order?.id}
+                        runningOrders={runningOrders}
+                      />
                     </div>
                   </div>
                 </div>
               </div>
+            ))
+          ))}
+
+        {/* Finished Orders */}
+        {activeTab === "finished" &&
+          (orders.length === 0 ? (
+            <EmptyState label="No Finished Orders" />
+          ) : (
+            orders.map((order) => {
+              const isProfit = order?.is_profit;
+              return (
+                <button
+                  key={order.id}
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    setShowPopup(true);
+                  }}
+                  className="w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md active:scale-[0.99] transition-all text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CoinImg order={order} />
+                      <div>
+                        <p className="text-[14px] font-bold text-gray-800 tracking-wide">
+                          {order?.trade_coin_symbol}/{order?.coin_symbol}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {getFormattedDeliveryTime(order?.created_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div
+                          className={`flex items-center gap-1 justify-end text-[12px] font-semibold
+                            ${isProfit ? "text-emerald-500" : "text-red-500"}`}
+                        >
+                          {isProfit ? (
+                            <MdTrendingUp size={14} />
+                          ) : (
+                            <MdTrendingDown size={14} />
+                          )}
+                          {isProfit ? "Profit" : "Loss"}
+                        </div>
+                        <p
+                          className={`text-[15px] font-bold mt-0.5
+                            ${isProfit ? "text-emerald-500" : "text-red-500"}`}
+                        >
+                          US$ {order?.profit_amount}
+                        </p>
+                      </div>
+                      <RiArrowRightSLine size={18} className="text-gray-300" />
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          ))}
+      </div>
+
+      {/* Detail Popup */}
+      {showPopup && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowPopup(false)}
+          />
+          <div className="relative w-full sm:max-w-md bg-white border border-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+            {/* Handle (mobile) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-200" />
+            </div>
+
+            {/* Popup Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <CoinImg order={selectedOrder} />
+                <div>
+                  <p className="text-[15px] font-bold text-gray-800">
+                    {selectedOrder?.trade_coin_symbol}/
+                    {selectedOrder?.coin_symbol}
+                  </p>
+                  <p className="text-[11px] text-gray-400">
+                    {getFormattedDeliveryTime(selectedOrder.created_at)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPopup(false)}
+                className="w-8 h-8 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-400 hover:border-red-200 transition-all"
+              >
+                <IoClose size={16} />
+              </button>
+            </div>
+
+            {/* Popup Details */}
+            <div className="p-5 space-y-2 max-h-[65vh] overflow-y-auto">
+              <DetailRow label="Purchase Amount" value={selectedOrder.amount} />
+              <DetailRow
+                label="Direction"
+                value={
+                  <span
+                    className={`capitalize px-2.5 py-0.5 rounded-lg text-[12px] font-bold
+                    ${
+                      selectedOrder.order_position === "buy"
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "bg-red-50 text-red-500"
+                    }`}
+                  >
+                    {selectedOrder.order_position}
+                  </span>
+                }
+              />
+              <DetailRow
+                label="Purchase Price"
+                value={selectedOrder.purchase_price}
+              />
+              <DetailRow label="Contract" value={selectedOrder.delivery_time} />
+              <DetailRow
+                label={selectedOrder.is_profit ? "Profit" : "Loss"}
+                value={`US$ ${selectedOrder.profit_amount}`}
+                highlight
+                isProfit={selectedOrder.is_profit}
+              />
+              <DetailRow
+                label="Delivery Price"
+                value={calculateDeliveryPrice(
+                  selectedOrder?.is_profit,
+                  selectedOrder.order_position,
+                  selectedOrder.delivery_time,
+                  selectedOrder.purchase_price,
+                )}
+              />
+              <DetailRow
+                label="Delivery Time"
+                value={getFormattedDeliveryTime(selectedOrder.created_at)}
+              />
+              <DetailRow label="Status" value="Finished" />
             </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-const getMetalCoinSymbol = (coinId) => {
-  // Replace with actual function to get metal coin symbol
-  return coinId; // Placeholder
 };
 
 export default ProfitStatistics;

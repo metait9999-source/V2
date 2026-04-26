@@ -34,6 +34,7 @@ import LeaseMining from "./Components/MiningMachine/LeaseMining";
 import LoanHistory from "./Components/HelpLoan/LoanHistory";
 import HelpLoan from "./Components/HelpLoan/LoanApply";
 import HelpLoanLanding from "./Components/HelpLoan/LoanLanding";
+import { Toaster } from "react-hot-toast";
 
 // How long to keep retrying for ethereum injection (ms)
 const WALLET_DETECT_TIMEOUT = 5000;
@@ -227,7 +228,7 @@ function App() {
           </Routes>
         )}
       </div>
-      <ToastContainer autoClose={2000} position="bottom-center" />
+      <Toaster position="top-right" reverseOrder={false} />
     </div>
   );
 }

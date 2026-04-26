@@ -5,7 +5,7 @@ import { useUser } from "../../context/UserContext";
 import { SlArrowLeft, SlArrowRight } from "react-icons/sl";
 import { API_BASE_URL } from "../../api/getApiURL";
 import { useSocketContext } from "../../context/SocketContext";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 const Withdraw = ({ openTransactionHistory }) => {
   const [withdraws, setWithdraws] = useState([]);
@@ -40,7 +40,7 @@ const Withdraw = ({ openTransactionHistory }) => {
       async function fetchMarketData() {
         try {
           const response = await fetch(
-            `${API_BASE_URL}/withdraws/user/${user?.id}`
+            `${API_BASE_URL}/withdraws/user/${user?.id}`,
           );
           const data = await response.json();
           if (response.status !== 404) {
@@ -61,14 +61,14 @@ const Withdraw = ({ openTransactionHistory }) => {
 
   // Filter deposits based on search term (coin symbol)
   const filteredWithdraws = withdraws.filter((order) =>
-    order.coin_symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    order.coin_symbol.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredWithdraws.length / itemsPerPage);
   const currentWithdraws = filteredWithdraws.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   // Handlers for pagination and search

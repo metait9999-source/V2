@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { Chart, registerables } from "chart.js";
 import useWallets from "../../hooks/useWallets";
 import { useUser } from "../../context/UserContext";

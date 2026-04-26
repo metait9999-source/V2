@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../../api/getApiURL";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import axios from "axios";
 import DeleteModal from "../DeleteModal/DeleteModal";
 import DetailsCard from "./DetailsCard";

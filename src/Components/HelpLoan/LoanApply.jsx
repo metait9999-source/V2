@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import axios from "axios";
 import { API_BASE_URL } from "../../api/getApiURL";
 import { useUser } from "../../context/UserContext";

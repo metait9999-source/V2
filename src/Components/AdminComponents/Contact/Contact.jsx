@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import useSettings from "../../../hooks/useSettings";
 import { useUpdateSettings } from "../../../hooks/useUpdateSettings";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { MdOutlineContactPage, MdOutlineEmail } from "react-icons/md";
 import { IoLogoWhatsapp } from "react-icons/io";
 import { FiSave } from "react-icons/fi";
