@@ -60,6 +60,12 @@ const Sidebar = () => {
       permission: "Dashboard",
     },
     {
+      label: "Arbitrage",
+      to: "/cradmin/arbitrage",
+      icon: <MdDashboard size={19} />,
+      permission: "Arbitrage",
+    },
+    {
       to: "/cradmin/settings",
       label: "Edit Feature",
       icon: <IoSettingsSharp size={19} />,

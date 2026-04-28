@@ -1,13 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useUser } from "../../context/UserContext";
+import { format } from "date-fns";
+import Header from "../Header/Header";
+import useWallets from "../../hooks/useWallets";
+import {
+  getPackages,
+  getUserSubscriptions,
+  subscribePackage,
+  cancelSubscription,
+} from "../../api/arbitrage.api";
+import { useNavigate } from "react-router";
 
-/* ── Coin config ─────────────────────────────────────────────── */
-const COINS = [
-  { symbol: "USDT", label: "USDT", color: "#26a17b" },
-  { symbol: "BTC", label: "BTC", color: "#f7931a" },
-  { symbol: "ETH", label: "ETH", color: "#627eea" },
-];
+const SUPPORTED_COINS = ["USDT", "BTC", "ETH"];
 
-/* ── Coin Logo using your real image assets ──────────────────── */
+const COIN_COLORS = {
+  USDT: "#26a17b",
+  BTC: "#f7931a",
+  ETH: "#627eea",
+};
+
 const CoinLogo = ({ symbol, size = 36, selected = false, onClick }) => (
   <button
     onClick={onClick}
@@ -34,16 +46,13 @@ const CoinLogo = ({ symbol, size = 36, selected = false, onClick }) => (
         display: "block",
       }}
       onError={(e) => {
-        // Fallback to colored circle if image missing
         e.target.style.display = "none";
-        e.target.parentNode.style.background =
-          COINS.find((c) => c.symbol === symbol)?.color || "#ccc";
+        e.target.parentNode.style.background = COIN_COLORS[symbol] || "#ccc";
       }}
     />
   </button>
 );
 
-/* ── Shield icon ─────────────────────────────────────────────── */
 const ShieldIcon = () => (
   <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
     <path
@@ -63,7 +72,6 @@ const ShieldIcon = () => (
   </svg>
 );
 
-/* ── Check icon ──────────────────────────────────────────────── */
 const CheckIcon = () => (
   <svg
     width="16"
@@ -83,7 +91,6 @@ const CheckIcon = () => (
   </svg>
 );
 
-/* ── Up-Down arrows ──────────────────────────────────────────── */
 const ArrowsUpDown = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
     <path
@@ -96,275 +103,408 @@ const ArrowsUpDown = () => (
   </svg>
 );
 
+const statusStyle = {
+  active: "bg-green-100 text-green-700",
+  completed: "bg-gray-100 text-gray-500",
+  cancelled: "bg-red-100 text-red-500",
+};
+
 /* ════════════════════════════════════════════════════════════════
-   HOSTING WORK PAGE  (Image 1)
+   WALLET BALANCE BAR
    ════════════════════════════════════════════════════════════════ */
-const HostingWorkPage = ({ onGoToArbitrage, onBack }) => (
-  <div className="min-h-screen bg-gray-50 flex flex-col">
-    {/* ── Hero gradient header ── */}
-    <div
-      className="relative overflow-hidden flex flex-col items-center pt-5 pb-10 px-5"
-      style={{
-        background:
-          "linear-gradient(145deg,#7c3aed 0%,#a855f7 45%,#ec4899 100%)",
-        minHeight: 220,
-      }}
-    >
-      {/* Decorative blobs */}
-      <div
-        className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
-        style={{
-          background: "#fff",
-          filter: "blur(48px)",
-          transform: "translate(30%,-30%)",
-        }}
-      />
-      <div
-        className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-15"
-        style={{
-          background: "#a5b4fc",
-          filter: "blur(36px)",
-          transform: "translate(-20%,40%)",
-        }}
-      />
+const WalletBalanceBar = ({ wallets }) => {
+  const supported =
+    wallets?.filter((w) =>
+      SUPPORTED_COINS.includes(w.coin_symbol?.toUpperCase()),
+    ) || [];
 
-      {/* Nav row */}
-      <div className="w-full flex items-center justify-between mb-3 relative z-10">
-        <button
-          onClick={onBack}
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: "rgba(255,255,255,0.18)" }}
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path
-              d="M11 14L6 9l5-5"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: "rgba(255,255,255,0.18)" }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <rect x="1" y="1" width="5" height="5" rx="1.2" fill="white" />
-            <rect x="10" y="1" width="5" height="5" rx="1.2" fill="white" />
-            <rect x="1" y="10" width="5" height="5" rx="1.2" fill="white" />
-            <rect x="10" y="10" width="5" height="5" rx="1.2" fill="white" />
-          </svg>
+  return (
+    <div className="mx-4 mb-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-50">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            My Wallets
+          </p>
         </div>
-      </div>
-
-      {/* Title + amount */}
-      <p className="text-white/80 text-sm font-medium tracking-widest uppercase mb-1 relative z-10">
-        Hosting work
-      </p>
-      <div
-        className="text-white font-black text-5xl mb-6 relative z-10"
-        style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: "-1px" }}
-      >
-        US$ <span style={{ fontVariantNumeric: "tabular-nums" }}>0</span>
-      </div>
-
-      {/* Hosting Order button */}
-      <button
-        onClick={onGoToArbitrage}
-        className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-base relative z-10 transition-transform active:scale-95"
-        style={{
-          background: "linear-gradient(90deg,#f472b6,#a855f7)",
-          boxShadow: "0 8px 24px rgba(168,85,247,0.45)",
-        }}
-      >
-        <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
-          <rect
-            x="0"
-            y="8"
-            width="4"
-            height="8"
-            rx="1"
-            fill="white"
-            opacity=".8"
-          />
-          <rect
-            x="7"
-            y="4"
-            width="4"
-            height="12"
-            rx="1"
-            fill="white"
-            opacity=".9"
-          />
-          <rect x="14" y="0" width="4" height="16" rx="1" fill="white" />
-        </svg>
-        Hosting Order
-      </button>
-    </div>
-
-    {/* ── Stats card ── */}
-    <div
-      className="mx-4 -mt-2 rounded-3xl overflow-hidden shadow-xl"
-      style={{
-        background:
-          "linear-gradient(135deg,#3b4fd8 0%,#6366f1 60%,#818cf8 100%)",
-      }}
-    >
-      <div className="px-5 pt-5 pb-4">
-        <div className="grid grid-cols-2 gap-4 mb-5">
-          <div>
-            <p className="text-indigo-200 text-xs font-medium mb-1">
-              Total Arbitrage
-            </p>
-            <p className="text-white font-bold text-lg">
-              0{" "}
-              <span className="text-indigo-200 text-sm font-normal">USDT</span>
-            </p>
-          </div>
-          <div>
-            <p className="text-indigo-200 text-xs font-medium mb-1">
-              Today Earnings
-            </p>
-            <p className="text-white font-bold text-lg">
-              0{" "}
-              <span className="text-indigo-200 text-sm font-normal">USDT</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Introduction row */}
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-cyan-300 text-xl font-bold mb-0.5">
-              Introduction
-            </p>
-            <p className="text-indigo-100 text-sm">How does AI robot work</p>
-          </div>
-          {/* Isometric chart illustration */}
-          <div className="relative w-24 h-20 flex-shrink-0">
-            <div
-              className="absolute bottom-0 right-0 w-16 h-16 rounded-xl flex items-end justify-center pb-1"
-              style={{
-                background: "rgba(255,255,255,0.12)",
-                border: "1px solid rgba(255,255,255,0.2)",
-              }}
-            >
-              <div className="flex items-end gap-1">
-                <div
-                  className="w-2.5 rounded-t"
-                  style={{ height: 24, background: "rgba(165,180,252,0.8)" }}
-                />
-                <div
-                  className="w-2.5 rounded-t"
-                  style={{ height: 36, background: "rgba(199,210,254,0.9)" }}
-                />
-                <div
-                  className="w-2.5 rounded-t"
-                  style={{ height: 20, background: "rgba(165,180,252,0.8)" }}
-                />
-                <div
-                  className="w-2.5 rounded-t"
-                  style={{ height: 44, background: "white" }}
-                />
+        <div className="divide-y divide-gray-50">
+          {supported.length === 0 ? (
+            <div className="px-4 py-4 text-center text-gray-400 text-sm">
+              No wallets found
+            </div>
+          ) : (
+            supported.map((w) => (
+              <div
+                key={w.id}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{
+                      background: `${COIN_COLORS[w.coin_symbol] || "#ccc"}20`,
+                    }}
+                  >
+                    <img
+                      src={`/assets/images/coins/${w.coin_symbol.toLowerCase()}-logo.png`}
+                      alt={w.coin_symbol}
+                      className="w-6 h-6 rounded-full object-contain"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {w.coin_symbol}
+                    </p>
+                    <p className="text-xs text-gray-400">{w.coin_name}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-gray-800">
+                    {parseFloat(w.coin_amount || 0).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    ≈ US$ {parseFloat(w.usd_amount || 0).toFixed(2)}
+                  </p>
+                </div>
               </div>
-            </div>
-            {/* Little person */}
-            <div className="absolute bottom-1 right-0 w-5 h-5 rounded-full bg-orange-300 flex items-center justify-center text-xs">
-              👤
-            </div>
-          </div>
+            ))
+          )}
         </div>
       </div>
     </div>
+  );
+};
 
-    {/* ── Arbitrage Products ── */}
-    <div className="px-4 pt-6 pb-4">
-      <p
-        className="text-gray-900 font-extrabold text-lg mb-3"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
+/* ════════════════════════════════════════════════════════════════
+   HOSTING WORK PAGE
+   ════════════════════════════════════════════════════════════════ */
+const HostingWorkPage = ({
+  onGoToArbitrage,
+  packages,
+  subscriptions,
+  loadingHistory,
+  onCancelSubscription,
+  wallets,
+}) => {
+  const totalEarned = subscriptions
+    .reduce((sum, s) => sum + parseFloat(s.total_earned || 0), 0)
+    .toFixed(4);
+
+  const todayEarned = subscriptions
+    .filter((s) => {
+      if (!s.last_paid_at) return false;
+      return (
+        new Date(s.last_paid_at).toDateString() === new Date().toDateString()
+      );
+    })
+    .reduce((sum, s) => {
+      return sum + (parseFloat(s.amount) * parseFloat(s.daily_rate)) / 100;
+    }, 0)
+    .toFixed(4);
+
+  const activeCount = subscriptions.filter((s) => s.status === "active").length;
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-8">
+      <Header pageTitle="Arbitrage" />
+
+      {/* Hero gradient header */}
+      <div
+        className="relative overflow-hidden flex flex-col items-center pt-6 pb-12 px-5"
+        style={{
+          background:
+            "linear-gradient(145deg,#7c3aed 0%,#a855f7 45%,#ec4899 100%)",
+        }}
       >
-        Arbitrage Products
-      </p>
-
-      {/* Product card */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Top accent */}
         <div
-          className="h-1 w-full"
-          style={{ background: "linear-gradient(90deg,#7c3aed,#ec4899)" }}
+          className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
+          style={{
+            background: "#fff",
+            filter: "blur(48px)",
+            transform: "translate(30%,-30%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-15"
+          style={{
+            background: "#a5b4fc",
+            filter: "blur(36px)",
+            transform: "translate(-20%,40%)",
+          }}
         />
 
-        <div className="px-5 pt-4 pb-5">
-          {/* Days badge + description */}
-          <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
+        <p className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-2 relative z-10">
+          Total Earnings
+        </p>
+        <div
+          className="text-white font-black text-5xl mb-1 relative z-10"
+          style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: "-1px" }}
+        >
+          US$ {totalEarned}
+        </div>
+        <p className="text-white/60 text-xs relative z-10 mb-6">
+          {activeCount} active subscription{activeCount !== 1 ? "s" : ""}
+        </p>
+
+        <button
+          onClick={() => onGoToArbitrage(null)}
+          className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-base relative z-10 transition-transform active:scale-95"
+          style={{
+            background: "linear-gradient(90deg,#f472b6,#a855f7)",
+            boxShadow: "0 8px 24px rgba(168,85,247,0.45)",
+          }}
+        >
+          <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
+            <rect
+              x="0"
+              y="8"
+              width="4"
+              height="8"
+              rx="1"
+              fill="white"
+              opacity=".8"
+            />
+            <rect
+              x="7"
+              y="4"
+              width="4"
+              height="12"
+              rx="1"
+              fill="white"
+              opacity=".9"
+            />
+            <rect x="14" y="0" width="4" height="16" rx="1" fill="white" />
+          </svg>
+          Start Hosting
+        </button>
+      </div>
+
+      {/* Stats row */}
+      <div className="mx-4 -mt-5 relative z-10 mb-4">
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Today", value: todayEarned, unit: "USDT" },
+            { label: "Active", value: activeCount, unit: "plans" },
+            { label: "Total", value: subscriptions.length, unit: "all time" },
+          ].map((s) => (
             <div
-              className="px-3 py-1 rounded-xl text-sm font-bold"
-              style={{
-                background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
-                color: "#7c3aed",
-              }}
+              key={s.label}
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 text-center"
             >
-              3 Days
+              <p className="text-gray-400 text-xs mb-1">{s.label}</p>
+              <p className="text-gray-800 font-bold text-base">{s.value}</p>
+              <p className="text-gray-400 text-xs">{s.unit}</p>
             </div>
-            <p className="text-gray-600 text-sm leading-snug">
-              Financial product — redeemable within three days
-            </p>
-          </div>
-
-          {/* Amount + Daily income */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <p className="text-gray-400 text-xs mb-1">Amount</p>
-              <p className="text-gray-800 font-semibold text-sm">
-                1,000 – 1,000,000
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs mb-1">Daily income</p>
-              <p className="font-bold text-sm" style={{ color: "#7c3aed" }}>
-                1–3%
-              </p>
-            </div>
-          </div>
-
-          {/* Coin types + Check button */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-xs mb-2">Arbitrage coin types</p>
-              <div className="flex items-center gap-1.5">
-                {COINS.map((coin) => (
-                  <CoinLogo key={coin.symbol} symbol={coin.symbol} size={36} />
-                ))}
-              </div>
-            </div>
-            <button
-              onClick={onGoToArbitrage}
-              className="px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-transform active:scale-95"
-              style={{
-                background: "linear-gradient(90deg,#f472b6,#a855f7)",
-                boxShadow: "0 4px 14px rgba(168,85,247,0.35)",
-              }}
-            >
-              Check
-            </button>
-          </div>
+          ))}
         </div>
       </div>
+
+      {/* Wallet balances */}
+      <WalletBalanceBar wallets={wallets} />
+
+      {/* Packages */}
+      <div className="px-4 mb-4">
+        <p
+          className="text-gray-900 font-extrabold text-lg mb-3"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Arbitrage Products
+        </p>
+        {packages.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
+            <p className="text-gray-400 text-sm">No packages available</p>
+          </div>
+        ) : (
+          packages.map((pkg) => (
+            <div
+              key={pkg.id}
+              className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4"
+            >
+              <div
+                className="h-1 w-full"
+                style={{ background: "linear-gradient(90deg,#7c3aed,#ec4899)" }}
+              />
+              <div className="px-5 pt-4 pb-5">
+                <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
+                  <div
+                    className="px-3 py-1 rounded-xl text-sm font-bold flex-shrink-0"
+                    style={{
+                      background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
+                      color: "#7c3aed",
+                    }}
+                  >
+                    {pkg.duration_days} Days
+                  </div>
+                  <p className="text-gray-500 text-sm leading-snug">
+                    Financial product — redeemable within {pkg.duration_days}{" "}
+                    days
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">Amount range</p>
+                    <p className="text-gray-800 font-semibold text-sm">
+                      {Number(pkg.min_amount).toLocaleString()} –{" "}
+                      {Number(pkg.max_amount).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">Daily income</p>
+                    <p
+                      className="font-bold text-sm"
+                      style={{ color: "#7c3aed" }}
+                    >
+                      {pkg.daily_rate_min}–{pkg.daily_rate_max}%
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-xs mb-2">
+                      Supported coins
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      {SUPPORTED_COINS.map((symbol) => (
+                        <CoinLogo key={symbol} symbol={symbol} size={32} />
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onGoToArbitrage(pkg)}
+                    className="px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-transform active:scale-95"
+                    style={{
+                      background: "linear-gradient(90deg,#f472b6,#a855f7)",
+                      boxShadow: "0 4px 14px rgba(168,85,247,0.35)",
+                    }}
+                  >
+                    Subscribe
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Subscription history */}
+      <div className="px-4">
+        <p
+          className="text-gray-900 font-extrabold text-lg mb-3"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          My Subscriptions
+        </p>
+        {loadingHistory ? (
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
+            <p className="text-gray-400 text-sm">Loading...</p>
+          </div>
+        ) : subscriptions.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
+            <p className="text-gray-400 text-sm">No subscriptions yet</p>
+            <p className="text-gray-300 text-xs mt-1">
+              Subscribe to a package to start earning
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {subscriptions.map((sub) => (
+              <div
+                key={sub.id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+              >
+                <div
+                  className="h-0.5 w-full"
+                  style={{
+                    background: "linear-gradient(90deg,#7c3aed,#ec4899)",
+                  }}
+                />
+                <div className="px-4 py-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-gray-800 text-sm">
+                        {sub.package_name}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-0.5">
+                        {sub.duration_days} days · {sub.coin_id}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyle[sub.status]}`}
+                    >
+                      {sub.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-50">
+                    <div>
+                      <p className="text-gray-400 text-xs mb-0.5">Principal</p>
+                      <p className="text-gray-800 font-semibold text-sm">
+                        {Number(sub.amount).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs mb-0.5">Daily rate</p>
+                      <p
+                        className="font-semibold text-sm"
+                        style={{ color: "#7c3aed" }}
+                      >
+                        {sub.daily_rate}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs mb-0.5">Earned</p>
+                      <p className="text-green-600 font-semibold text-sm">
+                        +{Number(sub.total_earned).toFixed(4)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                    <p className="text-gray-400 text-xs">
+                      Ends {format(new Date(sub.end_date), "dd MMM yyyy")}
+                    </p>
+                    {sub.status === "active" && (
+                      <button
+                        onClick={() => onCancelSubscription(sub.id)}
+                        className="text-xs text-red-400 font-medium underline underline-offset-2"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ════════════════════════════════════════════════════════════════
-   ARBITRAGE DETAIL PAGE  (Images 2 & 3)
+   ARBITRAGE DETAIL PAGE
    ════════════════════════════════════════════════════════════════ */
-const ArbitragePage = ({ onBack }) => {
-  const [amount, setAmount] = useState(0);
+const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
+  const { user } = useUser();
+  const [amount, setAmount] = useState("");
   const [sliderVal, setSliderVal] = useState(0);
-  const [selectedCoin, setSelectedCoin] = useState("BTC");
-  const maxBalance = 0;
+  const [selectedCoin, setSelectedCoin] = useState("USDT");
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  const expectedEarnings = (amount * 0.02).toFixed(2);
+  const pkg = selectedPackage;
+
+  // Get user balance for selected coin
+  const selectedWallet = wallets?.find(
+    (w) => w.coin_symbol?.toUpperCase() === selectedCoin,
+  );
+  const maxBalance = parseFloat(selectedWallet?.coin_amount || 0);
+
+  const expectedEarnings =
+    pkg && amount
+      ? ((parseFloat(amount) * parseFloat(pkg.daily_rate_min)) / 100).toFixed(2)
+      : "0.00";
 
   const benefits = [
     "Daily income is sent to your USDT, BTC, ETH wallet",
@@ -373,11 +513,75 @@ const ArbitragePage = ({ onBack }) => {
     "Artificial intelligence works 24 hours a day",
   ];
 
+  const isInsufficientBalance = parseFloat(amount) > maxBalance;
+
+  const handleSubscribe = async () => {
+    if (!pkg) {
+      toast.error("Please select a package");
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error("Please enter an amount");
+      return;
+    }
+    if (parseFloat(amount) < parseFloat(pkg.min_amount)) {
+      toast.error(
+        `Minimum amount is ${Number(pkg.min_amount).toLocaleString()}`,
+      );
+      return;
+    }
+    if (parseFloat(amount) > parseFloat(pkg.max_amount)) {
+      toast.error(
+        `Maximum amount is ${Number(pkg.max_amount).toLocaleString()}`,
+      );
+      return;
+    }
+    if (isInsufficientBalance) {
+      toast.error("Insufficient balance");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await subscribePackage({
+        userId: user.id,
+        packageId: pkg.id,
+        coinId: selectedCoin,
+        amount: parseFloat(amount),
+      });
+      toast.success("Subscribed successfully!");
+      onSubscribed();
+      onBack();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Failed to subscribe");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── Recharge handler ──────────────────────────────────────
+  const handleRecharge = () => {
+    const wallet = wallets?.find(
+      (w) => w.coin_symbol?.toUpperCase() === selectedCoin,
+    );
+    if (wallet) {
+      navigate("/funds", {
+        state: {
+          wallet,
+          coinAmount: wallet.coin_amount,
+        },
+      });
+    } else {
+      toast.error("Wallet not found for selected coin");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ── Gradient header ── */}
+    <div className="min-h-screen bg-gray-50 pb-8">
+      <Header pageTitle="Arbitrage" />
+
+      {/* Gradient header */}
       <div
-        className="relative overflow-hidden flex flex-col items-center pt-5 pb-16 px-5"
+        className="relative overflow-hidden flex flex-col items-center pt-6 pb-16 px-5"
         style={{
           background:
             "linear-gradient(145deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%)",
@@ -392,33 +596,22 @@ const ArbitragePage = ({ onBack }) => {
             transform: "translate(30%,-30%)",
           }}
         />
-        <div className="w-full flex items-center gap-3 relative z-10">
-          <button
-            onClick={onBack}
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.18)" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path
-                d="M11 14L6 9l5-5"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <p
-            className="text-white font-extrabold text-xl"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Arbitrage
+        <p
+          className="text-white font-extrabold text-xl relative z-10"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          {pkg ? pkg.name : "AI Arbitrage"}
+        </p>
+        {pkg && (
+          <p className="text-white/70 text-sm relative z-10 mt-1">
+            {pkg.duration_days} days · {pkg.daily_rate_min}–{pkg.daily_rate_max}
+            % daily
           </p>
-        </div>
+        )}
       </div>
 
-      {/* ── Hero banner card ── */}
-      <div className="mx-4 -mt-8 relative z-10">
+      {/* Hero banner */}
+      <div className="mx-4 -mt-8 relative z-10 mb-4">
         <div
           className="rounded-3xl overflow-hidden shadow-xl"
           style={{
@@ -429,47 +622,41 @@ const ArbitragePage = ({ onBack }) => {
           <div className="px-5 py-5 flex items-center justify-between">
             <div>
               <p
-                className="text-cyan-300 text-2xl font-extrabold mb-1"
+                className="text-cyan-300 text-xl font-extrabold mb-1"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
                 Join AI Arbitrage
               </p>
               <p className="text-indigo-200 text-sm">Zero risk, fast return</p>
             </div>
-            <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center">
-              <div className="relative">
-                <div
-                  className="w-12 h-14 rounded-2xl flex flex-col items-center justify-center gap-1"
-                  style={{
-                    background: "rgba(255,255,255,0.92)",
-                    boxShadow: "0 4px 16px rgba(99,102,241,0.4)",
-                  }}
-                >
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                  </div>
-                  <div className="w-6 h-1.5 rounded-full bg-cyan-400" />
-                  <p className="text-indigo-600 text-xs font-bold">HI!</p>
+            <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
+              <div
+                className="w-12 h-14 rounded-2xl flex flex-col items-center justify-center gap-1"
+                style={{
+                  background: "rgba(255,255,255,0.92)",
+                  boxShadow: "0 4px 16px rgba(99,102,241,0.4)",
+                }}
+              >
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
                 </div>
-                <div
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-14 h-3 rounded-full opacity-40"
-                  style={{ background: "#6366f1", filter: "blur(6px)" }}
-                />
+                <div className="w-6 h-1.5 rounded-full bg-cyan-400" />
+                <p className="text-indigo-600 text-xs font-bold">AI</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Main detail card ── */}
-      <div className="mx-4 mt-4 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Main detail card */}
+      <div className="mx-4 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4">
         <div
           className="h-1"
           style={{ background: "linear-gradient(90deg,#7c3aed,#ec4899)" }}
         />
         <div className="px-5 py-5">
-          {/* AI Arbitrage header row */}
+          {/* Header row */}
           <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <ShieldIcon />
@@ -477,23 +664,27 @@ const ArbitragePage = ({ onBack }) => {
                 AI Arbitrage
               </span>
             </div>
-            <div
-              className="px-3 py-1 rounded-xl text-sm font-bold"
-              style={{
-                background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
-                color: "#7c3aed",
-              }}
-            >
-              3 Days
-            </div>
+            {pkg && (
+              <div
+                className="px-3 py-1 rounded-xl text-sm font-bold"
+                style={{
+                  background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
+                  color: "#7c3aed",
+                }}
+              >
+                {pkg.duration_days} Days
+              </div>
+            )}
           </div>
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-5 pb-5 border-b border-gray-100">
             <div>
-              <p className="text-gray-400 text-xs mb-1">Amount (USD)</p>
+              <p className="text-gray-400 text-xs mb-1">Amount range</p>
               <p className="text-gray-800 font-semibold text-sm">
-                1,000 – 1,000,000
+                {pkg
+                  ? `${Number(pkg.min_amount).toLocaleString()} – ${Number(pkg.max_amount).toLocaleString()}`
+                  : "—"}
               </p>
             </div>
             <div>
@@ -502,71 +693,105 @@ const ArbitragePage = ({ onBack }) => {
                 className="font-extrabold text-sm"
                 style={{ color: "#7c3aed" }}
               >
-                1–3%
+                {pkg ? `${pkg.daily_rate_min}–${pkg.daily_rate_max}%` : "—"}
               </p>
             </div>
             <div>
               <p className="text-gray-400 text-xs mb-1">
-                Balance ({selectedCoin})
+                Available ({selectedCoin})
               </p>
-              <p className="text-gray-800 font-semibold text-sm">0</p>
+              <p className="text-gray-800 font-semibold text-sm">
+                {maxBalance.toFixed(4)}
+              </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-1">Expected earnings</p>
+              <p className="text-gray-400 text-xs mb-1">
+                Expected earnings/day
+              </p>
               <p
                 className="font-extrabold text-sm"
                 style={{ color: "#22c55e" }}
               >
-                {amount > 0 ? expectedEarnings : "0.00"}
+                {expectedEarnings}
               </p>
             </div>
           </div>
 
-          {/* ── Coin selector (clickable) ── */}
+          {/* Coin selector */}
           <div className="mb-5 pb-5 border-b border-gray-100">
             <p className="text-gray-500 text-xs font-medium mb-3">
-              Arbitrage coin types
+              Select coin
             </p>
             <div className="flex items-center gap-3">
-              {COINS.map((coin) => (
-                <div
-                  key={coin.symbol}
-                  className="flex flex-col items-center gap-1"
-                >
+              {SUPPORTED_COINS.map((symbol) => (
+                <div key={symbol} className="flex flex-col items-center gap-1">
                   <CoinLogo
-                    symbol={coin.symbol}
+                    symbol={symbol}
                     size={40}
-                    selected={selectedCoin === coin.symbol}
-                    onClick={() => setSelectedCoin(coin.symbol)}
+                    selected={selectedCoin === symbol}
+                    onClick={() => setSelectedCoin(symbol)}
                   />
                   <span
                     className="text-xs font-semibold"
                     style={{
-                      color:
-                        selectedCoin === coin.symbol ? "#7c3aed" : "#9ca3af",
+                      color: selectedCoin === symbol ? "#7c3aed" : "#9ca3af",
                     }}
                   >
-                    {coin.label}
+                    {symbol}
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Hosting amount input */}
           <div className="mb-4">
-            <p className="text-gray-700 font-semibold text-sm mb-3">
-              Hosting Amount
-            </p>
+            {/* Label + balance + max/recharge */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-700 font-semibold text-sm">
+                Hosting Amount
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">
+                  {maxBalance.toFixed(4)} {selectedCoin}
+                </span>
+                {maxBalance <= 0 ? (
+                  <button
+                    onClick={handleRecharge}
+                    className="text-xs font-bold px-2.5 py-1 rounded-lg text-white"
+                    style={{
+                      background: "linear-gradient(90deg,#f472b6,#a855f7)",
+                    }}
+                  >
+                    + Recharge
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setAmount(maxBalance.toString());
+                      setSliderVal(100);
+                    }}
+                    className="text-xs font-semibold"
+                    style={{ color: "#7c3aed" }}
+                  >
+                    Max
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Input */}
             <div
               className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all"
               style={{
-                borderColor: amount > 0 ? "#7c3aed" : "#e5e7eb",
+                borderColor: isInsufficientBalance
+                  ? "#ef4444"
+                  : parseFloat(amount) > 0
+                    ? "#7c3aed"
+                    : "#e5e7eb",
                 background: "#fafafa",
               }}
             >
-              {/* Show selected coin logo in input */}
-              <CoinLogo symbol={selectedCoin} size={36} />
+              <CoinLogo symbol={selectedCoin} size={32} />
               <div className="flex items-center gap-1 text-indigo-400">
                 <ArrowsUpDown />
               </div>
@@ -574,15 +799,58 @@ const ArbitragePage = ({ onBack }) => {
                 type="number"
                 min={0}
                 value={amount}
-                onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAmount(val);
+                  if (maxBalance > 0) {
+                    setSliderVal(
+                      Math.min(100, (parseFloat(val) / maxBalance) * 100) || 0,
+                    );
+                  }
+                }}
+                placeholder="0.00"
                 className="flex-1 bg-transparent text-gray-800 font-bold text-lg outline-none"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               />
-              {/* Show selected coin symbol label */}
               <span className="text-gray-400 text-sm font-medium">
                 {selectedCoin}
               </span>
             </div>
+          </div>
+
+          {/* Balance status + recharge */}
+          <div className="flex items-center justify-between mb-5">
+            {isInsufficientBalance ? (
+              <div className="flex items-center justify-between w-full">
+                <p className="text-red-500 text-xs font-semibold">
+                  Insufficient balance
+                </p>
+                <button
+                  onClick={handleRecharge}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-transform active:scale-95"
+                  style={{
+                    background: "linear-gradient(90deg,#f472b6,#a855f7)",
+                    boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path
+                      d="M6 1v10M1 6h10"
+                      stroke="white"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Recharge {selectedCoin}
+                </button>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-xs">
+                {pkg
+                  ? `Min: ${Number(pkg.min_amount).toLocaleString()} · Max: ${Number(pkg.max_amount).toLocaleString()}`
+                  : ""}
+              </p>
+            )}
           </div>
 
           {/* Slider */}
@@ -592,9 +860,11 @@ const ArbitragePage = ({ onBack }) => {
               min={0}
               max={100}
               value={sliderVal}
+              step={1}
               onChange={(e) => {
-                setSliderVal(e.target.value);
-                setAmount(Math.round((e.target.value / 100) * maxBalance));
+                const val = parseInt(e.target.value);
+                setSliderVal(val);
+                setAmount(((maxBalance * val) / 100).toFixed(4));
               }}
               className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
               style={{
@@ -602,35 +872,56 @@ const ArbitragePage = ({ onBack }) => {
                 accentColor: "#7c3aed",
               }}
             />
+            <div className="flex justify-between text-xs text-gray-300 mt-1">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
+            </div>
           </div>
 
           {/* Balance status */}
           <div className="flex items-center justify-between mb-5">
-            <p className="text-red-500 text-xs font-semibold">
-              Insufficient balance
-            </p>
-            <button className="text-gray-500 text-xs font-medium underline underline-offset-2">
-              Recharge
-            </button>
+            {isInsufficientBalance ? (
+              <p className="text-red-500 text-xs font-semibold">
+                Insufficient balance
+              </p>
+            ) : (
+              <p className="text-gray-400 text-xs">
+                {pkg
+                  ? `Min: ${Number(pkg.min_amount).toLocaleString()} · Max: ${Number(pkg.max_amount).toLocaleString()}`
+                  : ""}
+              </p>
+            )}
           </div>
 
-          {/* Hosting now button */}
+          {/* Subscribe button */}
           <button
-            className="w-full py-4 rounded-2xl text-white font-extrabold text-base transition-transform active:scale-98"
+            onClick={handleSubscribe}
+            disabled={
+              submitting ||
+              !amount ||
+              parseFloat(amount) <= 0 ||
+              isInsufficientBalance
+            }
+            className="w-full py-4 rounded-2xl text-white font-extrabold text-base transition-transform active:scale-98 disabled:opacity-50"
             style={{
               background: "linear-gradient(90deg,#f472b6,#a855f7)",
               boxShadow: "0 8px 24px rgba(168,85,247,0.4)",
               fontFamily: "'DM Sans', sans-serif",
-              letterSpacing: "0.3px",
             }}
           >
-            Hosting now
+            {submitting ? "Processing..." : "Hosting Now"}
           </button>
         </div>
       </div>
 
-      {/* ── Benefits list ── */}
-      <div className="mx-4 mt-4 mb-8 bg-white rounded-3xl shadow-sm border border-gray-100 px-5 py-5">
+      {/* Benefits */}
+      <div className="mx-4 bg-white rounded-3xl shadow-sm border border-gray-100 px-5 py-5">
+        <p className="font-bold text-gray-800 text-sm mb-4">
+          Why choose AI Arbitrage?
+        </p>
         <div className="flex flex-col gap-3">
           {benefits.map((b, i) => (
             <div key={i} className="flex items-start gap-3">
@@ -645,18 +936,86 @@ const ArbitragePage = ({ onBack }) => {
 };
 
 /* ════════════════════════════════════════════════════════════════
-   ROOT — switches between pages
+   ROOT
    ════════════════════════════════════════════════════════════════ */
 export default function ArbitrageRoot() {
-  const [page, setPage] = useState("hosting"); // "hosting" | "arbitrage"
+  const { user } = useUser();
+  const { wallets } = useWallets(user?.id);
+  const [page, setPage] = useState("hosting");
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [packages, setPackages] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  // Filter only supported coins
+  const supportedWallets =
+    wallets?.filter((w) =>
+      SUPPORTED_COINS.includes(w.coin_symbol?.toUpperCase()),
+    ) || [];
+
+  useEffect(() => {
+    fetchPackages();
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) fetchSubscriptions();
+  }, [user?.id]);
+
+  const fetchPackages = async () => {
+    try {
+      const res = await getPackages();
+      setPackages(res.data);
+    } catch {
+      toast.error("Failed to load packages");
+    }
+  };
+
+  const fetchSubscriptions = async () => {
+    try {
+      setLoadingHistory(true);
+      const res = await getUserSubscriptions(user.id);
+      setSubscriptions(res.data);
+    } catch {
+      toast.error("Failed to load subscriptions");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleGoToArbitrage = (pkg) => {
+    setSelectedPackage(pkg);
+    setPage("arbitrage");
+  };
+
+  const handleCancelSubscription = async (subscriptionId) => {
+    try {
+      await cancelSubscription({ subscriptionId, userId: user.id });
+      toast.success("Subscription cancelled — principal returned to balance");
+      fetchSubscriptions();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Failed to cancel");
+    }
+  };
 
   if (page === "arbitrage") {
-    return <ArbitragePage onBack={() => setPage("hosting")} />;
+    return (
+      <ArbitragePage
+        onBack={() => setPage("hosting")}
+        selectedPackage={selectedPackage}
+        onSubscribed={fetchSubscriptions}
+        wallets={supportedWallets}
+      />
+    );
   }
+
   return (
     <HostingWorkPage
-      onGoToArbitrage={() => setPage("arbitrage")}
-      onBack={() => {}}
+      onGoToArbitrage={handleGoToArbitrage}
+      packages={packages}
+      subscriptions={subscriptions}
+      loadingHistory={loadingHistory}
+      onCancelSubscription={handleCancelSubscription}
+      wallets={supportedWallets}
     />
   );
 }

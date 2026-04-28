@@ -13,6 +13,7 @@ import AllAdmins from "./AllAdmins/AllAdmins";
 import Contact from "./Contact/Contact";
 import SupportInbox from "./SupportInbox/SupportInbox";
 import { useUser } from "../../context/UserContext";
+import ArbitrageDashboard from "./Arbitrage/ArbitrageDashboard";
 
 // const PAGE_TITLES = {
 //   "/cradmin": "Dashboard",
@@ -115,6 +116,9 @@ const Layout = () => {
             )}
             {hasPermission("Inbox") && (
               <Route path="/live-support" element={<SupportInbox />} />
+            )}
+            {hasPermission("Arbitrage") && (
+              <Route path="/arbitrage" element={<ArbitrageDashboard />} />
             )}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
