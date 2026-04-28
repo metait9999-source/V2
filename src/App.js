@@ -22,7 +22,6 @@ import Converter from "./Components/Converter/Converter";
 import Layout from "./Components/AdminComponents/Layout";
 import AdminLogin from "./Components/AdminComponents/AdminLogin/AdminLogin";
 import AdminRoute from "./Components/AdminComponents/AdminRoute";
-// import ChatPopup from "./Components/ChatPopup/ChatPopup";
 import NotFound from "./Components/NotFound/NotFound";
 import ChatComponent from "./Components/ChatComponent/ChatComponent";
 import useListenMessages from "./hooks/useListenMessages";
@@ -34,58 +33,103 @@ import LoanHistory from "./Components/HelpLoan/LoanHistory";
 import HelpLoan from "./Components/HelpLoan/LoanApply";
 import HelpLoanLanding from "./Components/HelpLoan/LoanLanding";
 import { Toaster } from "react-hot-toast";
+import PasscodeScreen from "./Components/Passcode/PasscodeScreen";
 
-// How long to keep retrying for ethereum injection (ms)
 const WALLET_DETECT_TIMEOUT = 5000;
-// Interval between retries (ms)
 const WALLET_RETRY_INTERVAL = 300;
+const SESSION_KEY = "passcode_verified";
+const LOCK_TIMEOUT_MS = 0; // 0 = lock immediately, 30000 = 30s grace period
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState(null);
   const [isTrustWallet, setIsTrustWallet] = useState(false);
   const [referral] = useState("");
+
+  // Passcode flow
+  const [passcodeMode, setPasscodeMode] = useState(null);
+  const [passcodeVerified, setPasscodeVerified] = useState(
+    () => sessionStorage.getItem(SESSION_KEY) === "true",
+  );
+
   const web3Ref = useRef(null);
-  const { setUser, user, loading, setLoading } = useUser();
-  // const [isChatVisible, setChatVisible] = useState(false);
-  // const location = useLocation();
-  const { setSelectedConversation, setMessages } = useConversation();
   const retryTimerRef = useRef(null);
-  const hasConnectedRef = useRef(false); // Prevent double-init
+  const hasConnectedRef = useRef(false);
+  const lockTimerRef = useRef(null);
+
+  const { setUser, user, loading, setLoading } = useUser();
+  const { setSelectedConversation, setMessages } = useConversation();
   useListenMessages();
 
-  // Hide chat popup when navigating to /live-chat
-  // useEffect(() => {
-  //   if (location.pathname === "/live-chat") {
-  //     setChatVisible(false);
-  //   }
-  // }, [location]);
+  // ── Lock when user leaves page ────────────────────────────
+  useEffect(() => {
+    const lockApp = () => {
+      sessionStorage.removeItem(SESSION_KEY);
+      setPasscodeVerified(false);
+      setPasscodeMode(null);
+      // Will re-trigger initializeUser via passcodeVerified change
+    };
 
-  const connectWallet = useCallback(async () => {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    if (!accounts || accounts.length === 0) return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        if (LOCK_TIMEOUT_MS === 0) {
+          // Lock immediately
+          lockApp();
+        } else {
+          // Lock after timeout
+          lockTimerRef.current = setTimeout(lockApp, LOCK_TIMEOUT_MS);
+        }
+      } else if (document.visibilityState === "visible") {
+        // User came back before timeout — cancel lock
+        if (lockTimerRef.current) {
+          clearTimeout(lockTimerRef.current);
+          lockTimerRef.current = null;
+        }
+      }
+    };
 
-    const w3 = new Web3(window.ethereum);
-    web3Ref.current = w3;
+    const handlePageHide = () => {
+      lockApp();
+    };
 
-    const balance = await web3Ref.current.eth.getBalance(accounts[0]);
-    console.log("Balance:", Web3.utils.fromWei(balance, "ether"), "ETH");
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
 
-    setAccount(accounts[0]);
-    setIsConnected(true);
-    setIsTrustWallet(true);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+      if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
+    };
   }, []);
 
+  // ── Connect wallet ────────────────────────────────────────
+  const connectWallet = useCallback(async () => {
+    if (hasConnectedRef.current) return;
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      if (!accounts || accounts.length === 0) return;
+
+      hasConnectedRef.current = true;
+      const w3 = new Web3(window.ethereum);
+      web3Ref.current = w3;
+
+      setAccount(accounts[0]);
+      setIsConnected(true);
+      setIsTrustWallet(true);
+    } catch (err) {
+      console.error("Wallet connect error:", err);
+    }
+  }, []);
+
+  // ── Detect wallet with retry ──────────────────────────────
   const detectAndConnect = useCallback(() => {
     if (window.ethereum) {
       connectWallet();
       return;
     }
-
     const start = Date.now();
-
     retryTimerRef.current = setInterval(() => {
       if (window.ethereum) {
         clearInterval(retryTimerRef.current);
@@ -101,10 +145,8 @@ function App() {
     if (!window.location.hash) {
       window.location.replace(`${window.location.href}#/`);
     }
-
     detectAndConnect();
 
-    // Some wallets fire this custom event when ready
     const handleEthereumReady = () => {
       if (!hasConnectedRef.current) connectWallet();
     };
@@ -116,17 +158,42 @@ function App() {
     };
   }, [detectAndConnect, connectWallet]);
 
-  // Initialize user once wallet is connected
+  // ── Initialize user once wallet connected ─────────────────
   useEffect(() => {
     if (!isConnected || !isTrustWallet || !account) return;
 
     const initializeUser = async () => {
       try {
-        await createMetaCtUser(account, referral, setUser, setLoading);
+        const result = await createMetaCtUser(
+          account,
+          referral,
+          setUser,
+          setLoading,
+        );
+
+        if (!result) return;
+
+        // Already verified this session — user is set inside createMetaCtUser
+        if (result.verified) {
+          setMessages([]);
+          setSelectedConversation(null);
+          return;
+        }
+
+        // Only show passcode if not already verified
+        if (!passcodeVerified) {
+          if (!result.has_passcode) {
+            setPasscodeMode("set");
+          } else {
+            setPasscodeMode("verify");
+          }
+        }
+
         setMessages([]);
         setSelectedConversation(null);
       } catch (error) {
         console.error("Failed to initialize user:", error);
+        setLoading(false);
       }
     };
 
@@ -140,93 +207,118 @@ function App() {
     setLoading,
     setMessages,
     setSelectedConversation,
+    passcodeVerified,
   ]);
 
-  // const handleChatClick = () => setChatVisible(true);
-  // const handleCloseChat = () => setChatVisible(false);
+  // ── Called after passcode set or verified ─────────────────
+  const handlePasscodeSuccess = useCallback(
+    async (userData) => {
+      sessionStorage.setItem(SESSION_KEY, "true");
+      setPasscodeVerified(true);
+      setPasscodeMode(null);
 
-  // const isLiveChat = location.pathname.includes("/live-chat");
+      if (userData) {
+        setUser(userData);
+      } else {
+        try {
+          const axios = (await import("axios")).default;
+          const { API_BASE_URL } = await import("./api/getApiURL");
+          const res = await axios.get(
+            `${API_BASE_URL}/users/wallet/${account}`,
+          );
+          setUser(res.data);
+        } catch (err) {
+          console.error("Failed to load user after passcode set:", err);
+        }
+      }
+
+      setLoading(false);
+    },
+    [account, setUser, setLoading],
+  );
+
+  // ── Handle passcode errors ────────────────────────────────
+  const handlePasscodeError = useCallback((err) => {
+    if (err === "switch_to_verify") {
+      setPasscodeMode("verify");
+    } else {
+      console.error("Passcode error:", err);
+    }
+  }, []);
+
+  // ── Derived display states ────────────────────────────────
+  const showPasscode = !!passcodeMode && !passcodeVerified;
+  const showMainApp =
+    isConnected &&
+    isTrustWallet &&
+    user?.status === "active" &&
+    passcodeVerified;
 
   return (
     <div>
+      {/* Global loader */}
       {loading && (
         <div id="global-loader">
           <Spinner />
         </div>
       )}
+
+      {/* Passcode screen */}
+      {showPasscode && (
+        <PasscodeScreen
+          mode={passcodeMode}
+          walletAddress={account}
+          onSuccess={handlePasscodeSuccess}
+          onError={handlePasscodeError}
+        />
+      )}
+
       <div className="app">
-        {isConnected && isTrustWallet && user?.status === "active" ? (
-          <>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/profile" element={<Profile walletId={account} />} />
-              <Route path="/account" element={<Account />} />
-              <Route path="/transaction" element={<Transaction />} />
-              <Route path="/profit-stat" element={<ProfitStatistics />} />
-              <Route path="/notification" element={<Notification />} />
-              <Route path="/funds" element={<Funds />} />
-              <Route path="/business" element={<Business wallet={account} />} />
-              <Route path="/arbitrage" element={<ArbitrageRoot />} />
-              <Route path="/mining" element={<MiningMachine />} />
-              <Route path="/mining/:id" element={<LeaseMining />} />
-              <Route path="/loan-landing" element={<HelpLoanLanding />} />
-              <Route path="/help-loan" element={<HelpLoan />} />
-              <Route path="/loan-history" element={<LoanHistory />} />
-              <Route path="/referral-list" element={<ReferralList />} />
-              <Route path="/converter" element={<Converter />} />
-              <Route
-                path="/referral-history"
-                element={<ReferralBonusHistory />}
-              />
-              <Route path="/contact-us" element={<Contact />} />
-              <Route path="/live-chat" element={<ChatComponent />} />
-              <Route path="/*" element={<NotFound />} />
-            </Routes>
-            {/* {!isLiveChat && (
-              <ChatPopup visible={isChatVisible} onClose={handleCloseChat} />
-            )}
-            {!isLiveChat && (
-              <div className="c-chat" onClick={handleChatClick}>
-                <div className="c-chat-wrap">
-                  <div className="arrow-icon">
-                    <svg
-                      color="inherit"
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 32 32"
-                      className="c-svg"
-                    >
-                      <path
-                        fill="#FFFFFF"
-                        d="M12.63,26.46H8.83a6.61,6.61,0,0,1-6.65-6.07,89.05,89.05,0,0,1,0-11.2A6.5,6.5,0,0,1,8.23,3.25a121.62,121.62,0,0,1,15.51,0A6.51,6.51,0,0,1,29.8,9.19a77.53,77.53,0,0,1,0,11.2,6.61,6.61,0,0,1-6.66,6.07H19.48L12.63,31V26.46"
-                      />
-                      <path
-                        fill="#2000F0"
-                        d="M19.57,21.68h3.67a2.08,2.08,0,0,0,2.11-1.81,89.86,89.86,0,0,0,0-10.38,1.9,1.9,0,0,0-1.84-1.74,113.15,113.15,0,0,0-15,0A1.9,1.9,0,0,0,6.71,9.49a74.92,74.92,0,0,0-.06,10.38,2,2,0,0,0,2.1,1.81h3.81V26.5Z"
-                        className="lc-1adcsh3 e1nep2br0"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            )} */}
-          </>
-        ) : (
+        {showMainApp ? (
           <Routes>
-            <Route path="/" element={<GuestHome />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/profile" element={<Profile walletId={account} />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/transaction" element={<Transaction />} />
+            <Route path="/profit-stat" element={<ProfitStatistics />} />
+            <Route path="/notification" element={<Notification />} />
+            <Route path="/funds" element={<Funds />} />
+            <Route path="/business" element={<Business wallet={account} />} />
+            <Route path="/arbitrage" element={<ArbitrageRoot />} />
+            <Route path="/mining" element={<MiningMachine />} />
+            <Route path="/mining/:id" element={<LeaseMining />} />
+            <Route path="/loan-landing" element={<HelpLoanLanding />} />
+            <Route path="/help-loan" element={<HelpLoan />} />
+            <Route path="/loan-history" element={<LoanHistory />} />
+            <Route path="/referral-list" element={<ReferralList />} />
+            <Route path="/converter" element={<Converter />} />
             <Route
-              path="/cradmin/*"
-              element={
-                <AdminRoute>
-                  <Layout />
-                </AdminRoute>
-              }
+              path="/referral-history"
+              element={<ReferralBonusHistory />}
             />
+            <Route path="/contact-us" element={<Contact />} />
+            <Route path="/live-chat" element={<ChatComponent />} />
             <Route path="/*" element={<NotFound />} />
           </Routes>
+        ) : (
+          !showPasscode && (
+            <Routes>
+              <Route path="/" element={<GuestHome />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route
+                path="/cradmin/*"
+                element={
+                  <AdminRoute>
+                    <Layout />
+                  </AdminRoute>
+                }
+              />
+              <Route path="/*" element={<NotFound />} />
+            </Routes>
+          )
         )}
       </div>
+
       <Toaster position="top-right" reverseOrder={false} />
     </div>
   );

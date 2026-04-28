@@ -16,11 +16,11 @@ const navItems = [
     to: "/arbitrage",
   },
   { label: "Mining", icon: "/assets/images/menu/profits.png", to: "/mining" },
-  {
-    label: "Leverage",
-    icon: "/assets/images/menu/transaction.png",
-    to: "/leverage",
-  },
+  // {
+  //   label: "Leverage",
+  //   icon: "/assets/images/menu/transaction.png",
+  //   to: "/leverage",
+  // },
   {
     label: "Help Loan",
     icon: "/assets/images/menu/users.svg",

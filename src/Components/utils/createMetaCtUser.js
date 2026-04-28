@@ -5,49 +5,108 @@ export const createMetaCtUser = async (
   wallet,
   referral = "",
   setUser,
-  setLoading
+  setLoading,
 ) => {
   try {
-    let user;
     setLoading(true);
+
+    const alreadyVerified =
+      sessionStorage.getItem("passcode_verified") === "true";
+
+    // ── Step 1: Try to get existing user ──────────────────────
+    let existingUser = null;
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/users/wallet/${wallet}`
+        `${API_BASE_URL}/users/wallet/${wallet}`,
       );
-      user = response.data;
+      existingUser = response.data;
+      console.log("[createMetaCtUser] existingUser:", existingUser);
+      console.log(
+        "[createMetaCtUser] passcode_set:",
+        existingUser?.passcode_set,
+      );
     } catch (error) {
-      if (error.response && error.response.data.error === "User not found") {
-        // If user not found, proceed to create a new user
-        console.log("User not found, creating a new one.");
-      } else {
-        // If there's another error, throw it
+      if (error.response?.status !== 404) {
+        setLoading(false);
         throw error;
       }
     }
 
-    if (user && user.uuid) {
-      setUser(user);
-      console.log("User retrieved successfully");
-    } else {
-      // Create a new user since it wasn't found
+    // ── Step 2: Existing user ─────────────────────────────────
+    if (existingUser?.uuid) {
+      if (alreadyVerified) {
+        setUser(existingUser);
+        setLoading(false);
+        console.log("[createMetaCtUser] already verified this session");
+        return { exists: true, has_passcode: true, verified: true };
+      }
+
+      const hasPasscode = existingUser.passcode_set === true;
+      console.log("[createMetaCtUser] hasPasscode:", hasPasscode);
+
+      setLoading(false);
+      return {
+        exists: true,
+        has_passcode: hasPasscode,
+        verified: false,
+        user: existingUser,
+      };
+    }
+
+    // ── Step 3: New user — create ─────────────────────────────
+    let newUser = null;
+    try {
       const newUserResponse = await axios.post(`${API_BASE_URL}/users/create`, {
         user_wallet: wallet,
-        referral_uuid: referral,
+        referral_uuid: referral || null,
       });
-
-      if (newUserResponse.data && newUserResponse.data.uuid) {
-        setUser(newUserResponse.data);
-        console.log("New user registered successfully");
-      } else {
-        setLoading(false);
-        throw new Error("User creation failed");
+      newUser = newUserResponse.data;
+      console.log("[createMetaCtUser] new user created:", newUser);
+    } catch (createError) {
+      if (createError.response?.status === 400) {
+        try {
+          const retryRes = await axios.get(
+            `${API_BASE_URL}/users/wallet/${wallet}`,
+          );
+          const retryUser = retryRes.data;
+          const hasPasscode = retryUser.passcode_set === true;
+          console.log(
+            "[createMetaCtUser] retry user:",
+            retryUser,
+            "hasPasscode:",
+            hasPasscode,
+          );
+          setLoading(false);
+          return {
+            exists: true,
+            has_passcode: hasPasscode,
+            verified: false,
+            user: retryUser,
+          };
+        } catch {
+          setLoading(false);
+          throw createError;
+        }
       }
+      setLoading(false);
+      throw createError;
     }
+
+    if (!newUser?.uuid) {
+      setLoading(false);
+      throw new Error("User creation failed");
+    }
+
+    setLoading(false);
+    return {
+      exists: false,
+      has_passcode: false,
+      verified: false,
+      user: newUser,
+    };
   } catch (error) {
-    console.error("Error in createMetaCtUser:", error);
+    console.error("[createMetaCtUser] error:", error);
     setLoading(false);
     throw error;
-  } finally {
-    setLoading(false);
   }
 };
