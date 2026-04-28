@@ -1,49 +1,3 @@
-// ── Shared data ──
-export const MACHINES = [
-  {
-    id: 1,
-    days: 3,
-    label: "3 Days",
-    description: "Financial product - not redeemable within three days",
-    rent: "1,000 USDT",
-    rentValue: 1000,
-    stars: 5,
-    output: "1.0000% USDT/Day",
-    computing: "15000 TH/s",
-    power: "150000W",
-    cycle: "3 Days",
-    color: "#5b6ef5",
-  },
-  {
-    id: 2,
-    days: 7,
-    label: "7 Days",
-    description: "Financial product - not redeemable within seven days",
-    rent: "3,000 USDT",
-    rentValue: 3000,
-    stars: 5,
-    output: "1.5000% USDT/Day",
-    computing: "25000 TH/s",
-    power: "200000W",
-    cycle: "7 Days",
-    color: "#a855f7",
-  },
-  {
-    id: 3,
-    days: 30,
-    label: "30 Days",
-    description: "Financial product - not redeemable within thirty days",
-    rent: "10,000 USDT",
-    rentValue: 10000,
-    stars: 5,
-    output: "2.0000% USDT/Day",
-    computing: "50000 TH/s",
-    power: "350000W",
-    cycle: "30 Days",
-    color: "#ec4899",
-  },
-];
-
 export const BENEFITS = [
   "Daily settlement of miner income",
   "Data centers established in multiple countries",
@@ -52,7 +6,6 @@ export const BENEFITS = [
   "Real-time monitoring & alerts",
 ];
 
-// ── Shared UI components ──
 export const MachineIcon = ({ size = 56 }) => (
   <svg width={size} height={size} viewBox="0 0 80 80" fill="none">
     <rect

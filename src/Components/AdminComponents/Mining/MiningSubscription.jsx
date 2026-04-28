@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
-import { getSubscriptionsAdmin } from "../../../api/arbitrage.api";
+import { getMiningSubscriptionsAdmin } from "../../../api/mining.api";
 import Pagination from "../../Pagination/Pagination";
 
 const statusStyle = {
@@ -12,7 +12,7 @@ const statusStyle = {
 
 const ITEMS_PER_PAGE = 25;
 
-const ArbitrageSubscriptions = () => {
+const MiningSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -26,7 +26,7 @@ const ArbitrageSubscriptions = () => {
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
-      const res = await getSubscriptionsAdmin();
+      const res = await getMiningSubscriptionsAdmin();
       setSubscriptions(res.data);
     } catch {
       toast.error("Failed to load subscriptions");
@@ -35,7 +35,6 @@ const ArbitrageSubscriptions = () => {
     }
   };
 
-  // Filter by status + search
   const filtered = subscriptions.filter((s) => {
     const matchStatus = filter === "all" || s.status === filter;
     const matchSearch =
@@ -52,10 +51,18 @@ const ArbitrageSubscriptions = () => {
     page * ITEMS_PER_PAGE,
   );
 
-  // Reset page when filter/search changes
   useEffect(() => {
     setPage(1);
   }, [filter, search]);
+
+  const stats = {
+    active: subscriptions.filter((s) => s.status === "active").length,
+    completed: subscriptions.filter((s) => s.status === "completed").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled").length,
+    totalLocked: subscriptions
+      .filter((s) => s.status === "active")
+      .reduce((sum, s) => sum + parseFloat(s.rent_amount || 0), 0),
+  };
 
   return (
     <div className="p-4 md:p-6">
@@ -63,10 +70,10 @@ const ArbitrageSubscriptions = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
         <div>
           <h2 className="text-lg md:text-xl font-bold text-gray-800">
-            Arbitrage Subscriptions
+            Mining Subscriptions
           </h2>
           <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-            {filtered.length} total subscriptions
+            {filtered.length} total leases
           </p>
         </div>
         <button
@@ -78,15 +85,32 @@ const ArbitrageSubscriptions = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {["active", "completed", "cancelled"].map((s) => (
-          <div key={s} className="bg-gray-50 rounded-xl p-3 md:p-4">
-            <p className="text-xs text-gray-400 capitalize mb-1">{s}</p>
-            <p className="text-xl md:text-2xl font-bold text-gray-800">
-              {subscriptions.filter((x) => x.status === s).length}
-            </p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="bg-gray-50 rounded-xl p-3 md:p-4">
+          <p className="text-xs text-gray-400 mb-1">Active</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-800">
+            {stats.active}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-3 md:p-4">
+          <p className="text-xs text-gray-400 mb-1">Completed</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-800">
+            {stats.completed}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-3 md:p-4">
+          <p className="text-xs text-gray-400 mb-1">Cancelled</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-800">
+            {stats.cancelled}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-3 md:p-4">
+          <p className="text-xs text-gray-400 mb-1">Total Locked</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-800">
+            {stats.totalLocked.toLocaleString()}
+          </p>
+          <p className="text-xs text-gray-400">USDT</p>
+        </div>
       </div>
 
       {/* Search + Filter */}
@@ -156,6 +180,9 @@ const ArbitrageSubscriptions = () => {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
+                    <p className="font-semibold text-gray-800 text-sm">
+                      {sub.user_name || sub.user_uuid}
+                    </p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {sub.user_uuid}
                     </p>
@@ -177,13 +204,15 @@ const ArbitrageSubscriptions = () => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Coin</p>
-                    <p className="text-gray-700 font-medium">{sub.coin_id}</p>
+                    <p className="text-gray-400">Quantity</p>
+                    <p className="text-gray-700 font-medium">
+                      {sub.quantity} machine{sub.quantity > 1 ? "s" : ""}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Amount</p>
+                    <p className="text-gray-400">Rent Paid</p>
                     <p className="text-gray-800 font-semibold">
-                      {Number(sub.amount).toLocaleString()}
+                      {Number(sub.rent_amount).toLocaleString()} USDT
                     </p>
                   </div>
                   <div>
@@ -193,7 +222,7 @@ const ArbitrageSubscriptions = () => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Earned</p>
+                    <p className="text-gray-400">Total Earned</p>
                     <p className="text-green-600 font-semibold">
                       +{Number(sub.total_earned).toFixed(4)}
                     </p>
@@ -205,6 +234,12 @@ const ArbitrageSubscriptions = () => {
                     </p>
                   </div>
                 </div>
+                {sub.last_paid_at && (
+                  <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+                    Last paid:{" "}
+                    {format(new Date(sub.last_paid_at), "dd MMM yyyy HH:mm")}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -217,16 +252,17 @@ const ArbitrageSubscriptions = () => {
                   {[
                     "User",
                     "Package",
-                    "Coin",
-                    "Amount",
-                    "Rate",
+                    "Qty",
+                    "Rent Paid",
+                    "Daily Rate",
                     "Earned",
                     "End Date",
+                    "Last Paid",
                     "Status",
                   ].map((h) => (
                     <th
                       key={h}
-                      className="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap"
+                      className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap"
                     >
                       {h}
                     </th>
@@ -239,34 +275,45 @@ const ArbitrageSubscriptions = () => {
                     key={sub.id}
                     className="border-b border-gray-50 hover:bg-gray-50 transition"
                   >
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <p className="font-medium text-gray-800">
                         {sub.user_name || "—"}
                       </p>
                       <p className="text-xs text-gray-400">{sub.user_uuid}</p>
                     </td>
-                    <td className="px-5 py-3 text-gray-600">
+                    <td className="px-4 py-3 text-gray-600">
                       {sub.package_name}
                       <span className="ml-1 text-xs text-gray-400">
                         ({sub.duration_days}d)
                       </span>
                     </td>
-                    <td className="px-5 py-3 font-medium text-gray-700">
-                      {sub.coin_id}
+                    <td className="px-4 py-3 text-gray-700 font-medium">
+                      {sub.quantity}
                     </td>
-                    <td className="px-5 py-3 text-gray-800 font-medium">
-                      {Number(sub.amount).toLocaleString()}
+                    <td className="px-4 py-3 text-gray-800 font-medium">
+                      {Number(sub.rent_amount).toLocaleString()}
                     </td>
-                    <td className="px-5 py-3 text-indigo-600 font-medium">
+                    <td
+                      className="px-4 py-3 font-medium"
+                      style={{ color: "#7c3aed" }}
+                    >
                       {sub.daily_rate}%
                     </td>
-                    <td className="px-5 py-3 text-green-600 font-medium">
+                    <td className="px-4 py-3 text-green-600 font-medium">
                       +{Number(sub.total_earned).toFixed(4)}
                     </td>
-                    <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                       {format(new Date(sub.end_date), "dd MMM yyyy")}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
+                      {sub.last_paid_at
+                        ? format(
+                            new Date(sub.last_paid_at),
+                            "dd MMM yyyy HH:mm",
+                          )
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[sub.status]}`}
                       >
@@ -289,4 +336,4 @@ const ArbitrageSubscriptions = () => {
   );
 };
 
-export default ArbitrageSubscriptions;
+export default MiningSubscriptions;

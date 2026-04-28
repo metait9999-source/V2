@@ -289,7 +289,7 @@ const ArbitragePackages = () => {
         </div>
       ) : (
         <>
-          <div className="block sm:hidden space-y-2">
+          <div className="block md:hidden space-y-2">
             {packages.map((pkg) => (
               <div
                 key={pkg.id}
@@ -353,7 +353,7 @@ const ArbitragePackages = () => {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden sm:block bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">

@@ -10,6 +10,7 @@ import { useSocketContext } from "../../../context/SocketContext";
 import axios from "axios";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import { TbLayoutSidebarLeftCollapseFilled } from "react-icons/tb";
+import { useRef } from "react";
 
 const Sidebar = () => {
   const { adminUser, logout } = useUser();
@@ -19,6 +20,22 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [unreadConv, setUnreadConv] = useState(0);
   const { socket } = useSocketContext();
+  const manualOverride = useRef(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (manualOverride.current) return; // respect manual toggle
+      if (window.innerWidth < 1024) {
+        setIsCollapsed(true);
+      } else {
+        setIsCollapsed(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const fetchConversations = async () => {
     try {
@@ -64,6 +81,12 @@ const Sidebar = () => {
       to: "/cradmin/arbitrage",
       icon: <MdDashboard size={19} />,
       permission: "Arbitrage",
+    },
+    {
+      label: "Mining",
+      to: "/cradmin/mining",
+      icon: <MdDashboard size={19} />,
+      permission: "Mining",
     },
     {
       to: "/cradmin/settings",

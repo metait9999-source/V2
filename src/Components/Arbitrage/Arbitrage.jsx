@@ -540,12 +540,13 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
       toast.error("Insufficient balance");
       return;
     }
+
     try {
       setSubmitting(true);
       await subscribePackage({
         userId: user.id,
         packageId: pkg.id,
-        coinId: selectedCoin,
+        coinId: selectedWallet?.coin_id, // ✅ use coin_id not coin_symbol
         amount: parseFloat(amount),
       });
       toast.success("Subscribed successfully!");
