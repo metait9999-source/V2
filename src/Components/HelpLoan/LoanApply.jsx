@@ -1,22 +1,12 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import toast from "react-hot-toast";
-import axios from "axios";
-import { API_BASE_URL } from "../../api/getApiURL";
 import { useUser } from "../../context/UserContext";
-
-const LOAN_PERIODS = [
-  { label: "7 Days", value: 7, rate: "2.5%" },
-  { label: "14 Days", value: 14, rate: "4.0%" },
-  { label: "30 Days", value: 30, rate: "7.5%" },
-  { label: "60 Days", value: 60, rate: "13.0%" },
-  { label: "90 Days", value: 90, rate: "18.0%" },
-];
+import { getLoanPackages, submitLoan } from "../../api/loan.api";
 
 const STEPS = ["Personal", "Period", "Documents", "Amount"];
 
-// ── Step indicator ──
 const StepBar = ({ current, total }) => (
   <div className="flex items-center gap-2 px-5 py-3">
     {Array.from({ length: total }).map((_, i) => (
@@ -63,28 +53,20 @@ const StepBar = ({ current, total }) => (
   </div>
 );
 
-// ── Smart input — scrolls itself into view when focused ──
 const SmartInput = ({ label, inputRef, nextRef, isLast = false, ...props }) => {
   const wrapRef = useRef(null);
-
   const handleFocus = useCallback(() => {
-    // Wait for keyboard to appear (~300ms) then scroll into view
     setTimeout(() => {
       wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 320);
   }, []);
-
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" || e.key === "Next") {
+    if (e.key === "Enter") {
       e.preventDefault();
-      if (nextRef?.current) {
-        nextRef.current.focus();
-      } else {
-        inputRef?.current?.blur();
-      }
+      if (nextRef?.current) nextRef.current.focus();
+      else inputRef?.current?.blur();
     }
   };
-
   return (
     <div ref={wrapRef}>
       <p className="text-gray-500 text-xs font-semibold mb-1.5">{label}</p>
@@ -95,20 +77,12 @@ const SmartInput = ({ label, inputRef, nextRef, isLast = false, ...props }) => {
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-800 text-sm font-medium outline-none transition-all placeholder-gray-300"
-        style={{
-          WebkitAppearance: "none",
-          fontSize: 16, // prevents iOS zoom on focus
-        }}
-        onBlurCapture={(e) => {
-          // restore scroll position cleanly on blur
-          e.target.style.fontSize = "16px";
-        }}
+        style={{ WebkitAppearance: "none", fontSize: 16 }}
       />
     </div>
   );
 };
 
-// ── Photo upload ──
 const PhotoUpload = ({ label, sublabel, icon, preview, onChange }) => {
   const ref = useRef();
   return (
@@ -165,17 +139,21 @@ const PhotoUpload = ({ label, sublabel, icon, preview, onChange }) => {
   );
 };
 
-// ── Main form ──
 const HelpLoan = () => {
   const navigate = useNavigate();
   const { user, setLoading } = useUser();
   const [step, setStep] = useState(0);
+  const [loanPackages, setLoanPackages] = useState([]);
 
   const [form, setForm] = useState({
     fullName: "",
     homeAddress: "",
     phone: "",
+    package_id: null,
     period: null,
+    rate: null,
+    min_amount: null,
+    max_amount: null,
     loanAmount: "",
     creditFront: null,
     creditFrontPreview: null,
@@ -185,7 +163,24 @@ const HelpLoan = () => {
     idCardPreview: null,
   });
 
+  useEffect(() => {
+    getLoanPackages()
+      .then((res) => setLoanPackages(res.data))
+      .catch(() => toast.error("Failed to load loan packages"));
+  }, []);
+
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const selectPackage = (pkg) => {
+    setForm((f) => ({
+      ...f,
+      package_id: pkg.id,
+      period: pkg.period_days,
+      rate: parseFloat(pkg.interest_rate),
+      min_amount: parseFloat(pkg.min_amount),
+      max_amount: parseFloat(pkg.max_amount),
+    }));
+  };
 
   const handlePhoto = (key, previewKey) => (e) => {
     const file = e.target.files?.[0];
@@ -198,13 +193,10 @@ const HelpLoan = () => {
     set(previewKey, URL.createObjectURL(file));
   };
 
-  // Refs for focus chaining
   const nameRef = useRef(null);
   const addressRef = useRef(null);
   const phoneRef = useRef(null);
   const amountRef = useRef(null);
-
-  // Scroll container ref — used to scroll up when step changes
   const scrollRef = useRef(null);
 
   const goStep = (next) => {
@@ -220,38 +212,55 @@ const HelpLoan = () => {
       return (
         form.fullName.trim() && form.homeAddress.trim() && form.phone.trim()
       );
-    if (step === 1) return !!form.period;
+    if (step === 1) return !!form.package_id;
     if (step === 2) return form.creditFront && form.creditBack && form.idCard;
     if (step === 3) return form.loanAmount && parseFloat(form.loanAmount) > 0;
     return true;
   };
 
   const handleSubmit = async () => {
+    const amount = parseFloat(form.loanAmount);
+    if (form.min_amount && amount < form.min_amount) {
+      toast.error(`Minimum amount is ${form.min_amount.toLocaleString()} USDT`);
+      return;
+    }
+    if (form.max_amount && amount > form.max_amount) {
+      toast.error(`Maximum amount is ${form.max_amount.toLocaleString()} USDT`);
+      return;
+    }
+
     setLoading(true);
     try {
       const fd = new FormData();
       fd.append("user_id", user?.id);
+      fd.append("package_id", form.package_id);
       fd.append("full_name", form.fullName);
       fd.append("home_address", form.homeAddress);
       fd.append("phone", form.phone);
-      fd.append("loan_period", form.period);
       fd.append("loan_amount", form.loanAmount);
       fd.append("credit_front", form.creditFront);
       fd.append("credit_back", form.creditBack);
       fd.append("id_card", form.idCard);
 
-      await axios.post(`${API_BASE_URL}/loans`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await submitLoan(fd);
       setLoading(false);
       toast.success("Loan application submitted successfully!");
       navigate("/loan-history");
     } catch (err) {
       setLoading(false);
-      toast.error("Submission failed. Please try again.");
-      console.error(err);
+      toast.error(
+        err?.response?.data?.error || "Submission failed. Please try again.",
+      );
     }
   };
+
+  const totalRepay =
+    form.loanAmount && form.rate
+      ? (parseFloat(form.loanAmount) * (1 + form.rate / 100)).toLocaleString(
+          undefined,
+          { maximumFractionDigits: 2 },
+        )
+      : "—";
 
   return (
     <div
@@ -267,12 +276,11 @@ const HelpLoan = () => {
         rel="stylesheet"
       />
 
-      {/* Header */}
       <div className="flex-shrink-0">
         <Header pageTitle="Apply for Loan" />
       </div>
 
-      {/* Step bar — compact, always visible */}
+      {/* Step bar */}
       <div className="flex-shrink-0 px-4 pt-2 pb-1">
         <div className="bg-white rounded-2xl shadow-sm">
           <StepBar current={step} total={STEPS.length} />
@@ -293,13 +301,13 @@ const HelpLoan = () => {
         </div>
       </div>
 
-      {/* ── Scrollable content ── */}
+      {/* Scrollable content */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-3"
         style={{ overscrollBehavior: "contain" }}
       >
-        {/* ── STEP 0: Personal ── */}
+        {/* STEP 0: Personal */}
         {step === 0 && (
           <div className="bg-white rounded-3xl shadow-sm p-5 space-y-4">
             <div className="flex items-center gap-3 mb-1">
@@ -328,7 +336,6 @@ const HelpLoan = () => {
                 </p>
               </div>
             </div>
-
             <SmartInput
               label="Full Name"
               placeholder="Enter your full name"
@@ -347,7 +354,6 @@ const HelpLoan = () => {
               inputRef={addressRef}
               nextRef={phoneRef}
               autoComplete="street-address"
-              autoCapitalize="sentences"
             />
             <SmartInput
               label="Phone Number"
@@ -360,13 +366,10 @@ const HelpLoan = () => {
               autoComplete="tel"
               inputMode="tel"
             />
-
-            {/* Tap-outside to dismiss keyboard */}
-            <div className="h-2" />
           </div>
         )}
 
-        {/* ── STEP 1: Period ── */}
+        {/* STEP 1: Period */}
         {step === 1 && (
           <div className="bg-white rounded-3xl shadow-sm p-5">
             <div className="flex items-center gap-3 mb-4">
@@ -401,62 +404,69 @@ const HelpLoan = () => {
                 </p>
               </div>
             </div>
-            <div className="space-y-2.5">
-              {LOAN_PERIODS.map((p) => {
-                const active = form.period === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    onClick={() => set("period", p.value)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98]"
-                    style={{
-                      borderColor: active ? "#a855f7" : "#e5e7eb",
-                      background: active
-                        ? "linear-gradient(135deg,#f5f3ff,#fdf4ff)"
-                        : "#f9fafb",
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                        style={{
-                          borderColor: active ? "#a855f7" : "#d1d5db",
-                          background: active ? "#a855f7" : "transparent",
-                        }}
-                      >
-                        {active && (
-                          <div className="w-2 h-2 rounded-full bg-white" />
-                        )}
+
+            {loanPackages.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-8">
+                Loading packages...
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {loanPackages.map((pkg) => {
+                  const active = form.package_id === pkg.id;
+                  return (
+                    <button
+                      key={pkg.id}
+                      onClick={() => selectPackage(pkg)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98]"
+                      style={{
+                        borderColor: active ? "#a855f7" : "#e5e7eb",
+                        background: active
+                          ? "linear-gradient(135deg,#f5f3ff,#fdf4ff)"
+                          : "#f9fafb",
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                          style={{
+                            borderColor: active ? "#a855f7" : "#d1d5db",
+                            background: active ? "#a855f7" : "transparent",
+                          }}
+                        >
+                          {active && (
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                          )}
+                        </div>
+                        <span
+                          className="font-bold text-sm"
+                          style={{ color: active ? "#7c3aed" : "#374151" }}
+                        >
+                          {pkg.period_days} Days
+                        </span>
                       </div>
-                      <span
-                        className="font-bold text-sm"
-                        style={{ color: active ? "#7c3aed" : "#374151" }}
-                      >
-                        {p.label}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className="text-xs font-semibold"
-                        style={{ color: active ? "#a855f7" : "#9ca3af" }}
-                      >
-                        Interest
-                      </p>
-                      <p
-                        className="font-black text-base"
-                        style={{ color: active ? "#7c3aed" : "#374151" }}
-                      >
-                        {p.rate}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      <div className="text-right">
+                        <p
+                          className="text-xs font-semibold"
+                          style={{ color: active ? "#a855f7" : "#9ca3af" }}
+                        >
+                          Interest
+                        </p>
+                        <p
+                          className="font-black text-base"
+                          style={{ color: active ? "#7c3aed" : "#374151" }}
+                        >
+                          {pkg.interest_rate}%
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── STEP 2: Documents ── */}
+        {/* STEP 2: Documents */}
         {step === 2 && (
           <div className="space-y-3">
             <div className="bg-white rounded-3xl shadow-sm p-5">
@@ -507,12 +517,6 @@ const HelpLoan = () => {
                         strokeWidth="1.8"
                       />
                       <circle cx="7" cy="12" r="2" fill="white" opacity="0.7" />
-                      <path
-                        d="M13 10h4M13 14h4"
-                        stroke="white"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
                     </svg>
                   }
                 />
@@ -533,15 +537,6 @@ const HelpLoan = () => {
                         strokeWidth="1.8"
                       />
                       <path d="M2 10h20" stroke="white" strokeWidth="1.8" />
-                      <rect
-                        x="4"
-                        y="13"
-                        width="8"
-                        height="4"
-                        rx="1"
-                        fill="white"
-                        opacity="0.6"
-                      />
                     </svg>
                   }
                 />
@@ -574,7 +569,7 @@ const HelpLoan = () => {
                       strokeWidth="1.5"
                     />
                     <path
-                      d="M13 9h5M13 13h5M4 18c0-2 1.8-3 4-3s4 1 4 3"
+                      d="M13 9h5M13 13h5"
                       stroke="white"
                       strokeWidth="1.5"
                       strokeLinecap="round"
@@ -629,7 +624,7 @@ const HelpLoan = () => {
           </div>
         )}
 
-        {/* ── STEP 3: Amount ── */}
+        {/* STEP 3: Amount */}
         {step === 3 && (
           <div className="space-y-3">
             <div className="bg-white rounded-3xl shadow-sm p-5">
@@ -659,12 +654,14 @@ const HelpLoan = () => {
                 <div>
                   <p className="text-gray-900 font-bold text-sm">Loan Amount</p>
                   <p className="text-gray-400 text-xs">
-                    Enter the amount you need
+                    {form.min_amount && form.max_amount
+                      ? `${form.min_amount.toLocaleString()} – ${form.max_amount.toLocaleString()} USDT`
+                      : "Enter the amount you need"}
                   </p>
                 </div>
               </div>
 
-              {/* Amount input — large, prominent */}
+              {/* Amount input */}
               <div
                 className="rounded-2xl px-4 py-4 mb-4 flex items-center gap-3"
                 style={{
@@ -712,6 +709,9 @@ const HelpLoan = () => {
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[1000, 5000, 10000, 20000, 30000, 50000].map((amt) => {
                   const active = parseFloat(form.loanAmount) === amt;
+                  const withinRange =
+                    !form.max_amount || amt <= form.max_amount;
+                  if (!withinRange) return null;
                   return (
                     <button
                       key={amt}
@@ -754,25 +754,11 @@ const HelpLoan = () => {
                   },
                   {
                     label: "Interest",
-                    value: form.period
-                      ? (LOAN_PERIODS.find((p) => p.value === form.period)
-                          ?.rate ?? "—")
-                      : "—",
+                    value: form.rate ? `${form.rate}%` : "—",
                   },
                   {
                     label: "Total Repay",
-                    value:
-                      form.loanAmount && form.period
-                        ? (() => {
-                            const rate =
-                              parseFloat(
-                                LOAN_PERIODS.find(
-                                  (p) => p.value === form.period,
-                                )?.rate ?? "0",
-                              ) / 100;
-                            return `${(parseFloat(form.loanAmount) * (1 + rate)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDT`;
-                          })()
-                        : "—",
+                    value: totalRepay !== "—" ? `${totalRepay} USDT` : "—",
                   },
                 ].map((row) => (
                   <div
@@ -821,63 +807,39 @@ const HelpLoan = () => {
           </div>
         )}
 
-        {/* Extra bottom padding so content isn't hidden behind keyboard */}
         <div style={{ height: "env(keyboard-inset-height, 80px)" }} />
       </div>
-      {/* ── END scrollable ── */}
 
-      {/* ── Bottom nav ── */}
+      {/* Bottom nav */}
       <div
         className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100"
         style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
       >
         <div className="flex gap-3">
-          {step > 0 ? (
-            <button
-              onClick={() => goStep(step - 1)}
-              className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-gray-200 active:scale-95 transition-transform"
+          <button
+            onClick={() =>
+              step === 0 ? navigate("/help-loan") : goStep(step - 1)
+            }
+            className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-gray-200 active:scale-95 transition-transform"
+          >
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              stroke="#6b7280"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
             >
-              <svg
-                width="18"
-                height="18"
-                fill="none"
-                stroke="#6b7280"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate("/help-loan")}
-              className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-gray-200 active:scale-95 transition-transform"
-            >
-              <svg
-                width="18"
-                height="18"
-                fill="none"
-                stroke="#6b7280"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          )}
-
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
           <button
             disabled={!canNext()}
             onClick={() => {
-              // dismiss keyboard first on last field step
               document.activeElement?.blur();
               if (step < STEPS.length - 1) goStep(step + 1);
               else handleSubmit();

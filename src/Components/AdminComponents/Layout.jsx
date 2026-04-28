@@ -15,6 +15,7 @@ import SupportInbox from "./SupportInbox/SupportInbox";
 import { useUser } from "../../context/UserContext";
 import ArbitrageDashboard from "./Arbitrage/ArbitrageDashboard";
 import MiningDashboard from "./Mining/MiningDashboard";
+import Loans from "./Loan/Loans";
 
 // const PAGE_TITLES = {
 //   "/cradmin": "Dashboard",
@@ -123,6 +124,10 @@ const Layout = () => {
             )}
             {hasPermission("Mining") && (
               <Route path="/mining" element={<MiningDashboard />} />
+            )}
+            import Loans from "./Loans/Loans";
+            {hasPermission("Loans") && (
+              <Route path="/loans" element={<Loans />} />
             )}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

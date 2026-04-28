@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
-import axios from "axios";
-import { API_BASE_URL } from "../../api/getApiURL";
 import { useUser } from "../../context/UserContext";
+import { getMyLoans } from "../../api/loan.api";
+import { API_BASE_URL } from "../../api/getApiURL";
 
-// ── Tab config ──
 const TABS = [
-  {
-    key: "all",
-    label: "All",
-    color: "#6366f1",
-    bg: "#eef2ff",
-    dot: "#6366f1",
-  },
+  { key: "all", label: "All", color: "#6366f1", bg: "#eef2ff", dot: "#6366f1" },
   {
     key: "pending",
     label: "Pending",
@@ -37,7 +30,6 @@ const TABS = [
   },
 ];
 
-// ── Status badge ──
 const StatusBadge = ({ status }) => {
   const map = {
     pending: {
@@ -78,33 +70,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// ── Empty state ──
-const EmptyState = ({ tab }) => (
-  <div className="flex flex-col items-center justify-center py-16 px-8">
-    <div
-      className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
-      style={{ background: "linear-gradient(135deg, #f0f0ff, #fdf4ff)" }}
-    >
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          stroke="#a855f7"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-    <p className="text-gray-700 font-bold text-base mb-1">No loans found</p>
-    <p className="text-gray-400 text-sm text-center leading-relaxed">
-      {tab === "all"
-        ? "You haven't applied for any loans yet."
-        : `No ${tab} loan applications.`}
-    </p>
-  </div>
-);
-
-// ── Skeleton loader ──
 const SkeletonCard = () => (
   <div className="bg-white rounded-3xl p-5 shadow-sm animate-pulse">
     <div className="flex items-start justify-between mb-4">
@@ -125,7 +90,6 @@ const SkeletonCard = () => (
   </div>
 );
 
-// ── Loan card ──
 const LoanCard = ({ loan }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -151,15 +115,14 @@ const LoanCard = ({ loan }) => {
 
   return (
     <div
-      className="bg-white rounded-3xl shadow-sm overflow-hidden transition-all duration-200"
+      className="bg-white rounded-3xl shadow-sm overflow-hidden"
       style={{ border: "1px solid #f3f4f6" }}
     >
-      {/* Card top — always visible */}
       <div className="p-5">
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-gray-400 text-xs font-medium mb-0.5">
-              #{loan.id ?? "—"} · {date}
+              #{loan.id} · {date}
             </p>
             <p className="text-gray-900 font-black text-xl">
               {parseFloat(loan.loan_amount || 0).toLocaleString()} USDT
@@ -167,15 +130,16 @@ const LoanCard = ({ loan }) => {
           </div>
           <StatusBadge status={loan.status ?? "pending"} />
         </div>
-
-        {/* Key info row */}
         <div className="grid grid-cols-3 gap-3">
           {[
             {
               label: "Period",
               value: loan.loan_period ? `${loan.loan_period} Days` : "—",
             },
-            { label: "Applied", value: date },
+            {
+              label: "Interest",
+              value: loan.interest_rate ? `${loan.interest_rate}%` : "—",
+            },
             { label: "Due Date", value: dueDate },
           ].map((item) => (
             <div key={item.label}>
@@ -186,7 +150,6 @@ const LoanCard = ({ loan }) => {
         </div>
       </div>
 
-      {/* Expand toggle */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-gray-50 text-xs font-semibold text-gray-400 hover:text-purple-500 transition-colors"
@@ -212,7 +175,6 @@ const LoanCard = ({ loan }) => {
         </svg>
       </button>
 
-      {/* Expanded details */}
       {expanded && (
         <div
           className="px-5 pb-5 space-y-3 border-t border-gray-50"
@@ -225,6 +187,12 @@ const LoanCard = ({ loan }) => {
             { label: "Full Name", value: loan.full_name },
             { label: "Phone", value: loan.phone },
             { label: "Address", value: loan.home_address },
+            {
+              label: "Total Repay",
+              value: loan.total_repay
+                ? `${Number(loan.total_repay).toLocaleString()} USDT`
+                : "—",
+            },
           ].map((row) =>
             row.value ? (
               <div
@@ -241,7 +209,34 @@ const LoanCard = ({ loan }) => {
             ) : null,
           )}
 
-          {/* Status message */}
+          {/* Documents */}
+          <p className="text-gray-500 text-xs font-bold pt-2 uppercase tracking-wide">
+            Documents
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Card Front", key: "credit_front" },
+              { label: "Card Back", key: "credit_back" },
+              { label: "ID Card", key: "id_card" },
+            ].map((doc) => (
+              <a
+                key={doc.key}
+                href={`${API_BASE_URL}/${loan[doc.key]}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img
+                  src={`${API_BASE_URL}/${loan[doc.key]}`}
+                  alt={doc.label}
+                  className="w-full h-16 object-cover rounded-xl border border-gray-100"
+                />
+                <p className="text-xs text-gray-400 text-center mt-1">
+                  {doc.label}
+                </p>
+              </a>
+            ))}
+          </div>
+
           {loan.status === "rejected" && loan.reject_reason && (
             <div
               className="rounded-2xl px-4 py-3 mt-2"
@@ -253,6 +248,7 @@ const LoanCard = ({ loan }) => {
               <p className="text-red-400 text-xs">{loan.reject_reason}</p>
             </div>
           )}
+
           {loan.status === "approved" && (
             <div
               className="rounded-2xl px-4 py-3 mt-2"
@@ -262,8 +258,8 @@ const LoanCard = ({ loan }) => {
                 Approved
               </p>
               <p className="text-emerald-500 text-xs">
-                Your loan has been approved. Funds will be deposited within 24
-                hours.
+                Your loan has been approved. Funds have been deposited to your
+                USDT balance.
               </p>
             </div>
           )}
@@ -273,26 +269,20 @@ const LoanCard = ({ loan }) => {
   );
 };
 
-// ── Main page ──
 const LoanHistory = () => {
   const navigate = useNavigate();
   const { user } = useUser();
-
   const [activeTab, setActiveTab] = useState("all");
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch loans
   useEffect(() => {
     const fetchLoans = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/loans?user_id=${user?.id}`,
-        );
+        const res = await getMyLoans(user?.id);
         setLoans(res.data ?? []);
-      } catch (err) {
-        console.error("Failed to fetch loans:", err);
+      } catch {
         setLoans([]);
       } finally {
         setLoading(false);
@@ -301,11 +291,8 @@ const LoanHistory = () => {
     if (user?.id) fetchLoans();
   }, [user?.id]);
 
-  // Filter by tab
   const filtered =
     activeTab === "all" ? loans : loans.filter((l) => l.status === activeTab);
-
-  // Count per tab
   const counts = {
     all: loans.length,
     pending: loans.filter((l) => l.status === "pending").length,
@@ -327,7 +314,6 @@ const LoanHistory = () => {
         rel="stylesheet"
       />
 
-      {/* Header */}
       <div className="flex-shrink-0">
         <Header pageTitle="Loan History" />
       </div>
@@ -393,23 +379,47 @@ const LoanHistory = () => {
         </div>
       </div>
 
-      {/* Loan list */}
+      {/* List */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {loading ? (
           <>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+            {" "}
+            <SkeletonCard /> <SkeletonCard /> <SkeletonCard />{" "}
           </>
         ) : filtered.length === 0 ? (
-          <EmptyState tab={activeTab} />
+          <div className="flex flex-col items-center justify-center py-16">
+            <div
+              className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
+              style={{
+                background: "linear-gradient(135deg, #f0f0ff, #fdf4ff)",
+              }}
+            >
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  stroke="#a855f7"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p className="text-gray-700 font-bold text-base mb-1">
+              No loans found
+            </p>
+            <p className="text-gray-400 text-sm text-center">
+              {activeTab === "all"
+                ? "You haven't applied for any loans yet."
+                : `No ${activeTab} applications.`}
+            </p>
+          </div>
         ) : (
           filtered.map((loan) => <LoanCard key={loan.id} loan={loan} />)
         )}
         <div className="h-4" />
       </div>
 
-      {/* Apply new loan button */}
+      {/* Apply button */}
       <div
         className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100"
         style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
