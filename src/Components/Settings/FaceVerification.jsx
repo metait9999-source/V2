@@ -60,7 +60,7 @@ const FaceVerification = () => {
     try {
       const formData = new FormData();
       formData.append("user_id", user?.id);
-      formData.append("face_image", capturedFile, "face.jpg");
+      formData.append("documents", capturedFile, "face.jpg");
       await axios.post(`${API_BASE_URL}/users/face-verify`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
