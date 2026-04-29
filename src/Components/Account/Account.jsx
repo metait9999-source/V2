@@ -1,39 +1,61 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import imgWallet from "../../Assets/images/img_wallet.png";
 import Header from "../Header/Header";
 import { Link } from "react-router-dom";
 import useWallets from "../../hooks/useWallets";
 import { useUser } from "../../context/UserContext";
 import useCryptoTradeConverter from "../../hooks/userCryptoTradeConverter";
+import axios from "axios";
+import { API_BASE_URL } from "../../api/getApiURL";
 
 function Account() {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const { wallets } = useWallets(user?.id);
   const [searchTerm, setSearchTerm] = useState("");
   const [coinValues, setCoinValues] = useState({});
   const { convertUSDTToCoin } = useCryptoTradeConverter();
-  const [balanceVisible, setBalanceVisible] = useState(false); // hidden by default
+  const [balanceVisible, setBalanceVisible] = useState(
+    () => user?.balance_visible === 1 || user?.balance_visible === true,
+  );
+
+  // ── Fix: wrap in useCallback so it's stable across renders ──
+  const fetchConvertedValues = useCallback(async () => {
+    if (!wallets?.length) return;
+    const newCoinValues = {};
+    for (const wallet of wallets) {
+      try {
+        const convertedCoin = await convertUSDTToCoin(
+          wallet?.coin_amount,
+          wallet.coin_id,
+        );
+        newCoinValues[wallet.coin_id] = convertedCoin;
+      } catch {
+        newCoinValues[wallet.coin_id] = null;
+      }
+    }
+    setCoinValues(newCoinValues);
+  }, [wallets, convertUSDTToCoin]);
 
   useEffect(() => {
-    const fetchConvertedValues = async () => {
-      if (wallets?.length > 0) {
-        const newCoinValues = {};
-        for (const wallet of wallets) {
-          try {
-            const convertedCoin = await convertUSDTToCoin(
-              wallet?.coin_amount,
-              wallet.coin_id,
-            );
-            newCoinValues[wallet.coin_id] = convertedCoin;
-          } catch (error) {
-            newCoinValues[wallet.coin_id] = null;
-          }
-        }
-        setCoinValues(newCoinValues);
-      }
-    };
     fetchConvertedValues();
-  }, [wallets]);
+  }, [fetchConvertedValues]);
+
+  const toggleBalance = async () => {
+    const newVal = !balanceVisible;
+    setBalanceVisible(newVal);
+    try {
+      await axios.put(`${API_BASE_URL}/users/${user.id}/balance-visibility`, {
+        balance_visible: newVal ? 1 : 0,
+      });
+      // keep user context in sync
+      if (setUser) {
+        setUser((prev) => ({ ...prev, balance_visible: newVal ? 1 : 0 }));
+      }
+    } catch {
+      // revert UI if API fails
+      setBalanceVisible(!newVal);
+    }
+  };
 
   const totalBalance =
     wallets?.reduce((sum, wallet) => {
@@ -43,6 +65,12 @@ function Account() {
   const filtered = wallets?.filter((w) =>
     w.coin_symbol.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const blurStyle = {
+    filter: balanceVisible ? "blur(0px)" : "blur(7px)",
+    transition: "filter 0.35s cubic-bezier(0.4,0,0.2,1)",
+    userSelect: balanceVisible ? "text" : "none",
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,7 +127,7 @@ function Account() {
                   Total Balance
                 </span>
                 <button
-                  onClick={() => setBalanceVisible((v) => !v)}
+                  onClick={toggleBalance}
                   aria-label={balanceVisible ? "Hide balance" : "Show balance"}
                   style={{
                     background: "rgba(255,255,255,0.22)",
@@ -125,7 +153,6 @@ function Account() {
                   }}
                 >
                   {balanceVisible ? (
-                    /* Eye open */
                     <svg
                       width="12"
                       height="12"
@@ -140,7 +167,6 @@ function Account() {
                       <circle cx="12" cy="12" r="3" />
                     </svg>
                   ) : (
-                    /* Eye closed */
                     <svg
                       width="12"
                       height="12"
@@ -159,22 +185,21 @@ function Account() {
                 </button>
               </div>
 
-              {/* Blurred amount — CSS blur trick, no layout shift */}
+              {/* Total balance amount */}
               <p
                 className="text-white font-extrabold leading-none select-none"
                 style={{
                   fontSize: "1.2rem",
                   letterSpacing: "-0.02em",
-                  filter: balanceVisible ? "blur(0px)" : "blur(7px)",
-                  transition: "filter 0.35s cubic-bezier(0.4,0,0.2,1)",
-                  userSelect: balanceVisible ? "text" : "none",
+                  ...blurStyle,
                 }}
               >
                 ${totalBalance.toFixed(2)}
               </p>
 
               <p className="text-white/55 text-xs mt-1.5">
-                {wallets?.length ?? 0} wallet{wallets?.length !== 1 ? "s" : ""}
+                {wallets?.length ?? 0} wallet
+                {wallets?.length !== 1 ? "s" : ""}
               </p>
             </div>
           </div>
@@ -244,15 +269,17 @@ function Account() {
                 </p>
               </div>
             </div>
+
             <div className="text-right">
               <p className="text-gray-900 font-semibold text-sm">
-                US$ {parseFloat(wallet.coin_amount || 0).toFixed(4)}
+                {balanceVisible
+                  ? `$${parseFloat(wallet.coin_amount || 0).toFixed(4)}`
+                  : "$****"}
               </p>
               <p className="text-gray-400 text-sm mt-0.5">
-                {coinValues[wallet.coin_id] !== undefined
-                  ? coinValues[wallet.coin_id]
-                  : "0.0000"}{" "}
-                {wallet.coin_symbol}
+                {balanceVisible
+                  ? `${coinValues[wallet.coin_id] !== undefined ? coinValues[wallet.coin_id] : "0.0000"} ${wallet.coin_symbol}`
+                  : `**** ${wallet.coin_symbol}`}
               </p>
             </div>
           </Link>
