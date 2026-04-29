@@ -264,8 +264,6 @@ const Funds = () => {
     }
   };
 
-  // ── FIX: Call axios directly for both balance updates so the shared
-  //    hook state doesn't interfere between the two sequential calls ──
   const updateBalanceDirect = async (userId, coinId, newBalance) => {
     await axios.put(`${API_BASE_URL}/userbalance/${userId}/balance/${coinId}`, {
       coinAmount: newBalance,
@@ -286,15 +284,20 @@ const Funds = () => {
       return;
     }
 
-    const usdtEquivalent = coinAmt * price;
+    // availableBalance is in coin units (e.g. 0.005 BTC)
+    const availableCoinAmt = parseFloat(availableBalance || 0);
 
-    if (usdtEquivalent > displayBalance) {
+    // Validate against coin balance, not USD balance
+    if (coinAmt > availableCoinAmt) {
       toast.error("Amount exceeds available balance");
       return;
     }
 
+    const usdtEquivalent = coinAmt * price;
+
     setIsConverting(true);
 
+    // displayBalance stores USD, so subtract the USD equivalent
     const newCoinWalletBalance = displayBalance - usdtEquivalent;
     const newUSDTBalance =
       parseFloat(usdtWallet?.coin_amount || 0) + usdtEquivalent;
@@ -320,7 +323,6 @@ const Funds = () => {
       toast.success(
         `Converted ${coinAmt} ${coinSymbol} → ${usdtEquivalent.toFixed(2)} USDT`,
       );
-      // background sync — isolated, never affects UI
       try {
         refetchUserBalance();
       } catch (_) {}
@@ -671,7 +673,9 @@ const Funds = () => {
                     className="flex-1 min-w-0 bg-transparent text-right text-gray-800 font-bold text-base outline-none"
                   />
                   <button
-                    onClick={() => setConvertAmount(availableBalance || "0")}
+                    onClick={() =>
+                      setConvertAmount(String(availableBalance || "0"))
+                    }
                     className="flex-shrink-0 text-indigo-500 font-bold text-sm"
                   >
                     Max
