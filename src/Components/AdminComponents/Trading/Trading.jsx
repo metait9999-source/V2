@@ -47,11 +47,9 @@ const Trading = () => {
   const tradesPerPage = 20;
 
   useEffect(() => {
-    const filtered = trades
-      ?.reverse()
-      .filter((trade) =>
-        trade.user_uuid.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
+    const filtered = trades?.filter((trade) =>
+      trade.user_uuid.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
     setFilteredTrades(filtered);
     setPage(1);
   }, [searchTerm, trades]);
