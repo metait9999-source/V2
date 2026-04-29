@@ -5,59 +5,71 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [confirmDigits, setConfirmDigits] = useState(["", "", "", "", "", ""]);
-  const [step, setStep] = useState("enter"); // "enter" | "confirm"
-  const inputRefs = useRef([]);
+  const [step, setStep] = useState("enter");
+  const hiddenInputRef = useRef(null);
+
+  const currentDigits = step === "confirm" ? confirmDigits : digits;
+  const setCurrentDigits = step === "confirm" ? setConfirmDigits : setDigits;
 
   useEffect(() => {
-    inputRefs.current[0]?.focus();
+    setTimeout(() => hiddenInputRef.current?.focus(), 100);
   }, [step]);
 
-  const handleChange = (index, value, isConfirm = false) => {
-    if (!/^\d?$/.test(value)) return;
-    const arr = isConfirm ? [...confirmDigits] : [...digits];
-    arr[index] = value;
-    if (isConfirm) setConfirmDigits(arr);
-    else setDigits(arr);
+  const focusInput = () => hiddenInputRef.current?.focus();
 
+  const handleInput = (e) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const arr = raw.split("");
+    while (arr.length < 6) arr.push("");
+    setCurrentDigits(arr);
     setError("");
 
-    // Auto-advance
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when last digit filled
-    if (value && index === 5) {
-      const code = arr.join("");
-      if (code.length === 6) {
-        setTimeout(() => handleSubmit(arr, isConfirm), 100);
-      }
+    if (raw.length === 6) {
+      setTimeout(() => handleSubmit(arr), 100);
     }
   };
 
-  const handleKeyDown = (index, e, isConfirm = false) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Backspace") {
-      const arr = isConfirm ? [...confirmDigits] : [...digits];
-      if (arr[index]) {
-        arr[index] = "";
-        if (isConfirm) setConfirmDigits(arr);
-        else setDigits(arr);
-      } else if (index > 0) {
-        inputRefs.current[index - 1]?.focus();
-      }
+      const current = currentDigits.join("");
+      if (current.length === 0) return;
+      const next = current.slice(0, -1).split("");
+      while (next.length < 6) next.push("");
+      setCurrentDigits(next);
+      setError("");
+      // Keep hidden input in sync
+      e.target.value = current.slice(0, -1);
+      e.preventDefault();
     }
   };
 
-  // In handleSubmit inside PasscodeScreen, verify flow:
-  const handleSubmit = async (digitArr, isConfirm = false) => {
-    const code = digitArr.join("");
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+    if (!pasted) return;
+    const arr = pasted.split("");
+    while (arr.length < 6) arr.push("");
+    setCurrentDigits(arr);
+    setError("");
+    if (pasted.length === 6) {
+      setTimeout(() => handleSubmit(arr), 100);
+    }
+  };
+
+  const handleSubmit = async (digitArr) => {
+    const arr = digitArr || currentDigits;
+    const code = arr.join("");
     if (code.length !== 6) return;
 
     if (mode === "set") {
       if (step === "enter") {
         setStep("confirm");
         setConfirmDigits(["", "", "", "", "", ""]);
-        setTimeout(() => inputRefs.current[0]?.focus(), 100);
+        if (hiddenInputRef.current) hiddenInputRef.current.value = "";
+        setTimeout(() => hiddenInputRef.current?.focus(), 100);
         return;
       }
 
@@ -66,7 +78,8 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         setDigits(["", "", "", "", "", ""]);
         setConfirmDigits(["", "", "", "", "", ""]);
         setStep("enter");
-        setTimeout(() => inputRefs.current[0]?.focus(), 100);
+        if (hiddenInputRef.current) hiddenInputRef.current.value = "";
+        setTimeout(() => hiddenInputRef.current?.focus(), 100);
         return;
       }
 
@@ -77,22 +90,14 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
           user_wallet: walletAddress,
           passcode: digits.join(""),
         });
-        // ✅ Call onSuccess with user data returned from setPasscode
         onSuccess(res.data.user || null);
       } catch (err) {
         const errMsg = err?.response?.data?.error || "";
-
-        // ✅ If passcode was already set (edge case) — treat as success
-        // and switch to verify mode
         if (errMsg === "Passcode already set") {
           setError("Passcode already exists. Please verify instead.");
-          setTimeout(() => {
-            // Switch to verify mode
-            onError("switch_to_verify");
-          }, 1500);
+          setTimeout(() => onError("switch_to_verify"), 1500);
           return;
         }
-
         setError(errMsg || "Failed to set passcode");
       } finally {
         setLoading(false);
@@ -100,7 +105,6 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
       return;
     }
 
-    // mode === "verify"
     try {
       setLoading(true);
       const { verifyPasscode } = await import("../../api/auth.api");
@@ -109,21 +113,22 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         passcode: code,
       });
       onSuccess(res.data.user);
-    } catch (err) {
+    } catch {
       setError("Incorrect passcode. Try again.");
       setDigits(["", "", "", "", "", ""]);
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      if (hiddenInputRef.current) hiddenInputRef.current.value = "";
+      setTimeout(() => hiddenInputRef.current?.focus(), 100);
     } finally {
       setLoading(false);
     }
   };
 
-  const currentDigits = step === "confirm" ? confirmDigits : digits;
-  const isConfirmStep = step === "confirm";
+  const filledCount = currentDigits.filter((d) => d !== "").length;
 
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center px-8"
+      onClick={focusInput}
       style={{
         background:
           "linear-gradient(145deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%)",
@@ -135,7 +140,26 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         rel="stylesheet"
       />
 
-      {/* Logo / Icon */}
+      {/* Hidden real input */}
+      <input
+        ref={hiddenInputRef}
+        type="tel"
+        inputMode="numeric"
+        maxLength={6}
+        defaultValue=""
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        style={{
+          position: "absolute",
+          opacity: 0,
+          pointerEvents: "none",
+          width: 1,
+          height: 1,
+        }}
+      />
+
+      {/* Icon */}
       <div
         className="w-16 h-16 rounded-3xl flex items-center justify-center mb-8"
         style={{ background: "rgba(255,255,255,0.15)" }}
@@ -176,32 +200,45 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
           : "Enter your 6-digit passcode to continue"}
       </p>
 
-      {/* Digit inputs */}
-      <div className="flex items-center gap-3 mb-6">
+      {/* Visual boxes — display only */}
+      <div className="flex items-center gap-3 mb-6" onClick={focusInput}>
         {currentDigits.map((d, i) => (
-          <input
+          <div
             key={i}
-            ref={(el) => (inputRefs.current[i] = el)}
-            type="tel"
-            inputMode="numeric"
-            maxLength={1}
-            value={d}
-            onChange={(e) => handleChange(i, e.target.value, isConfirmStep)}
-            onKeyDown={(e) => handleKeyDown(i, e, isConfirmStep)}
-            className="w-12 h-14 rounded-2xl text-center text-white font-black text-xl outline-none transition-all"
+            className="w-12 h-14 rounded-2xl flex items-center justify-center font-black text-white transition-all"
             style={{
               background: d
                 ? "rgba(255,255,255,0.3)"
                 : "rgba(255,255,255,0.12)",
-              border: d
-                ? "2px solid rgba(255,255,255,0.6)"
-                : "2px solid rgba(255,255,255,0.2)",
-              caretColor: "transparent",
-              fontSize: d ? 22 : 16,
+              border:
+                i === filledCount && !loading
+                  ? "2px solid rgba(255,255,255,0.9)" // active box highlight
+                  : d
+                    ? "2px solid rgba(255,255,255,0.6)"
+                    : "2px solid rgba(255,255,255,0.2)",
+              fontSize: 22,
+              cursor: "text",
             }}
-          />
+          >
+            {d || ""}
+          </div>
         ))}
       </div>
+
+      {/* Clear button */}
+      {filledCount > 0 && !loading && (
+        <button
+          onClick={() => {
+            setCurrentDigits(["", "", "", "", "", ""]);
+            if (hiddenInputRef.current) hiddenInputRef.current.value = "";
+            setError("");
+            setTimeout(() => hiddenInputRef.current?.focus(), 50);
+          }}
+          className="mb-4 text-white/50 text-xs font-medium underline underline-offset-2 hover:text-white/80 transition-colors"
+        >
+          Clear
+        </button>
+      )}
 
       {/* Error */}
       {error && (
@@ -227,12 +264,35 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
 
       {/* Loading */}
       {loading && (
-        <p className="text-white/60 text-sm">
-          {mode === "set" ? "Setting passcode..." : "Verifying..."}
-        </p>
+        <div className="flex items-center gap-2">
+          <svg
+            className="animate-spin"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth="3"
+            />
+            <path
+              d="M12 2a10 10 0 0110 10"
+              stroke="white"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+          <p className="text-white/60 text-sm">
+            {mode === "set" ? "Setting passcode..." : "Verifying..."}
+          </p>
+        </div>
       )}
 
-      {/* Step indicator for set mode */}
+      {/* Step indicator */}
       {mode === "set" && (
         <div className="flex items-center gap-2 mt-6">
           <div

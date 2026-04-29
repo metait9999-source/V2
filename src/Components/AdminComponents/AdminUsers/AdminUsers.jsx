@@ -9,6 +9,7 @@ import MoreActionModal from "./MoreActionModal";
 import CreateUserModal from "./CreateUserModal";
 import { FaUsers } from "react-icons/fa";
 import { FiSearch, FiPlus, FiMoreVertical } from "react-icons/fi";
+import { IoClose } from "react-icons/io5";
 import {
   MdOutlineAccountBalanceWallet,
   MdOutlinePeople,
@@ -16,18 +17,162 @@ import {
   MdOutlineManageAccounts,
 } from "react-icons/md";
 
-// ── Dropdown action menu for each row ────────────────────────
+/* ── Face Image Modal ─────────────────────────────────────── */
+const FaceImageModal = ({ user, onClose }) => {
+  if (!user) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <p className="font-bold text-gray-800 text-sm">
+              {user.name || "User"}
+            </p>
+            <p className="text-gray-400 text-xs">UID: {user.uuid}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all"
+          >
+            <IoClose size={17} />
+          </button>
+        </div>
+
+        {/* Face Image */}
+        <div className="p-4">
+          {user.face_image ? (
+            <>
+              <img
+                src={`${API_BASE_URL}/${user.face_image}`}
+                alt="Face verification"
+                className="w-full rounded-xl object-cover border border-gray-100"
+                style={{ maxHeight: 400 }}
+              />
+              <div className="flex items-center gap-2 mt-3 px-1">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <path
+                      d="M2 6l3 3 5-5"
+                      stroke="#10b981"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <p className="text-emerald-600 text-xs font-medium">
+                  Face photo submitted for verification
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
+                    stroke="#9ca3af"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                    stroke="#9ca3af"
+                    strokeWidth="1.8"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-500 font-semibold text-sm mb-1">
+                No face image
+              </p>
+              <p className="text-gray-400 text-xs">
+                This user has not submitted a face verification photo yet.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* User info */}
+        <div className="px-4 pb-4">
+          <div className="bg-gray-50 rounded-xl p-3 divide-y divide-gray-100">
+            {[
+              {
+                label: "Wallet",
+                value: user.user_wallet
+                  ? `${user.user_wallet.slice(0, 8)}...${user.user_wallet.slice(-6)}`
+                  : "—",
+              },
+              {
+                label: "Status",
+                value: (
+                  <span
+                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                      user.status === "active"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {user.status}
+                  </span>
+                ),
+              },
+              {
+                label: "Face Verify",
+                value: (
+                  <span
+                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                      user.face_image
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {user.face_image ? "Submitted" : "Not submitted"}
+                  </span>
+                ),
+              },
+            ].map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between py-2"
+              >
+                <p className="text-gray-400 text-xs">{row.label}</p>
+                {typeof row.value === "string" ? (
+                  <p className="text-gray-700 text-xs font-medium">
+                    {row.value}
+                  </p>
+                ) : (
+                  row.value
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Action Menu ──────────────────────────────────────────── */
 const ActionMenu = ({
   user,
   onBalance,
   onRefUpdate,
   onProfitUpdate,
   onMore,
+  onFace,
   showMore,
 }) => {
   const [open, setOpen] = useState(false);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = () => setOpen(false);
@@ -37,7 +182,7 @@ const ActionMenu = ({
 
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
-      {/* ── Desktop: inline buttons ── */}
+      {/* Desktop */}
       <div className="hidden xl:flex flex-wrap gap-1.5">
         <ActionButton
           color="dark"
@@ -57,6 +202,28 @@ const ActionMenu = ({
           icon={<MdOutlineTrendingUp size={11} />}
           label={user.is_profit === 1 ? "Lose" : "Profit"}
         />
+        <ActionButton
+          color={user.face_image ? "green" : "gray"}
+          onClick={onFace}
+          icon={
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <circle
+                cx="12"
+                cy="12"
+                r="3"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+            </svg>
+          }
+          label="Face"
+        />
         {showMore && (
           <ActionButton
             color="indigo"
@@ -67,7 +234,7 @@ const ActionMenu = ({
         )}
       </div>
 
-      {/* ── Mobile/tablet: dropdown ── */}
+      {/* Mobile dropdown */}
       <div className="xl:hidden">
         <button
           onClick={(e) => {
@@ -107,6 +274,31 @@ const ActionMenu = ({
               color={user.is_profit === 1 ? "red" : "green"}
               onClick={() => {
                 onProfitUpdate();
+                setOpen(false);
+              }}
+            />
+            <DropdownItem
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              }
+              label="Face Image"
+              color={user.face_image ? "green" : "gray"}
+              onClick={() => {
+                onFace();
                 setOpen(false);
               }}
             />
@@ -164,7 +356,7 @@ const DropdownItem = ({ icon, label, color, onClick }) => (
   </button>
 );
 
-// ── Main component ────────────────────────────────────────────
+/* ── Main Component ───────────────────────────────────────── */
 const AdminUsers = () => {
   const { adminUser, setLoading } = useUser();
   const [users, setUsers] = useState([]);
@@ -178,6 +370,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchEmployee, setSearchEmployee] = useState("");
   const [page, setPage] = useState(1);
+  const [faceUser, setFaceUser] = useState(null); // ✅ face modal state
   const tradesPerPage = 25;
 
   useEffect(() => {
@@ -263,7 +456,12 @@ const AdminUsers = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* ── Page header ── */}
+      {/* Face Image Modal */}
+      {faceUser && (
+        <FaceImageModal user={faceUser} onClose={() => setFaceUser(null)} />
+      )}
+
+      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 flex-shrink-0">
@@ -287,7 +485,7 @@ const AdminUsers = () => {
         </button>
       </div>
 
-      {/* ── Search bars ── */}
+      {/* Search bars */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <FiSearch
@@ -317,7 +515,7 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* ── Table card ── */}
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-[13px]">
@@ -328,6 +526,7 @@ const AdminUsers = () => {
                   "Employee",
                   "Name",
                   "Note",
+                  "Face",
                   ...(isSuperAdmin ? ["Email"] : []),
                   "Wallet",
                   ...(isSuperAdmin ? ["Mobile"] : []),
@@ -349,7 +548,7 @@ const AdminUsers = () => {
               {currentUsers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={12}
+                    colSpan={14}
                     className="py-16 text-center text-gray-400 text-[13px]"
                   >
                     No users found.
@@ -372,6 +571,51 @@ const AdminUsers = () => {
                     </td>
                     <td className="px-4 py-3 text-gray-500 max-w-[100px] truncate">
                       {user?.note || "—"}
+                    </td>
+
+                    {/* ✅ Face image cell */}
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setFaceUser(user)}
+                        className="group relative flex items-center justify-center"
+                        title={
+                          user.face_image ? "View face photo" : "No face photo"
+                        }
+                      >
+                        {user.face_image ? (
+                          <div className="relative">
+                            <img
+                              src={`${API_BASE_URL}/${user.face_image}`}
+                              alt="face"
+                              className="w-8 h-8 rounded-full object-cover border-2 border-emerald-300 hover:border-emerald-500 transition-all shadow-sm"
+                            />
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-gray-400 transition-all">
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <path
+                                d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
+                                stroke="#9ca3af"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="3"
+                                stroke="#9ca3af"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
                     </td>
 
                     {isSuperAdmin && (
@@ -397,8 +641,7 @@ const AdminUsers = () => {
                     {isSuperAdmin && (
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border
-                          ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border ${
                             user.status === "active"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                               : "bg-gray-100 text-gray-500 border-gray-200"
@@ -420,6 +663,7 @@ const AdminUsers = () => {
                       <ActionMenu
                         user={user}
                         showMore={showMore}
+                        onFace={() => setFaceUser(user)}
                         onBalance={() => {
                           setUserDetails(user);
                           setIsBalanceModalOpen(true);

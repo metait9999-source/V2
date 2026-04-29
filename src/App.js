@@ -34,6 +34,8 @@ import HelpLoan from "./Components/HelpLoan/LoanApply";
 import HelpLoanLanding from "./Components/HelpLoan/LoanLanding";
 import { Toaster } from "react-hot-toast";
 import PasscodeScreen from "./Components/Passcode/PasscodeScreen";
+import FaceVerification from "./Components/Settings/FaceVerification";
+import TwoFactorAuth from "./Components/Settings/TwoFactorAuth";
 
 const WALLET_DETECT_TIMEOUT = 5000;
 const WALLET_RETRY_INTERVAL = 300;
@@ -63,11 +65,20 @@ function App() {
 
   // ── Lock when user leaves page ────────────────────────────
   useEffect(() => {
+    window.__cameraActive = false;
     const lockApp = () => {
+      if (window.__cameraActive) return;
       sessionStorage.removeItem(SESSION_KEY);
       setPasscodeVerified(false);
       setPasscodeMode(null);
       // Will re-trigger initializeUser via passcodeVerified change
+    };
+
+    // ✅ Detect ANY file input click anywhere in the app
+    const handleFileInputClick = (e) => {
+      if (e.target.type === "file") {
+        window.__cameraActive = true;
+      }
     };
 
     const handleVisibilityChange = () => {
@@ -81,6 +92,7 @@ function App() {
         }
       } else if (document.visibilityState === "visible") {
         // User came back before timeout — cancel lock
+        window.__cameraActive = false;
         if (lockTimerRef.current) {
           clearTimeout(lockTimerRef.current);
           lockTimerRef.current = null;
@@ -89,13 +101,15 @@ function App() {
     };
 
     const handlePageHide = () => {
+      if (window.__cameraActive) return;
       lockApp();
     };
-
+    document.addEventListener("click", handleFileInputClick, true);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", handlePageHide);
 
     return () => {
+      document.addEventListener("click", handleFileInputClick, true);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", handlePageHide);
       if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
@@ -298,6 +312,8 @@ function App() {
             />
             <Route path="/contact-us" element={<Contact />} />
             <Route path="/live-chat" element={<ChatComponent />} />
+            <Route path="/face-verification" element={<FaceVerification />} />
+            <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
             <Route path="/*" element={<NotFound />} />
           </Routes>
         ) : (
