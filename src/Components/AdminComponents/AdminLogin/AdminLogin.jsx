@@ -182,7 +182,7 @@ const AdminLogin = () => {
 
         {/* Bottom branding */}
         <p className="mt-4 text-center text-[11px] text-gray-400">
-          CRAdmin © {new Date().getFullYear()} · All rights reserved
+          panel © {new Date().getFullYear()} · All rights reserved
         </p>
       </div>
     </div>

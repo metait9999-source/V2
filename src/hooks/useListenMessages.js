@@ -17,7 +17,7 @@ const useListenMessages = () => {
       sound.play().catch((error) => {
         console.warn("Notification sound could not be played:", error);
       });
-      if (location.pathname === "/cradmin/live-support") {
+      if (location.pathname === "/panel/live-support") {
         triggerRefetch();
       }
 

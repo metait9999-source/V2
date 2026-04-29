@@ -30,10 +30,12 @@ const Funds = () => {
   const [preview, setPreview] = useState(null);
   const [availableBalance, setAvailableBalance] = useState("");
   const { socket } = useSocketContext();
-  const { updateUserBalance, success } = useUpdateUserBalance();
+  const { updateUserBalance } = useUpdateUserBalance();
   const { wallets } = useWallets(user?.id);
   const [convertAmount, setConvertAmount] = useState("");
   const [convertedResult, setConvertedResult] = useState("0.00");
+  const [isConverting, setIsConverting] = useState(false);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
 
   const {
     data: latestDeposit,
@@ -46,12 +48,21 @@ const Funds = () => {
     wallet?.coin_id,
   );
 
+  const [localCoinBalance, setLocalCoinBalance] = useState(null);
+
+  useEffect(() => {
+    if (balance?.coin_amount !== undefined) {
+      setLocalCoinBalance(parseFloat(balance.coin_amount));
+    }
+  }, [balance?.coin_amount]);
+
+  const displayBalance =
+    localCoinBalance ?? parseFloat(balance?.coin_amount || 0);
+
   const { convertUSDTToCoin } = useCryptoTradeConverter();
 
-  // USDT wallet as convert target
   const usdtWallet = wallets?.find((w) => w.coin_symbol === "USDT");
 
-  // ── Fetch available coin balance display ──
   const getConvertedAmount = useCallback(async () => {
     if (!balance?.coin_amount || !wallet?.coin_id) return;
     try {
@@ -69,30 +80,25 @@ const Funds = () => {
     getConvertedAmount();
   }, [getConvertedAmount]);
 
-  // ── Cache coin ID so we only search once per coin ──
   const coinGeckoIdRef = useRef(null);
   const coinPriceRef = useRef(null);
 
   useEffect(() => {
-    // Reset cache when wallet changes
     coinGeckoIdRef.current = null;
+    coinPriceRef.current = null;
   }, [wallet?.coin_symbol]);
 
   const getCoinGeckoId = async (symbol) => {
     if (!symbol) return null;
     if (symbol.toUpperCase() === "USDT") return "tether";
-
     try {
       const res = await fetch(
         `https://api.coingecko.com/api/v3/search?query=${symbol}`,
       );
       const data = await res.json();
-
-      // Find exact symbol match from results
       const match = data.coins?.find(
         (coin) => coin.symbol.toUpperCase() === symbol.toUpperCase(),
       );
-
       return match?.id || null;
     } catch {
       return null;
@@ -100,16 +106,10 @@ const Funds = () => {
   };
 
   useEffect(() => {
-    coinGeckoIdRef.current = null;
-    coinPriceRef.current = null;
-  }, [wallet?.coin_symbol]);
-
-  // ── Fetch price once when tab opens or coin changes ──
-  useEffect(() => {
     const fetchPrice = async () => {
       const symbol = wallet?.coin_symbol?.toUpperCase();
       if (!symbol || symbol === "USDT") {
-        coinPriceRef.current = 1; // USDT = 1:1
+        coinPriceRef.current = 1;
         return;
       }
       try {
@@ -118,7 +118,6 @@ const Funds = () => {
         }
         const coinId = coinGeckoIdRef.current;
         if (!coinId) return;
-
         const res = await fetch(
           `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
         );
@@ -128,39 +127,65 @@ const Funds = () => {
         coinPriceRef.current = null;
       }
     };
-
     if (activeTab === "convert") fetchPrice();
-  }, [wallet?.coin_symbol, activeTab]); // ← fetch when tab opens
+  }, [wallet?.coin_symbol, activeTab]);
 
-  // ── Calculate result instantly from cached price ──
   useEffect(() => {
     if (!convertAmount || parseFloat(convertAmount) <= 0) {
       setConvertedResult("0.00");
       return;
     }
-
     const price = coinPriceRef.current;
     if (!price) {
       setConvertedResult("0.00");
       return;
     }
-
-    // Instant calculation — no API call here
     const result = parseFloat(convertAmount) * price;
     setConvertedResult(result.toFixed(2));
   }, [convertAmount]);
 
   useEffect(() => {
     setLoading(loading);
-    if (success) window.location.reload();
-  }, [loading, success, setLoading]);
+  }, [loading, setLoading]);
 
+  // ── Copy address with execCommand fallback ──
   const handleCopyAddress = () => {
-    navigator.clipboard
-      .writeText(wallet?.wallet_address)
-      .then(() => toast.success("Copied to clipboard!"))
-      .catch(() => toast.error("Failed to copy"));
+    const address = wallet?.wallet_address;
+    if (!address) {
+      toast.error("No address to copy");
+      return;
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(address)
+        .then(() => toast.success("Copied to clipboard!"))
+        .catch(() => fallbackCopy(address));
+    } else {
+      fallbackCopy(address);
+    }
   };
+
+  const fallbackCopy = (text) => {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (success) toast.success("Copied to clipboard!");
+      else toast.error("Failed to copy");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  // ── QR Modal — Trust Wallet blocks all programmatic downloads,
+  //    so we show fullscreen modal and user long-presses to save ──
+  const openQrModal = () => setQrModalVisible(true);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -208,7 +233,7 @@ const Funds = () => {
       setLoading(false);
       return;
     }
-    if (parseFloat(withdrawAmount) > parseFloat(balance?.coin_amount)) {
+    if (parseFloat(withdrawAmount) > displayBalance) {
       toast.error("Withdraw amount cannot be greater than available balance");
       setLoading(false);
       return;
@@ -229,7 +254,7 @@ const Funds = () => {
       setLoading(false);
       setWithdrawAmount("");
       setWithdrawAddress("");
-      const main_balance = new Decimal(parseFloat(balance?.coin_amount));
+      const main_balance = new Decimal(displayBalance);
       const withdraw_balance = new Decimal(parseFloat(withdrawAmount));
       const new_balance = main_balance.d[0] - withdraw_balance.d[0];
       updateUserBalance(user?.id, wallet?.coin_id, new_balance);
@@ -239,29 +264,66 @@ const Funds = () => {
     }
   };
 
+  // ── FIX: Call axios directly for both balance updates so the shared
+  //    hook state doesn't interfere between the two sequential calls ──
+  const updateBalanceDirect = async (userId, coinId, newBalance) => {
+    await axios.put(`${API_BASE_URL}/userbalance/${userId}/balance/${coinId}`, {
+      coinAmount: newBalance,
+    });
+  };
+
   const handleConvertSubmit = async () => {
     if (!convertAmount || parseFloat(convertAmount) <= 0) {
       toast.error("Enter a valid amount");
       return;
     }
-    if (parseFloat(convertAmount) > parseFloat(balance?.coin_amount)) {
+
+    const coinAmt = parseFloat(convertAmount);
+    const price = coinPriceRef.current;
+
+    if (!price) {
+      toast.error("Price data not loaded yet, please try again");
+      return;
+    }
+
+    const usdtEquivalent = coinAmt * price;
+
+    if (usdtEquivalent > displayBalance) {
       toast.error("Amount exceeds available balance");
       return;
     }
-    const newCoinBalance =
-      parseFloat(balance?.coin_amount) - parseFloat(convertAmount);
+
+    setIsConverting(true);
+
+    const newCoinWalletBalance = displayBalance - usdtEquivalent;
     const newUSDTBalance =
-      parseFloat(usdtWallet?.coin_amount || 0) + parseFloat(convertAmount);
+      parseFloat(usdtWallet?.coin_amount || 0) + usdtEquivalent;
+
+    let convertSuccess = false;
     try {
-      await updateUserBalance(user.id, wallet?.coin_id, newCoinBalance);
+      await updateBalanceDirect(user.id, wallet?.coin_id, newCoinWalletBalance);
       if (usdtWallet) {
-        await updateUserBalance(user.id, usdtWallet.coin_id, newUSDTBalance);
+        await updateBalanceDirect(user.id, usdtWallet.coin_id, newUSDTBalance);
       }
+      convertSuccess = true;
+    } catch (err) {
+      console.error("Convert error:", err);
+      toast.error("Conversion failed — please try again");
+    } finally {
+      setIsConverting(false);
+    }
+
+    if (convertSuccess) {
+      setLocalCoinBalance(newCoinWalletBalance);
       setConvertAmount("");
       setConvertedResult("0.00");
-      toast.success("Converted to USDT successfully");
-    } catch {
-      toast.error("Conversion failed");
+      toast.success(
+        `Converted ${coinAmt} ${coinSymbol} → ${usdtEquivalent.toFixed(2)} USDT`,
+      );
+      // background sync — isolated, never affects UI
+      try {
+        refetchUserBalance();
+      } catch (_) {}
     }
   };
 
@@ -354,7 +416,7 @@ const Funds = () => {
           }}
         />
         <p className="text-white font-extrabold text-4xl mb-2 relative z-10">
-          US$ {parseFloat(balance?.coin_amount || 0).toFixed(4)}
+          US$ {displayBalance.toFixed(4)}
         </p>
         <div className="flex items-center justify-center gap-2 relative z-10">
           <img
@@ -432,19 +494,48 @@ const Funds = () => {
                   </div>
                 </div>
               )}
-              <div className="flex justify-center my-4">
+
+              <div className="flex flex-col items-center my-4 gap-3">
                 {wallet?.wallet_qr ? (
-                  <img
-                    className="w-48 h-48 object-contain rounded-xl"
-                    src={`${API_BASE_URL}/${wallet.wallet_qr}`}
-                    alt={coinSymbol}
-                  />
+                  <>
+                    <img
+                      className="w-48 h-48 object-contain rounded-xl"
+                      src={`${API_BASE_URL}/${wallet.wallet_qr}`}
+                      alt={coinSymbol}
+                    />
+                    <button
+                      onClick={openQrModal}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
+                      style={{
+                        background: "linear-gradient(90deg,#6366f1,#8b5cf6)",
+                        color: "#fff",
+                        boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+                      }}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Save QR Code
+                    </button>
+                  </>
                 ) : (
                   <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center">
                     <p className="text-gray-400 text-sm">No QR code</p>
                   </div>
                 )}
               </div>
+
               <p className="text-center text-gray-700 text-sm font-medium mb-2">
                 {wallet?.wallet_address
                   ? `${wallet.wallet_address.slice(0, 14)}...${wallet.wallet_address.slice(-12)}`
@@ -482,7 +573,6 @@ const Funds = () => {
                 {coinSymbol}
               </div>
 
-              {/* Address input */}
               <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50">
                 <input
                   type="text"
@@ -508,7 +598,6 @@ const Funds = () => {
                 )}
               </div>
 
-              {/* Amount input — fixed Max overflow */}
               <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50">
                 <img
                   className="w-6 h-6 rounded-full flex-shrink-0"
@@ -563,7 +652,6 @@ const Funds = () => {
               <p className="font-bold text-gray-900 text-base">Convert</p>
             </div>
             <div className="px-5 py-4 flex flex-col gap-4">
-              {/* From — selected coin */}
               <div>
                 <p className="text-gray-500 text-xs font-semibold mb-2">From</p>
                 <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50">
@@ -583,19 +671,17 @@ const Funds = () => {
                     className="flex-1 min-w-0 bg-transparent text-right text-gray-800 font-bold text-base outline-none"
                   />
                   <button
-                    onClick={() => setConvertAmount(balance?.coin_amount)}
+                    onClick={() => setConvertAmount(availableBalance || "0")}
                     className="flex-shrink-0 text-indigo-500 font-bold text-sm"
                   >
                     Max
                   </button>
                 </div>
                 <p className="text-gray-400 text-xs mt-1.5 px-1">
-                  Balance: {parseFloat(balance?.coin_amount || 0).toFixed(4)}{" "}
-                  USDT
+                  Balance: {availableBalance || "0.00000000"} {coinSymbol}
                 </p>
               </div>
 
-              {/* Down arrow */}
               <div className="flex justify-center">
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center"
@@ -615,7 +701,6 @@ const Funds = () => {
                 </div>
               </div>
 
-              {/* To — always USDT, shows real converted amount */}
               <div>
                 <p className="text-gray-500 text-xs font-semibold mb-2">To</p>
                 <div className="flex items-center gap-2 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50">
@@ -627,7 +712,6 @@ const Funds = () => {
                   <span className="text-gray-900 font-bold text-base flex-shrink-0">
                     USDT
                   </span>
-                  {/* Auto-calculated USDT amount */}
                   <span className="flex-1 text-right text-gray-800 font-bold text-base">
                     {convertedResult}
                   </span>
@@ -635,7 +719,7 @@ const Funds = () => {
                 <p className="text-gray-400 text-xs mt-1.5 px-1">
                   Fee: 0.3% &nbsp;·&nbsp; You receive:{" "}
                   {convertAmount
-                    ? (parseFloat(convertAmount) * 0.997).toFixed(4)
+                    ? (parseFloat(convertedResult) * 0.997).toFixed(4)
                     : "0.0000"}{" "}
                   USDT
                 </p>
@@ -643,13 +727,15 @@ const Funds = () => {
 
               <button
                 onClick={handleConvertSubmit}
-                className="w-full py-4 rounded-2xl text-white font-extrabold text-base mt-2"
+                disabled={isConverting}
+                className="w-full py-4 rounded-2xl text-white font-extrabold text-base mt-2 transition-opacity"
                 style={{
                   background: "linear-gradient(90deg,#f472b6,#a855f7)",
                   boxShadow: "0 8px 24px rgba(168,85,247,0.35)",
+                  opacity: isConverting ? 0.7 : 1,
                 }}
               >
-                Convert
+                {isConverting ? "Converting…" : `Convert ${coinSymbol} → USDT`}
               </button>
               <p className="text-gray-400 text-xs text-center leading-relaxed">
                 You can not trade between two cryptocurrencies directly.
@@ -767,6 +853,56 @@ const Funds = () => {
               Submit
             </button>
           </div>
+        </div>
+      )}
+      {/* ══ QR FULLSCREEN MODAL ══ */}
+      {qrModalVisible && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.92)" }}
+          onClick={() => setQrModalVisible(false)}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setQrModalVisible(false)}
+            className="absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.15)" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M2 2l10 10M12 2L2 12"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+
+          {/* Instruction */}
+          <p className="text-white/70 text-sm mb-6 font-medium">
+            Long press the QR code to save
+          </p>
+
+          {/* QR image — large, no pointer-events blocking */}
+          <img
+            src={`${API_BASE_URL}/${wallet?.wallet_qr}`}
+            alt={coinSymbol}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "72vw",
+              height: "72vw",
+              maxWidth: 320,
+              maxHeight: 320,
+              borderRadius: 20,
+              objectFit: "contain",
+              background: "#fff",
+              padding: 12,
+            }}
+          />
+
+          <p className="text-white/40 text-xs mt-6 text-center px-8">
+            Tap outside to close
+          </p>
         </div>
       )}
     </div>

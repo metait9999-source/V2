@@ -18,18 +18,18 @@ import MiningDashboard from "./Mining/MiningDashboard";
 import Loans from "./Loan/Loans";
 
 // const PAGE_TITLES = {
-//   "/cradmin": "Dashboard",
-//   "/cradmin/settings": "Edit Feature",
-//   "/cradmin/contact": "Contact",
-//   "/cradmin/live-support": "Inbox",
-//   "/cradmin/wallets": "Wallets",
-//   "/cradmin/new-wallet": "New Wallet",
-//   "/cradmin/edit-wallet": "Edit Wallet",
-//   "/cradmin/users": "Users",
-//   "/cradmin/admin-users": "Admin Users",
-//   "/cradmin/deposits": "Deposits",
-//   "/cradmin/withdraws": "Withdraws",
-//   "/cradmin/trading": "Trading",
+//   "/panel": "Dashboard",
+//   "/panel/settings": "Edit Feature",
+//   "/panel/contact": "Contact",
+//   "/panel/live-support": "Inbox",
+//   "/panel/wallets": "Wallets",
+//   "/panel/new-wallet": "New Wallet",
+//   "/panel/edit-wallet": "Edit Wallet",
+//   "/panel/users": "Users",
+//   "/panel/admin-users": "Admin Users",
+//   "/panel/deposits": "Deposits",
+//   "/panel/withdraws": "Withdraws",
+//   "/panel/trading": "Trading",
 // };
 
 const Layout = () => {

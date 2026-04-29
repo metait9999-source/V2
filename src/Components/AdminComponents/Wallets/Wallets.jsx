@@ -73,7 +73,7 @@ const Wallets = () => {
             </p>
           </div>
         </div>
-        <Link to="/cradmin/new-wallet">
+        <Link to="/panel/new-wallet">
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-[13px] font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-md shadow-indigo-200">
             <FiPlus size={15} />
             Add New Wallet
@@ -182,7 +182,7 @@ const Wallets = () => {
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
-                        <Link to="/cradmin/edit-wallet" state={{ wallet }}>
+                        <Link to="/panel/edit-wallet" state={{ wallet }}>
                           <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors">
                             <FiEdit2 size={11} />
                             Edit

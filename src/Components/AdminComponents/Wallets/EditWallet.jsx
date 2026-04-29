@@ -146,7 +146,7 @@ const EditWallet = () => {
         },
       );
       toast.success("Wallet updated successfully");
-      navigate("/cradmin/wallets");
+      navigate("/panel/wallets");
     } catch {
       toast.error("Failed to update wallet");
     }
@@ -157,7 +157,7 @@ const EditWallet = () => {
       {/* ── Page header ── */}
       <div className="flex items-center gap-2.5">
         <button
-          onClick={() => navigate("/cradmin/wallets")}
+          onClick={() => navigate("/panel/wallets")}
           className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 transition-colors"
         >
           <FiArrowLeft size={15} />
