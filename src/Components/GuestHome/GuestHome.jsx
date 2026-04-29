@@ -35,7 +35,7 @@ const GuestHome = () => {
             />
           </a>
           <div className="theme-title ">
-            <span className="text-white">Trust Walletr</span>
+            <span className="text-white">Trust Wallet</span>
           </div>
         </div>
         <div className="content-title ">
