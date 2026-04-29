@@ -322,7 +322,7 @@ function App() {
               <Route path="/" element={<GuestHome />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route
-                path="/cradmin/*"
+                path="/panel/*"
                 element={
                   <AdminRoute>
                     <Layout />

@@ -34,7 +34,7 @@ const AdminLogin = () => {
       ) {
         setAdminUser(userData);
         toast.success("Login successful!");
-        navigate("/cradmin");
+        navigate("/panel");
       } else {
         navigate("/");
       }
