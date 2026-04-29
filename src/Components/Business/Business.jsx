@@ -416,12 +416,14 @@ const TradePopup = ({
       return toast.error("Insufficient balance");
     if (0 >= parseInt(user?.trade_limit))
       return toast.error("Trade limit reached");
+
     try {
       setLoading(true);
       const result = await convertUSDTToCoin(amount, selectedWallet?.coin_id);
       const wAmount = selectedWallet?.coin_name === "Tether" ? amount : result;
       const order_id = Math.floor(100000 + Math.random() * 900000);
       const percent = parseInt(selectedProfit) / 100;
+
       await axios.post(`${API_BASE_URL}/tradeorder`, {
         order_id,
         order_type: type,
@@ -440,13 +442,13 @@ const TradePopup = ({
         profit_level: selectedProfit,
         is_profit: user?.is_profit,
       });
-      updateUserBalance(
-        user.id,
-        selectedWallet.coin_id,
-        userCoinBalance - amount,
-      );
+
+      // ✅ call but don't watch its success state
+      updateUserBalance(user.id, selectedWallet.coin_id, userCoinBalance - amt);
+
       toast.success("Trade order placed successfully!");
-      onClose();
+      setAmount("");
+      onClose(); // just close, no reload
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -695,7 +697,7 @@ const BusinessView = ({ coin, type, onBack }) => {
   const { timerProfits } = useTimerProfit();
   const { wallets } = useWallets(user?.id);
   const { convertUSDTToCoin } = useCryptoTradeConverter();
-  const { updateUserBalance, success } = useUpdateUserBalance();
+  const { updateUserBalance } = useUpdateUserBalance();
 
   const [market, setMarket] = useState(null);
   const [purchasePrice, setPurchasePrice] = useState(null);
@@ -725,12 +727,12 @@ const BusinessView = ({ coin, type, onBack }) => {
       }
       setLoading(false);
     };
-    if (success) {
-      window.location.reload();
-      return;
-    }
+    // if (success) {
+    //   // window.location.reload();
+    //   return;
+    // }
     load();
-  }, [coin, type, wallets.length, setLoading, success]);
+  }, [coin, type, wallets.length, setLoading]);
 
   useEffect(() => {
     const w = wallets.find((w) => w.coin_id === "518");
@@ -793,7 +795,12 @@ const BusinessView = ({ coin, type, onBack }) => {
           </button>
         </div>
 
-        <Link to="/profit-stat">
+        <Link
+          to="/profit-stat"
+          onClick={(e) => {
+            if (tradePopupVisible) e.preventDefault();
+          }}
+        >
           <BarChartIcon />
         </Link>
       </div>
