@@ -517,8 +517,8 @@ const ChatComponent = () => {
               <textarea
                 value={message}
                 onChange={(e) => {
-                  emitTyping();
                   setMessage(e.target.value);
+                  emitTyping();
                 }}
                 onBlur={emitStopTyping}
                 onKeyDown={handleKeyDown}

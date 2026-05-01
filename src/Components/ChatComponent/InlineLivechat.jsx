@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   IoClose,
   IoSend,
@@ -24,11 +24,19 @@ const InlineLiveChat = ({ user, onClose }) => {
 
   const { socket } = useSocketContext();
 
-  const { typingUsers, setSelectedConversation } = useConversation();
-
+  const { typingUsers, setSelectedConversation, setMessages } =
+    useConversation();
   const { messages } = useGetMessages();
 
-  const [convId, setConvId] = useState(null);
+  // ── convId: both state (for re-render) and ref (for instant access) ──
+  const convIdRef = useRef(null);
+  const [convId, setConvIdState] = useState(null);
+
+  const setConvId = useCallback((id) => {
+    convIdRef.current = id;
+    setConvIdState(id);
+  }, []);
+
   const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState("");
@@ -60,16 +68,14 @@ const InlineLiveChat = ({ user, onClose }) => {
   }, [convId]);
 
   // ── Set convId + set zustand selectedConversation ─────────
-  // This is the key — useGetMessages fetches by selectedConversation
   useEffect(() => {
     if (convData?.[0]) {
       const conv = convData[0];
       const id = conv.conversation_id ?? conv.id ?? null;
       setConvId(id);
-      // ← Set zustand selectedConversation so useGetMessages fetches correctly
       setSelectedConversation(conv);
     }
-  }, [convData, setSelectedConversation]);
+  }, [convData, setSelectedConversation, setConvId]);
 
   // ── Message block status ──────────────────────────────────
   useEffect(() => {
@@ -119,8 +125,6 @@ const InlineLiveChat = ({ user, onClose }) => {
   };
 
   // ── Send message ──────────────────────────────────────────
-  const { setMessages } = useConversation();
-
   const sendMessage = async () => {
     if (!message.trim() && !file) return;
     if (sending) return;
@@ -139,9 +143,13 @@ const InlineLiveChat = ({ user, onClose }) => {
 
       if (res.data) {
         const newConvId = res.data.conversation_id;
-        if (newConvId && !convId) {
+        if (newConvId && !convIdRef.current) {
           setConvId(newConvId);
           window.__inlineChatConvId = newConvId;
+          setSelectedConversation({
+            ...res.data,
+            conversation_id: newConvId,
+          });
         }
         setMessages((prev) => [...prev, res.data]);
       }
@@ -163,7 +171,7 @@ const InlineLiveChat = ({ user, onClose }) => {
     }
   };
 
-  // ── FAQ selection ─────────────────────────────────────────
+  // ── FAQ selection — FIXED ─────────────────────────────────
   const handleFaqSelect = async (faq) => {
     if (sending) return;
     if (!user?.id) return;
@@ -177,11 +185,32 @@ const InlineLiveChat = ({ user, onClose }) => {
       fd.append("faq_id", faq.id);
 
       const res = await axios.post(`${API_BASE_URL}/messages/send`, fd);
+
+      // ✅ Resolve convId immediately using ref — don't wait for state update
+      const newConvId = res.data?.conversation_id;
+      if (newConvId && !convIdRef.current) {
+        setConvId(newConvId); // updates both ref and state
+        window.__inlineChatConvId = newConvId;
+        setSelectedConversation({
+          ...res.data,
+          conversation_id: newConvId,
+        });
+      }
+
+      // ✅ Use resolved convId for bot reply — ref is always current
+      const resolvedConvId = convIdRef.current ?? newConvId;
+
       const childRes = await axios.get(
         `${API_BASE_URL}/chat-faqs/${faq.id}/children`,
       );
       const { parent, children } = childRes.data;
       const safeChildren = Array.isArray(children) ? children : [];
+
+      // ✅ Ensure user message has correct conversation_id
+      const userMessage = {
+        ...res.data,
+        conversation_id: resolvedConvId,
+      };
 
       const botReply = {
         id: `bot-${Date.now()}`,
@@ -190,16 +219,17 @@ const InlineLiveChat = ({ user, onClose }) => {
         message_text: parent?.answer ?? "",
         faq_options: safeChildren.length > 0 ? safeChildren : null,
         created_at: new Date().toISOString(),
-        conversation_id: res.data?.conversation_id,
+        conversation_id: resolvedConvId, // ✅ always correct
       };
 
-      setMessages((prev) => [...prev, res.data, botReply]);
+      // ✅ User message first, bot reply second
+      setMessages((prev) => [...prev, userMessage, botReply]);
 
-      // mark seen instantly for bot reply
-      if (socket && convId) {
+      // mark seen for bot reply
+      if (socket && resolvedConvId) {
         const seenAt = new Date().toISOString();
         socket.emit("markSeen", {
-          conversationId: convId,
+          conversationId: resolvedConvId,
           recipientId: 0,
           seenAt,
         });
@@ -222,9 +252,12 @@ const InlineLiveChat = ({ user, onClose }) => {
       : format(date, "hh:mm a");
   };
 
-  // Filter messages for this conversation
+  // ✅ Filter uses ref as fallback so it's never stale
   const filteredMessages = Array.isArray(messages)
-    ? messages.filter((m) => String(m.conversation_id) === String(convId))
+    ? messages.filter(
+        (m) =>
+          String(m.conversation_id) === String(convIdRef.current ?? convId),
+      )
     : [];
 
   const isBlocked = messageStatus === 0;
@@ -410,13 +443,10 @@ const InlineLiveChat = ({ user, onClose }) => {
                         </div>
                       )}
 
-                      {/* ── Timestamp + Read receipt ── */}
+                      {/* ── Read receipt ── */}
                       <div
                         className={`flex items-center gap-1 ${isMe ? "justify-end" : "justify-start"}`}
                       >
-                        {/* <p className="text-[10px] text-gray-400 m-0">
-                          {format(new Date(msg.created_at), "hh:mm a")}
-                        </p> */}
                         {isMe && (
                           <span
                             className="text-[10px] font-semibold transition-all duration-300"
@@ -478,6 +508,7 @@ const InlineLiveChat = ({ user, onClose }) => {
             )}
           </div>
         ) : (
+          /* ── Empty state with FAQs ── */
           <div className="flex flex-col items-center justify-center min-h-full py-8 px-4 text-center">
             <div
               className="w-[72px] h-[72px] rounded-3xl flex items-center justify-center mb-4"
@@ -548,6 +579,7 @@ const InlineLiveChat = ({ user, onClose }) => {
         </button>
       )}
 
+      {/* ── Input area ── */}
       {isBlocked ? (
         <div className="flex-shrink-0 px-4 py-4 bg-red-50 border-t border-red-100 text-center">
           <p className="text-red-500 text-sm font-semibold m-0">
@@ -598,14 +630,14 @@ const InlineLiveChat = ({ user, onClose }) => {
               className="hidden"
             />
 
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5">
+            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-500/15 transition-all">
               <textarea
                 value={message}
                 onChange={(e) => {
                   setMessage(e.target.value);
                   emitTyping();
                 }}
-                // onInput={() => emitTyping()}
+                onInput={() => emitTyping()}
                 onBlur={emitStopTyping}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
@@ -656,6 +688,7 @@ const InlineLiveChat = ({ user, onClose }) => {
         </div>
       )}
 
+      {/* ── Full image viewer ── */}
       {selectedImage && (
         <div
           onClick={() => setSelectedImage(null)}
