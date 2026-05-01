@@ -73,7 +73,7 @@ const GuestHome = () => {
           <img className="img_phone" src={introImg} alt="" />
         </div>
 
-        <div className="download_actions">
+        <div className="flex justify-center items-center gap-5 px-10">
           <a
             href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp&amp;hl=en"
             target="_blank"
@@ -82,7 +82,7 @@ const GuestHome = () => {
             <img src={google_play} alt="" />
           </a>
           <a
-            href="https://apps.apple.com/us/app/trust-crypto-bitcoin-wallet/"
+            href="https://apps.apple.com/us/app/trust-crypto-bitcoin-wallet/id1288339409"
             target="_blank"
             rel="noreferrer"
           >
