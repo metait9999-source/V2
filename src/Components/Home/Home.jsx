@@ -165,9 +165,9 @@ function Home() {
           </div>
           <div className="invite-content">
             <h3>Invite friends to join</h3>
-            <Link to="/invite" className="invite-btn">
+            {/* <Link to="/invite" className="invite-btn">
               Start invitation
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>

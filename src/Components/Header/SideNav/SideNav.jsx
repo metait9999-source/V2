@@ -2,46 +2,121 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../../../context/UserContext";
 import useSettings from "../../../hooks/useSettings";
-import { FaWallet } from "react-icons/fa";
+import useWallets from "../../../hooks/useWallets";
+import axios from "axios";
+import { API_BASE_URL } from "../../../api/getApiURL";
+import { BiDollar, BiWallet } from "react-icons/bi";
+import { MdOutlineShowChart } from "react-icons/md";
+import { GiMining } from "react-icons/gi";
+import { TbChartBar } from "react-icons/tb";
 
-const appName = "Metaverse";
+const appName = "Meta";
 
 const navItems = [
-  { label: "Trade", icon: "/assets/images/menu/transaction.png", to: "/" },
+  {
+    label: "Wallet",
+    to: "/account",
+    iconBg: "linear-gradient(135deg,#f59e0b,#f97316)",
+    reactIcon: <BiWallet />,
+    reactIconStyle: { fontSize: 22, color: "#fff" },
+  },
+  {
+    label: "Trade",
+    to: "/",
+    iconBg: "linear-gradient(135deg,#10b981,#059669)",
+    icon: "/assets/images/menu/trade.png",
+    iconStyle: { width: 40, height: 40 },
+  },
   {
     label: "Arbitrage",
-    icon: "/assets/images/menu/knowledge.png",
     to: "/arbitrage",
+    iconBg: "linear-gradient(135deg,#3b82f6,#6366f1)",
+    reactIcon: <MdOutlineShowChart />,
+    reactIconStyle: { fontSize: 22, color: "#fff" },
   },
-  { label: "Mining", icon: "/assets/images/menu/profits.png", to: "/mining" },
+  {
+    label: "Mining",
+    to: "/mining",
+    iconBg: "linear-gradient(135deg,#8b5cf6,#7c3aed)",
+    reactIcon: <GiMining />,
+    reactIconStyle: { fontSize: 20, color: "#fff" },
+  },
   {
     label: "Help Loan",
-    icon: "/assets/images/menu/users.svg",
     to: "/loan-landing",
+    icon: "/assets/images/menu/loan.png",
+    iconBg: "linear-gradient(135deg,#f97316,#ef4444)",
+    iconStyle: { width: 30, height: 28 },
   },
-  // {
-  //   label: "Platform Activities",
-  //   icon: "/assets/images/menu/money-bag.svg",
-  //   to: "/activities",
-  // },
   {
     label: "Profit Statistics",
-    icon: "/assets/images/menu/profits.png",
     to: "/profit-stat",
+    iconBg: "linear-gradient(135deg,#14b8a6,#0891b2)",
+    reactIcon: <TbChartBar />,
+    reactIconStyle: { fontSize: 22, color: "#fff" },
   },
-  {
-    label: "Account",
-    icon: "/assets/images/menu/accounts.png",
-    to: "/account",
-  },
+  // ── Mixed example: still use an image for this one ──
+  // {
+  //   label: "News",
+  //   to: "/news",
+  //   icon: "/assets/images/menu/news.png",
+  //   iconBg: "linear-gradient(135deg,#f97316,#ef4444)",
+  //   iconStyle: { width: 20, height: 20 },
+  // },
 ];
+
+const DEFAULT_ICON_BG = "linear-gradient(135deg,#6366f1,#a855f7)";
+
+/* ══════════════════════════════════════════════
+   NAV ICON — renders react icon OR <img>
+══════════════════════════════════════════════ */
+const NavIcon = ({
+  reactIcon,
+  reactIconStyle,
+  icon,
+  iconStyle,
+  iconBg,
+  alt,
+}) => (
+  <div
+    className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0"
+    style={{ background: iconBg || DEFAULT_ICON_BG }}
+  >
+    {reactIcon ? (
+      <span
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          ...(reactIconStyle || {}),
+        }}
+      >
+        {reactIcon}
+      </span>
+    ) : (
+      <img
+        src={icon}
+        alt={alt}
+        className="object-contain brightness-0 invert"
+        style={{ width: 20, height: 20, ...(iconStyle || {}) }}
+      />
+    )}
+  </div>
+);
 
 /* ══════════════════════════════════════════════
    SETTINGS ITEM
 ══════════════════════════════════════════════ */
 const SettingsItem = ({ gradient, icon, label, sublabel, onClick, to }) => {
   const content = (
-    <div className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors">
+    <div
+      className="flex items-center justify-between px-5 py-4 transition-colors"
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background = "rgba(255,255,255,0.06)")
+      }
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
       <div className="flex items-center gap-3">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -50,9 +125,15 @@ const SettingsItem = ({ gradient, icon, label, sublabel, onClick, to }) => {
           {icon}
         </div>
         <div>
-          <p className="text-gray-800 font-semibold text-sm">{label}</p>
+          <p
+            style={{ color: "#f1f5f9", fontWeight: 600, fontSize: "0.875rem" }}
+          >
+            {label}
+          </p>
           {sublabel && (
-            <p className="text-gray-400 text-xs mt-0.5">{sublabel}</p>
+            <p style={{ color: "#64748b", fontSize: "0.75rem", marginTop: 2 }}>
+              {sublabel}
+            </p>
           )}
         </div>
       </div>
@@ -60,7 +141,7 @@ const SettingsItem = ({ gradient, icon, label, sublabel, onClick, to }) => {
         width="14"
         height="14"
         fill="none"
-        stroke="#d1d5db"
+        stroke="#334155"
         strokeWidth={2.5}
         viewBox="0 0 24 24"
       >
@@ -70,7 +151,12 @@ const SettingsItem = ({ gradient, icon, label, sublabel, onClick, to }) => {
   );
 
   return to ? (
-    <Link to={to} onClick={onClick} className="block">
+    <Link
+      to={to}
+      onClick={onClick}
+      className="block"
+      style={{ textDecoration: "none" }}
+    >
       {content}
     </Link>
   ) : (
@@ -87,10 +173,14 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
   const { settings } = useSettings();
   const smartContractLink = settings?.smart_contract_link || "#";
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
+  const { wallets } = useWallets(user?.id);
   const menuRef = useRef(null);
 
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [balanceVisible, setBalanceVisible] = useState(
+    () => user?.balance_visible === 1 || user?.balance_visible === true,
+  );
 
   const toggleSettingsPopup = () => setSettingsVisible((v) => !v);
 
@@ -109,129 +199,316 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setToggleMenu]);
 
+  const toggleBalance = async () => {
+    const newVal = !balanceVisible;
+    setBalanceVisible(newVal);
+    try {
+      await axios.put(`${API_BASE_URL}/users/${user.id}/balance-visibility`, {
+        balance_visible: newVal ? 1 : 0,
+      });
+      if (setUser)
+        setUser((prev) => ({ ...prev, balance_visible: newVal ? 1 : 0 }));
+    } catch {
+      setBalanceVisible(!newVal);
+    }
+  };
+
+  const totalBalance =
+    wallets?.reduce(
+      (sum, wallet) => sum + parseFloat(wallet.coin_amount || 0),
+      0,
+    ) ?? 0;
+
+  const blurStyle = {
+    filter: balanceVisible ? "blur(0px)" : "blur(7px)",
+    transition: "filter 0.35s cubic-bezier(0.4,0,0.2,1)",
+    userSelect: balanceVisible ? "text" : "none",
+  };
+
+  const DRAWER_BG = "#0a0a0f";
+  const DRAWER_BORDER = "rgba(255,255,255,0.07)";
+  const SECTION_LABEL = "#475569";
+  const NAV_TEXT = "#cbd5e1";
+  const NAV_HOVER_BG = "rgba(255,255,255,0.06)";
+  const SHEET_BG = "#111118";
+
   return (
     <>
       {/* ── Main Drawer ── */}
       {toggleMenu && (
         <div className="fixed inset-0 z-[2016] flex">
-          {/* Overlay */}
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0"
+            style={{
+              background: "rgba(0,0,0,0.7)",
+              backdropFilter: "blur(6px)",
+            }}
             onClick={() => setToggleMenu(false)}
           />
 
-          {/* Drawer */}
           <div
             ref={menuRef}
-            className="relative w-[80%] max-w-sm h-full bg-white overflow-y-auto shadow-2xl flex flex-col"
-            style={{ zIndex: 2016 }}
+            className="relative w-[80%] max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col"
+            style={{
+              zIndex: 2016,
+              background: DRAWER_BG,
+              borderRight: `1px solid ${DRAWER_BORDER}`,
+            }}
           >
             {/* Header */}
-            <div className="px-5 pt-6 pb-4 border-b border-gray-100">
+            <div
+              className="px-5 pt-6 pb-4"
+              style={{ borderBottom: `1px solid ${DRAWER_BORDER}` }}
+            >
               <div className="flex items-center justify-between mb-3">
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+                <h1
+                  className="text-2xl font-black tracking-tight"
+                  style={{
+                    background: "linear-gradient(90deg,#a78bfa,#60a5fa)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
                   {appName}
                 </h1>
-                <div className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold px-3 py-1 rounded-full shadow">
+                <div
+                  className="text-white text-sm font-semibold px-3 py-1 rounded-full shadow"
+                  style={{
+                    background: "linear-gradient(90deg,#7c3aed,#6366f1)",
+                  }}
+                >
                   Credit: {user?.credit || 0}
                 </div>
               </div>
-              <p className="text-gray-400 text-sm font-medium">
+
+              <p
+                style={{
+                  color: SECTION_LABEL,
+                  fontSize: "0.8rem",
+                  fontWeight: 500,
+                }}
+              >
                 UID: {user?.uuid || "—"}
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 mt-4">
-                <Link
-                  to="/account"
-                  onClick={() => setToggleMenu(false)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold rounded-xl shadow-md active:scale-95 transition-all"
-                >
-                  <FaWallet size={14} />
-                  Wallet
-                </Link>
-                <a
-                  href={smartContractLink}
-                  className="flex-1 flex items-center justify-center gap-2 border-2 border-purple-500 text-purple-600 font-semibold py-2.5 px-4 rounded-xl hover:bg-purple-50 active:scale-95 transition-all"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
+              {/* Balance */}
+              <div className="mt-4">
+                <div className="flex items-center gap-1 mb-1">
+                  <button
+                    onClick={toggleBalance}
+                    aria-label={
+                      balanceVisible ? "Hide balance" : "Show balance"
+                    }
+                    className="flex items-center justify-center p-0 bg-transparent border-none cursor-pointer"
+                    style={{ lineHeight: 1 }}
                   >
-                    <path
+                    {balanceVisible ? (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#64748b"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#64748b"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                        <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    )}
+                  </button>
+
+                  <div
+                    // to="/account"
+                    // onClick={() => setToggleMenu(false)}
+                    className="flex items-center gap-0.5"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <span
+                      style={{
+                        color: "#475569",
+                        fontSize: "0.8rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Main Wallet
+                    </span>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#334155"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  <span className="text-sm">Join smart contract</span>
-                </a>
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </div>
+                </div>
+
+                <p
+                  className="font-bold leading-none select-none flex items-center -ml-1"
+                  style={{
+                    fontSize: "1.1rem",
+                    letterSpacing: "-0.03em",
+                    color: "#f1f5f9",
+                    ...blurStyle,
+                  }}
+                >
+                  <BiDollar size={23} />
+                  {totalBalance.toFixed(2)}
+                </p>
               </div>
             </div>
 
             {/* Functions */}
             <div className="px-5 pt-5 pb-4 flex-1">
-              <h2 className="text-base font-bold text-gray-900 mb-3">
+              <h2
+                className="font-bold mb-3"
+                style={{
+                  color: SECTION_LABEL,
+                  textTransform: "uppercase",
+                  fontSize: "0.7rem",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Functions
               </h2>
-              <nav className="space-y-1">
-                {navItems.map(({ label, icon, to }) => (
-                  <Link
-                    key={label}
-                    to={to}
-                    onClick={() => setToggleMenu(false)}
-                    className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-purple-50 active:bg-purple-100 transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
-                      <img
-                        src={icon}
-                        alt={label}
-                        className="w-5 h-5 object-contain brightness-0 invert"
-                      />
-                    </div>
-                    <span className="text-gray-700 font-medium group-hover:text-purple-700 transition-colors">
-                      {label}
-                    </span>
-                  </Link>
-                ))}
 
-                {/* Chat */}
-                {/* <Link
-                  to="/contact-us"
-                  onClick={() => setToggleMenu(false)}
-                  className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-purple-50 active:bg-purple-100 transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <img
-                      src="/assets/images/menu/chat.png"
-                      alt="Chat"
-                      className="w-5 h-5 object-contain brightness-0 invert"
-                    />
-                  </div>
-                  <span className="text-gray-700 font-medium group-hover:text-purple-700 transition-colors">
-                    Contact us
-                  </span>
-                </Link> */}
+              <nav className="space-y-0.5">
+                {navItems.map(
+                  ({
+                    label,
+                    icon,
+                    iconStyle,
+                    iconBg,
+                    to,
+                    reactIcon,
+                    reactIconStyle,
+                  }) => (
+                    <Link
+                      key={label}
+                      to={to}
+                      onClick={() => setToggleMenu(false)}
+                      className="flex items-center gap-4 px-3 py-3 rounded-2xl transition-colors"
+                      style={{ textDecoration: "none" }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = NAV_HOVER_BG)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = "transparent")
+                      }
+                    >
+                      <NavIcon
+                        reactIcon={reactIcon}
+                        reactIconStyle={reactIconStyle}
+                        icon={icon}
+                        iconStyle={iconStyle}
+                        iconBg={iconBg}
+                        alt={label}
+                      />
+                      <span
+                        style={{
+                          color: NAV_TEXT,
+                          fontWeight: 500,
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </Link>
+                  ),
+                )}
 
                 {/* Settings */}
                 <button
                   onClick={toggleSettingsPopup}
-                  className="w-full flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-purple-50 active:bg-purple-100 transition-colors group"
+                  className="w-full flex items-center gap-4 px-3 py-3 rounded-2xl transition-colors"
+                  style={{ background: "transparent" }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = NAV_HOVER_BG)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <img
-                      src="/assets/images/menu/settings.png"
-                      alt="Settings"
-                      className="w-5 h-5 object-contain brightness-0 invert"
-                    />
-                  </div>
-                  <span className="text-gray-700 font-medium group-hover:text-purple-700 transition-colors">
+                  <NavIcon
+                    icon="/assets/images/menu/settings.png"
+                    iconBg="linear-gradient(135deg,#475569,#334155)"
+                    alt="Settings"
+                  />
+                  <span
+                    style={{
+                      color: NAV_TEXT,
+                      fontWeight: 500,
+                      fontSize: "0.9rem",
+                    }}
+                  >
                     Settings
                   </span>
                 </button>
+
+                {/* Join Smart Contract */}
+                <a
+                  href={smartContractLink}
+                  onClick={() => setToggleMenu(false)}
+                  className="flex items-center gap-4 px-3 py-3 rounded-2xl transition-colors"
+                  style={{ textDecoration: "none" }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = NAV_HOVER_BG)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                >
+                  <div
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0"
+                    style={{
+                      background: "linear-gradient(135deg,#f59e0b,#ef4444)",
+                    }}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    style={{
+                      color: NAV_TEXT,
+                      fontWeight: 500,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Join Smart Contract
+                  </span>
+                </a>
               </nav>
             </div>
           </div>
@@ -242,26 +519,45 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
       {settingsVisible && (
         <div className="fixed inset-0 z-[2018] flex items-end justify-center">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0"
+            style={{
+              background: "rgba(0,0,0,0.7)",
+              backdropFilter: "blur(6px)",
+            }}
             onClick={toggleSettingsPopup}
           />
-          <div className="relative bg-white rounded-t-3xl w-full max-w-md z-10 overflow-hidden pb-8">
-            {/* Handle */}
+          <div
+            className="relative rounded-t-3xl w-full max-w-md z-10 overflow-hidden pb-8"
+            style={{
+              background: SHEET_BG,
+              border: `1px solid ${DRAWER_BORDER}`,
+            }}
+          >
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-gray-200" />
+              <div
+                className="w-10 h-1 rounded-full"
+                style={{ background: "#1e293b" }}
+              />
             </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-base font-bold text-gray-900">Settings</h3>
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${DRAWER_BORDER}` }}
+            >
+              <h3
+                style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "1rem" }}
+              >
+                Settings
+              </h3>
               <button
                 onClick={toggleSettingsPopup}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                className="w-8 h-8 flex items-center justify-center rounded-full"
+                style={{ background: "rgba(255,255,255,0.06)" }}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500"
+                  className="w-5 h-5"
                   fill="none"
-                  stroke="currentColor"
+                  stroke="#94a3b8"
                   strokeWidth={2}
                   viewBox="0 0 24 24"
                 >
@@ -274,9 +570,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
               </button>
             </div>
 
-            {/* Settings Items */}
-            <div className="divide-y divide-gray-50">
-              {/* ── Profile ── */}
+            <div>
               <SettingsItem
                 gradient="linear-gradient(135deg,#6366f1,#a855f7)"
                 icon={
@@ -301,8 +595,6 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                 to="/profile"
                 onClick={closeAll}
               />
-
-              {/* ── Change Passcode ── */}
               <SettingsItem
                 gradient="linear-gradient(135deg,#7c3aed,#a855f7)"
                 icon={
@@ -332,8 +624,6 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   navigate("/change-passcode");
                 }}
               />
-
-              {/* ── 2FA ── */}
               <SettingsItem
                 gradient="linear-gradient(135deg,#3b82f6,#6366f1)"
                 icon={
@@ -363,8 +653,6 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   navigate("/two-factor-auth");
                 }}
               />
-
-              {/* ── Face Verification ── */}
               <SettingsItem
                 gradient="linear-gradient(135deg,#10b981,#0d9488)"
                 icon={
@@ -382,18 +670,6 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                       stroke="white"
                       strokeWidth="1.8"
                     />
-                    <path
-                      d="M9 9.5C9.5 8.5 10.5 8 12 8s2.5.5 3 1.5"
-                      stroke="white"
-                      strokeWidth="1.3"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M9 14.5c.5 1 1.5 1.5 3 1.5s2.5-.5 3-1.5"
-                      stroke="white"
-                      strokeWidth="1.3"
-                      strokeLinecap="round"
-                    />
                   </svg>
                 }
                 label="Face Verification"
@@ -407,8 +683,6 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   navigate("/face-verification");
                 }}
               />
-
-              {/* ── Referral (conditional) ── */}
               {user?.is_referral > 0 && (
                 <>
                   <SettingsItem
@@ -446,7 +720,6 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                     to="/referral-list"
                     onClick={closeAll}
                   />
-
                   <SettingsItem
                     gradient="linear-gradient(135deg,#f59e0b,#f97316)"
                     icon={
