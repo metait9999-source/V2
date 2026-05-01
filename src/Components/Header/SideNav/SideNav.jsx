@@ -10,7 +10,7 @@ const navItems = [
   { label: "Trade", icon: "/assets/images/menu/transaction.png", to: "/" },
   {
     label: "Arbitrage",
-    icon: "/assets/images/menu/accounts.png",
+    icon: "/assets/images/menu/knowledge.png",
     to: "/arbitrage",
   },
   { label: "Mining", icon: "/assets/images/menu/profits.png", to: "/mining" },
@@ -28,6 +28,11 @@ const navItems = [
     label: "Profit Statistics",
     icon: "/assets/images/menu/profits.png",
     to: "/profit-stat",
+  },
+  {
+    label: "Account",
+    icon: "/assets/images/menu/accounts.png",
+    to: "/account",
   },
 ];
 
@@ -194,7 +199,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                 ))}
 
                 {/* Chat */}
-                <Link
+                {/* <Link
                   to="/contact-us"
                   onClick={() => setToggleMenu(false)}
                   className="flex items-center gap-4 px-3 py-3 rounded-2xl hover:bg-purple-50 active:bg-purple-100 transition-colors group"
@@ -209,7 +214,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   <span className="text-gray-700 font-medium group-hover:text-purple-700 transition-colors">
                     Contact us
                   </span>
-                </Link>
+                </Link> */}
 
                 {/* Settings */}
                 <button
@@ -295,6 +300,37 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                 sublabel="View & edit your profile"
                 to="/profile"
                 onClick={closeAll}
+              />
+
+              {/* ── Change Passcode ── */}
+              <SettingsItem
+                gradient="linear-gradient(135deg,#7c3aed,#a855f7)"
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <rect
+                      x="3"
+                      y="11"
+                      width="18"
+                      height="11"
+                      rx="2"
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M7 11V7a5 5 0 0110 0v4"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="12" cy="16" r="1.5" fill="white" />
+                  </svg>
+                }
+                label="Change Passcode"
+                sublabel="Update your login passcode"
+                onClick={() => {
+                  closeAll();
+                  navigate("/change-passcode");
+                }}
               />
 
               {/* ── 2FA ── */}

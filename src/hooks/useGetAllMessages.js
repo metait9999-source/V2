@@ -3,31 +3,33 @@ import axios from "axios";
 import { API_BASE_URL } from "../api/getApiURL";
 
 const useGetAllMessages = (convId, userId) => {
-  const [messages, setMessages] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchAllMessages = useCallback(async () => {
+    // ✅ Guard — don't fetch if convId is null/undefined
+    if (!convId || !userId) return;
     try {
       setLoading(true);
       const response = await axios.get(
-        `${API_BASE_URL}/messages/${convId}/user/${userId}`
+        `${API_BASE_URL}/messages/${convId}/user/${userId}`,
       );
-      setMessages(response.data);
+      setMessages(response.data || []);
     } catch (err) {
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, [userId, convId]);
+  }, [convId, userId]);
 
   useEffect(() => {
-    if (userId) {
+    // ✅ Only fetch when both convId AND userId are available
+    if (convId && userId) {
       fetchAllMessages();
     }
-  }, [userId, fetchAllMessages]);
+  }, [convId, userId, fetchAllMessages]);
 
-  // Returning fetchLatestDeposit as refetch function
   return { messages, setMessages, loading, error, refetch: fetchAllMessages };
 };
 

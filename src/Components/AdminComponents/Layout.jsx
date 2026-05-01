@@ -16,21 +16,8 @@ import { useUser } from "../../context/UserContext";
 import ArbitrageDashboard from "./Arbitrage/ArbitrageDashboard";
 import MiningDashboard from "./Mining/MiningDashboard";
 import Loans from "./Loan/Loans";
-
-// const PAGE_TITLES = {
-//   "/panel": "Dashboard",
-//   "/panel/settings": "Edit Feature",
-//   "/panel/contact": "Contact",
-//   "/panel/live-support": "Inbox",
-//   "/panel/wallets": "Wallets",
-//   "/panel/new-wallet": "New Wallet",
-//   "/panel/edit-wallet": "Edit Wallet",
-//   "/panel/users": "Users",
-//   "/panel/admin-users": "Admin Users",
-//   "/panel/deposits": "Deposits",
-//   "/panel/withdraws": "Withdraws",
-//   "/panel/trading": "Trading",
-// };
+import ChatFAQs from "./ChatFaq/ChatFaq";
+import DepositToast from "./Sidebar/DepositToast";
 
 const Layout = () => {
   const { adminUser } = useUser();
@@ -125,14 +112,18 @@ const Layout = () => {
             {hasPermission("Mining") && (
               <Route path="/mining" element={<MiningDashboard />} />
             )}
-            import Loans from "./Loans/Loans";
             {hasPermission("Loans") && (
               <Route path="/loans" element={<Loans />} />
             )}
+
+            <Route path="/chat-faq" element={<ChatFAQs />} />
+
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
       </div>
+
+      <DepositToast />
     </div>
   );
 };

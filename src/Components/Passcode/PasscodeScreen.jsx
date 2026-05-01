@@ -128,7 +128,11 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center px-8"
-      onClick={focusInput}
+      onClick={(e) => {
+        // ✅ Don't refocus if clicking the chat button or its children
+        if (e.target.closest("[data-chat-button]")) return;
+        focusInput();
+      }}
       style={{
         background:
           "linear-gradient(145deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%)",

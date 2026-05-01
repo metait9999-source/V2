@@ -13,7 +13,7 @@ export const SocketContextProvider = ({ children }) => {
     if (user || adminUser) {
       const socket = io(apiURL, {
         query: {
-          userId: user?.id || 0,
+          userId: user?.id ?? 0,
         },
       });
       setSocket(socket);
