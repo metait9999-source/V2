@@ -1,516 +1,133 @@
-.home-header {
-  background: linear-gradient(145deg, #5b21b6 0%, #7c3aed 55%, #a78bfa 100%);
-  border-radius: 0 0 8vw 8vw;
-  padding: 5.86667vw 3.73333vw 6vw;
-  position: relative;
-  overflow: hidden;
-}
-
-.home-header::before {
-  content: "";
-  position: absolute;
-  top: -25%;
-  right: -15%;
-  width: 55vw;
-  height: 55vw;
-  background: rgba(196, 132, 252, 0.2);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.home-header::after {
-  content: "";
-  position: absolute;
-  bottom: -30%;
-  left: -10%;
-  width: 45vw;
-  height: 45vw;
-  background: rgba(109, 40, 217, 0.3);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.home-header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 2;
-}
-
-.header-icon-btn {
-  background: none;
-  border: none;
-  padding: 2vw;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-}
-
-.header-icon-btn img {
-  width: 5.33333vw;
-  filter: brightness(0) invert(1);
-}
-
-/* ---------- Metaverse Brand ---------- */
-.metaverse-brand {
-  display: flex;
-  align-items: center;
-  gap: 2.5vw;
-  color: #fff;
-  font-size: 5.5vw;
-  font-weight: 700;
-  font-family: "Inter", sans-serif;
-  letter-spacing: 0.02em;
-}
-
-.metaverse-logo-icon {
-  width: 9vw;
-  height: 9vw;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.metaverse-logo-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-/* ---------- Hero Banner ---------- */
-.hero-banner-card {
-  background: linear-gradient(
-    135deg,
-    rgba(46, 7, 100, 0.75) 0%,
-    rgba(76, 29, 149, 0.85) 100%
-  );
-  border-radius: 4vw;
-  margin-top: 5vw;
-  padding: 5vw 4vw 5vw 5vw;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-  z-index: 2;
-  min-height: 34vw;
-  overflow: hidden;
-}
-
-.hero-banner-content {
-  flex: 1;
-  z-index: 2;
-}
-
-.hero-banner-content h2 {
-  color: #fff;
-  font-size: 5.5vw;
-  font-weight: 700;
-  font-family: "Inter", sans-serif;
-  line-height: 1.4;
-  margin: 0;
-}
-
-.hero-banner-visual {
-  width: 36vw;
-  height: 28vw;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.defi-screen-mockup {
-  background: linear-gradient(135deg, #3730a3 0%, #4c1d95 100%);
-  border: 0.4vw solid rgba(196, 132, 252, 0.55);
-  border-radius: 3vw;
-  width: 32vw;
-  height: 24vw;
-  position: absolute;
-  right: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 2vw;
-  box-shadow: 0 4px 20px rgba(109, 40, 217, 0.4);
-}
-
-.defi-badge {
-  background: #7c3aed;
-  color: #fff;
-  font-size: 3.5vw;
-  font-weight: 700;
-  padding: 1.5vw 3vw;
-  border-radius: 2vw;
-}
-
-.hero-coin-icon {
-  font-size: 7.5vw;
-  color: #f59e0b;
-}
-
-.defi-dot {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.defi-dot-1 {
-  width: 4vw;
-  height: 4vw;
-  background: #a78bfa;
-  top: -2vw;
-  left: 4vw;
-  opacity: 0.7;
-}
-
-.defi-dot-2 {
-  width: 2.5vw;
-  height: 2.5vw;
-  background: #34d399;
-  bottom: 1vw;
-  right: 2vw;
-  opacity: 0.8;
-}
-
-/* ---------- Market Container Overrides ---------- */
-.user-panel .market_container .market_title {
-  display: flex;
-  align-items: center;
-  gap: 2.5vw;
-}
-
-.user-panel .market_container .market_title::before {
-  content: "";
-  display: inline-block;
-  width: 1.1vw;
-  height: 5.33333vw;
-  background: #7b2fbe;
-  border-radius: 1vw;
-  flex-shrink: 0;
-}
-
-.user-panel .market_container .market_tabs .tab_item {
-  border: 0.02667rem solid #7b2fbe;
-  color: #7b2fbe;
-}
-
-.user-panel .market_container .market_tabs .tab_item.active {
-  background: #7b2fbe;
-  border-color: #7b2fbe;
-  color: #fff;
-}
-
-/* ---------- Feature Cards Section ---------- */
-.feature-cards-section {
-  padding: 5vw 4.8vw 2vw;
+.market_pro_list {
   display: flex;
   flex-direction: column;
-  gap: 4vw;
+  gap: 0;
 }
 
-.feature-card {
-  border-radius: 4.5vw;
-  padding: 5vw;
+.pro_item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f0ebff;
-  overflow: hidden;
-  position: relative;
-  min-height: 32vw;
-  box-shadow: 0 2px 14px rgba(123, 47, 190, 0.1);
+  padding: 3.5vw 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  gap: 2vw;
 }
 
-.feature-card-text {
-  flex: 1;
-  z-index: 2;
-  padding-right: 2vw;
-}
-
-.feature-card-text h3 {
-  font-size: 4.8vw;
-  font-weight: 700;
-  color: #1a1a2e;
-  font-family: "Inter", sans-serif;
-  line-height: 1.3;
-  margin: 0 0 1.5vw;
-}
-
-.feature-card-text p {
-  font-size: 3.5vw;
-  color: #6b6b8d;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.feature-card-visual {
-  width: 30vw;
-  height: 26vw;
-  position: relative;
-  flex-shrink: 0;
-}
-
-/* AI Arbitrage visual */
-.ai-bg-circle-1 {
-  position: absolute;
-  width: 22vw;
-  height: 22vw;
-  background: linear-gradient(135deg, #c084fc 0%, #7c3aed 100%);
-  border-radius: 50%;
-  opacity: 0.45;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.ai-bg-circle-2 {
-  position: absolute;
-  width: 13vw;
-  height: 13vw;
-  background: linear-gradient(135deg, #a855f7 0%, #6d28d9 100%);
-  border-radius: 50%;
-  opacity: 0.65;
-  right: 7vw;
-  top: 0;
-}
-
-.ai-coin {
-  position: absolute;
-  width: 8vw;
-  height: 8vw;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4vw;
-  font-weight: 700;
-  color: #fff;
-  z-index: 3;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
-
-.ai-coin-btc {
-  background: #f59e0b;
-  right: 2vw;
-  bottom: 2vw;
-}
-
-.ai-coin-eth {
-  background: #6b7280;
-  right: 20vw;
-  top: 0;
-}
-
-.ai-screen {
-  position: absolute;
-  right: 6vw;
-  top: 28%;
-  width: 14vw;
-  height: 10vw;
-  background: linear-gradient(135deg, #6d28d9, #9333ea);
-  border-radius: 1.5vw;
-  opacity: 0.8;
-  z-index: 2;
-}
-
-/* Leveraged trading visual */
-.lev-chart-card {
-  position: absolute;
-  width: 22vw;
-  height: 18vw;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  border-radius: 2.5vw;
-  right: 2vw;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.65;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
-}
-
-.lev-chart-overlay {
-  position: absolute;
-  width: 16vw;
-  height: 13vw;
-  background: linear-gradient(135deg, #4c1d95, #7c3aed);
-  border-radius: 2vw;
-  right: 8vw;
-  bottom: 0;
-  opacity: 0.5;
-}
-
-.lev-coin-btc {
-  background: #f59e0b;
-  color: #fff;
-  position: absolute;
-  width: 8vw;
-  height: 8vw;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4vw;
-  font-weight: 700;
-  right: 6vw;
-  bottom: 2vw;
-  z-index: 3;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  animation: floatCoin 3s ease-in-out infinite;
-}
-
-@keyframes floatCoin {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-2vw);
-  }
-}
-
-/* ---------- Section Header ---------- */
-.section-header {
+.pro_base {
   display: flex;
   align-items: center;
   gap: 2.5vw;
-  margin-bottom: 4vw;
+  flex: 0 0 auto;
+  width: 28vw;
 }
 
-.section-accent {
-  display: inline-block;
-  width: 1.1vw;
-  height: 5.33333vw;
-  background: #7b2fbe;
-  border-radius: 1vw;
+.pro_base_icon {
+  width: 9vw;
+  height: 9vw;
+  border-radius: 50%;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
-.section-header h3 {
-  font-size: 5.33333vw;
-  font-weight: 800;
-  color: #000;
-  font-family: "Inter", sans-serif;
-  margin: 0;
-}
-
-/* ---------- Invite Friends ---------- */
-.invite-section {
-  padding: 4vw 4.8vw;
-}
-
-.invite-banner {
-  background: linear-gradient(130deg, #ec4899 0%, #a855f7 55%, #8b5cf6 100%);
-  border-radius: 4.5vw;
-  padding: 5vw 5vw 5vw 4vw;
-  display: flex;
-  align-items: center;
-  min-height: 38vw;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3);
-}
-
-.invite-banner::before {
-  content: "";
-  position: absolute;
-  top: -20%;
-  left: -10%;
-  width: 38vw;
-  height: 38vw;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.invite-visual {
-  width: 32vw;
-  height: 28vw;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.inv-coin {
-  position: absolute;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.pro_title {
+  font-size: 3.8vw;
   font-weight: 700;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-
-.inv-coin-btc {
-  background: #f59e0b;
-  width: 14vw;
-  height: 14vw;
-  font-size: 6vw;
-  top: 5%;
-  left: 10%;
-}
-
-.inv-coin-eth {
-  background: #6b7280;
-  width: 10vw;
-  height: 10vw;
-  font-size: 4.5vw;
-  bottom: 10%;
-  right: 0;
-}
-
-.inv-coin-small {
-  background: #34d399;
-  width: 7vw;
-  height: 7vw;
-  font-size: 3vw;
-  top: 45%;
-  left: 50%;
-}
-
-.invite-content {
-  flex: 1;
-  text-align: right;
-  z-index: 2;
-}
-
-.invite-content h3 {
-  color: #fff;
-  font-size: 5vw;
-  font-weight: 700;
-  font-family: "Inter", sans-serif;
+  color: #f1f5f9; /* overriding legacy fc-353F52 → light for dark bg */
   line-height: 1.3;
-  margin: 0 0 4vw;
 }
 
-.invite-btn {
-  display: inline-block;
-  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
-  color: #fff;
-  font-size: 3.73333vw;
-  font-weight: 600;
-  padding: 2.5vw 5vw;
-  border-radius: 8vw;
-  text-decoration: none;
-  font-family: "Inter", sans-serif;
-  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.45);
-}
-
-/* ---------- News Section Override ---------- */
-.news_container .home_news .news_title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.news_container .section-header {
-  margin-bottom: 0;
-}
-
-.news_container .section-header h3 {
-  font-size: 5.33333vw;
-  font-weight: 800;
-}
-
-/* ---------- CryptoMarket item label update ---------- */
-.pro_subtitle-usdt {
+.pro_subtitle {
   font-size: 3.2vw;
-  color: #5f6775;
+  color: #64748b; /* overriding legacy fc-5F6775 → slate-500 */
   margin-top: 0.5vw;
+}
+
+/* chart column */
+.pro_line {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lineBoard {
+  width: 100%;
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 56px;
+}
+
+/* price + change column */
+.pro_detail {
+  flex: 0 0 auto;
+  text-align: right;
+  width: 22vw;
+}
+
+.pro_price {
+  font-size: 3.8vw;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+}
+
+.pro_change {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1vw;
+  margin-top: 0.5vw;
+}
+
+.change_value {
+  font-size: 3.2vw;
+  font-weight: 600;
+}
+
+.period {
+  font-size: 2.8vw;
+  color: #475569;
+}
+
+/* ── Legacy utility classes (kept for CryptoMarket / ForexMarket children) ── */
+.ff_NunitoBold {
+  font-weight: 700;
+}
+.fc-353F52 {
+  color: #f1f5f9;
+} /* remapped to white for dark theme */
+.fc-5F6775 {
+  color: #64748b;
+}
+.fc-8CC351 {
+  color: #22c55e;
+}
+.fc-1652F0 {
+  color: #818cf8;
+} /* remapped accent for dark bg */
+.fs-15 {
+  font-size: 3.8vw;
+}
+.fs-16 {
+  font-size: 4vw;
+}
+.fs-20 {
+  font-size: 5vw;
+}
+.m-r-10 {
+  margin-right: 2.5vw;
+}
+.ff_InterSemiBold {
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+}
+.ff_NunitoSemiBold {
+  font-weight: 600;
+}
+.over-line-1 {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

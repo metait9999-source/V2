@@ -2,15 +2,13 @@ import React, { useState, useEffect } from "react";
 import Chart from "../Chart/chart";
 import { Link } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-// import imgPath from '../../Assets/images/coins';
 
 function CryptoMarket() {
   const [marketData, setMarketData] = useState([]);
   const { setLoading } = useUser();
   const cryptoURL =
     "https://api.coinlore.net/api/ticker/?id=90,2679,2,257,80,1,89,2713,2321,58,48543,118,2710,54683,44883,33422,2751,45219,48563,47305,111341,33718,48569,121619,32607,93845,135601,46183,121593,2741,46018,12377,42441,33830,70497,121613,46561,36447,33644,32360,33536,34406,46981";
-  // const cryptoURL = "https://api.coinlore.net/api/tickers/";
-  //   const [activeWallet, setActiveWallet] = useState(null);
+
   useEffect(() => {
     setLoading(true);
     async function fetchMarketData() {
@@ -18,85 +16,99 @@ function CryptoMarket() {
         const response = await fetch(cryptoURL);
         const data = await response.json();
         setMarketData(data);
-        // setMarketData(data.data); // for all coin
         setLoading(false);
       } catch (error) {
         console.error("Error fetching market data:", error);
         setLoading(false);
       }
     }
-
     fetchMarketData();
   }, [setLoading]);
 
   return (
-    <>
-      <div className="market_pro_list">
-        {marketData.map((coin) => (
+    <div className="flex flex-col">
+      {marketData.map((coin) => {
+        const isPositive = Number(coin.percent_change_24h) >= 0;
+        return (
           <Link
             key={coin.id}
-            className="pro_item"
             to={`/business?coin=${coin.id}&type=crypto`}
+            className="flex items-center justify-between py-3 gap-2 no-underline"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <div className="pro_base">
+            {/* coin info */}
+            <div
+              className="flex items-center gap-2 flex-shrink-0"
+              style={{ width: "28vw" }}
+            >
               <img
                 src={`/assets/images/coins/${coin.symbol.toLowerCase()}-logo.png`}
-                className="pro_base_icon"
                 alt={`${coin.symbol} Logo`}
+                className="rounded-full object-contain flex-shrink-0 bg-white"
+                style={{ width: "9vw", height: "9vw" }}
               />
               <div>
-                <div className="pro_title ff_NunitoBold fc-353F52">
+                <div
+                  className="font-bold text-slate-100"
+                  style={{ fontSize: "3.8vw" }}
+                >
                   {coin.symbol}
                 </div>
-                <div className="pro_subtitle fc-5F6775">USDT</div>
-              </div>
-            </div>
-            <div className="pro_line">
-              <div
-                className="lineBoard"
-                style={{
-                  userSelect: "none",
-                  WebkitTapHighlightColor: "rgba(0, 0, 0, 0)",
-                  position: "relative",
-                }}
-              >
-                <div className="chart-wrapper">
-                  <Chart
-                    color={
-                      Number(coin.percent_change_24h) >= 0
-                        ? "#10b981"
-                        : "#ef4444"
-                    }
-                    one={coin?.percent_change_1h}
-                    four={coin?.percent_change_24h}
-                    seven={coin?.percent_change_7d}
-                  />
+                <div
+                  className="text-slate-500 mt-0.5"
+                  style={{ fontSize: "3.2vw" }}
+                >
+                  USDT
                 </div>
               </div>
             </div>
-            <div className="pro_detail">
-              <div className="pro_price fs-15 fc-353F52">
-                US$ {parseFloat(coin.price_usd).toFixed(3)}
+
+            {/* chart */}
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div
+                className="w-full"
+                style={{
+                  height: 56,
+                  userSelect: "none",
+                  WebkitTapHighlightColor: "rgba(0,0,0,0)",
+                }}
+              >
+                <Chart
+                  color={isPositive ? "#10b981" : "#ef4444"}
+                  one={coin?.percent_change_1h}
+                  four={coin?.percent_change_24h}
+                  seven={coin?.percent_change_7d}
+                />
               </div>
-              <div className="pro_change">
+            </div>
+
+            {/* price + change */}
+            <div className="flex-shrink-0 text-right" style={{ width: "25vw" }}>
+              <div
+                className="font-bold text-slate-100"
+                style={{ fontSize: "3.8vw" }}
+              >
+                ${parseFloat(coin.price_usd).toFixed(3)}
+              </div>
+              <div className="flex items-center justify-end gap-1 mt-0.5">
                 <span
-                  className="change_value fc-8CC351 m-r-10"
+                  className="font-semibold"
                   style={{
-                    color:
-                      coin.percent_change_24h < 0
-                        ? "rgb(207, 32, 47)"
-                        : "rgb(19, 178, 111)",
+                    fontSize: "3.2vw",
+                    color: isPositive ? "rgb(19,178,111)" : "rgb(207,32,47)",
                   }}
                 >
-                  {coin.percent_change_24h}%{" "}
+                  {coin.percent_change_24h}%
                 </span>
-                <span className="period">24 Hrs</span>
+                <span className="text-slate-500" style={{ fontSize: "2.8vw" }}>
+                  24 Hrs
+                </span>
               </div>
             </div>
           </Link>
-        ))}
-      </div>
-    </>
+        );
+      })}
+    </div>
   );
 }
 

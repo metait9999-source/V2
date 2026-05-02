@@ -4,31 +4,26 @@ import { Link } from "react-router-dom";
 import Chart from "../Chart/chart";
 import { useUser } from "../../context/UserContext";
 
-// Import dynamic images
 const forexImages = require.context(
   "../../Assets/images/coins",
   false,
-  /\.(png|jpe?g|svg)$/
+  /\.(png|jpe?g|svg)$/,
 );
 
-// Helper function to get image paths
 const getImagePath = (symbol) => {
   try {
     return forexImages(`./${symbol.toLowerCase()}-logo.png`);
-  } catch (error) {
-    console.error("Image not found:", symbol);
-    return "/assets/images/default-forex-logo.png"; // Default image if not found
+  } catch {
+    return "/assets/images/default-forex-logo.png";
   }
 };
 
-// ForexMarket Component
 const ForexMarket = () => {
   const [forexMarkets, setForexMarkets] = useState([]);
   const [wallet, setWallet] = useState(null);
   const { setLoading } = useUser();
 
   useEffect(() => {
-    // Fetch Forex market data
     setLoading(true);
     const fetchForexMarkets = async () => {
       const response = await fetch(`${API_BASE_URL}/market/forex`);
@@ -38,86 +33,96 @@ const ForexMarket = () => {
         setLoading(false);
       }
     };
-
-    // Fetch Wallet data (simulating WordPress get_posts)
     const fetchWallet = async () => {
-      const walletData = {
-        id: 1,
-        coin_symbol: "ETH",
-        status: "active",
-      };
-      setWallet(walletData);
+      setWallet({ id: 1, coin_symbol: "ETH", status: "active" });
     };
-
     fetchForexMarkets();
     fetchWallet();
   }, [setLoading]);
 
   return (
-    <div className="market_pro_list">
+    <div className="flex flex-col">
       {forexMarkets.map((fx, index) => {
         const meta = fx.response[0].meta;
         const symbol = meta.symbol.replace("=X", "");
         const imagePath = getImagePath(symbol);
         const marketPrice = meta.regularMarketPrice;
-        const previousClose = meta.previousClose;
-        const priceChange = (marketPrice - previousClose).toFixed(5);
-        const one = meta.regularMarketDayHigh;
-        const four = meta.regularMarketDayLow;
-        const seven = meta.regularMarketPrice;
+        const priceChange = (marketPrice - meta.previousClose).toFixed(5);
+        const isPositive = priceChange >= 0;
 
         return (
           <Link
             key={index}
-            className="pro_item"
             to={`/business?coin=${symbol}&type=forex`}
+            className="flex items-center justify-between py-3 gap-2 no-underline"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <div className="pro_base">
+            {/* coin info */}
+            <div
+              className="flex items-center gap-2 flex-shrink-0"
+              style={{ width: "32vw" }}
+            >
               <img
                 src={imagePath}
-                className="pro_base_icon"
                 alt={`${symbol} Logo`}
+                className="rounded-full object-contain flex-shrink-0"
+                style={{ width: "9vw", height: "9vw" }}
               />
               <div>
-                <div className="pro_title ff_NunitoBold fc-353F52">
+                <div
+                  className="font-bold text-slate-100"
+                  style={{ fontSize: "3.8vw" }}
+                >
                   {symbol.replace(meta.currency, ` / ${meta.currency}`)}
                 </div>
-                <div className="pro_subtitle fc-5F6775">
+                <div
+                  className="text-slate-500 mt-0.5"
+                  style={{ fontSize: "3.2vw" }}
+                >
                   {wallet ? `${wallet.coin_symbol} Wallet` : ""}
                 </div>
               </div>
             </div>
-            <div className="pro_line">
+
+            {/* chart */}
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div
-                className="lineBoard"
+                className="w-full"
                 style={{
+                  height: 56,
                   userSelect: "none",
-                  WebkitTapHighlightColor: "rgba(0, 0, 0, 0)",
-                  position: "relative",
+                  WebkitTapHighlightColor: "rgba(0,0,0,0)",
                 }}
               >
-                <div className="chart-wrapper">
-                  <Chart one={one} seven={seven} four={four} />
-                </div>
+                <Chart
+                  one={meta.regularMarketDayHigh}
+                  four={meta.regularMarketDayLow}
+                  seven={meta.regularMarketPrice}
+                />
               </div>
             </div>
-            <div className="pro_detail">
-              <div className="pro_price fs-15 fc-353F52">
-                US$ {marketPrice.toFixed(3)}
+
+            {/* price + change */}
+            <div className="flex-shrink-0 text-right" style={{ width: "28vw" }}>
+              <div
+                className="font-bold text-slate-100"
+                style={{ fontSize: "3.8vw" }}
+              >
+                ${marketPrice.toFixed(3)}
               </div>
-              <div className="pro_change">
+              <div className="flex items-center justify-end gap-1 mt-0.5">
                 <span
-                  className="change_value fc-8CC351 m-r-10"
+                  className="font-semibold"
                   style={{
-                    color:
-                      priceChange < 0
-                        ? "rgb(207, 32, 47)"
-                        : "rgb(19, 178, 111)",
+                    fontSize: "3.2vw",
+                    color: isPositive ? "rgb(19,178,111)" : "rgb(207,32,47)",
                   }}
                 >
                   {priceChange}
                 </span>
-                <span className="period">24 Hrs</span>
+                <span className="text-slate-500" style={{ fontSize: "2.8vw" }}>
+                  24 Hrs
+                </span>
               </div>
             </div>
           </Link>

@@ -46,15 +46,14 @@ const WALLET_RETRY_INTERVAL = 300;
 const SESSION_KEY = "passcode_verified";
 const LOCK_TIMEOUT_MS = 0;
 
+/* ─── Contact menu option ── */
 const ContactMenuOption = ({ href, icon, label, sublabel, gradient }) => {
   if (!href) return null;
-
   return (
     <a
       href={href}
-      // target="_blank"
       rel="noopener noreferrer"
-      onTouchEnd={(e) => {
+      onTouchEnd={() => {
         window.location.href = href;
       }}
       style={{
@@ -79,7 +78,7 @@ const ContactMenuOption = ({ href, icon, label, sublabel, gradient }) => {
           justifyContent: "center",
           color: "white",
           flexShrink: 0,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
         }}
       >
         {icon}
@@ -90,13 +89,13 @@ const ContactMenuOption = ({ href, icon, label, sublabel, gradient }) => {
             margin: 0,
             fontWeight: 700,
             fontSize: 14,
-            color: "#1f2937",
+            color: "#f1f5f9",
             lineHeight: 1.2,
           }}
         >
           {label}
         </p>
-        <p style={{ margin: 0, fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+        <p style={{ margin: 0, fontSize: 11, color: "#64748b", marginTop: 2 }}>
           {sublabel}
         </p>
       </div>
@@ -104,11 +103,12 @@ const ContactMenuOption = ({ href, icon, label, sublabel, gradient }) => {
   );
 };
 
+/* ─── Draggable chat button ── */
 const DraggableChatButton = ({ user, isPasscodeScreen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const btnRef = useRef(null);
-  const menuRef = useRef(null); // ← ADD separate ref for menu
+  const menuRef = useRef(null);
 
   const [showMenu, setShowMenu] = useState(false);
   const [showInlineChat, setShowInlineChat] = useState(false);
@@ -123,7 +123,6 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
   const posRef = useRef(pos);
   posRef.current = pos;
 
-  // ✅ ONLY mousedown — NO touchstart on document
   useEffect(() => {
     if (!showMenu) return;
     const handler = (e) => {
@@ -146,56 +145,49 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
   });
 
   const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    touchStart.current = { x: touch.clientX, y: touch.clientY };
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
     dragStart.current = {
-      x: touch.clientX - posRef.current.x,
-      y: touch.clientY - posRef.current.y,
+      x: t.clientX - posRef.current.x,
+      y: t.clientY - posRef.current.y,
     };
     setDragging(false);
   };
-
   const handleTouchMove = (e) => {
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStart.current.x;
-    const dy = touch.clientY - touchStart.current.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance > 8) {
+    const t = e.touches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = t.clientY - touchStart.current.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 8) {
       e.preventDefault();
-      const newPos = clamp(
-        touch.clientX - dragStart.current.x,
-        touch.clientY - dragStart.current.y,
+      setPos(
+        clamp(t.clientX - dragStart.current.x, t.clientY - dragStart.current.y),
       );
-      setPos(newPos);
       setDragging(true);
     }
   };
-
   const handleTouchEnd = (e) => {
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStart.current.x;
-    const dy = touch.clientY - touchStart.current.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = t.clientY - touchStart.current.y;
     setDragging(false);
-    if (distance < 8) {
+    if (Math.sqrt(dx * dx + dy * dy) < 8) {
       e.preventDefault();
       if (document.activeElement) document.activeElement.blur();
       setShowMenu((p) => !p);
     }
   };
-
   const handleMouseDown = (e) => {
     if (document.activeElement) document.activeElement.blur();
-    const startX = e.clientX;
-    const startY = e.clientY;
+    const sx = e.clientX,
+      sy = e.clientY;
     dragStart.current = {
       x: e.clientX - posRef.current.x,
       y: e.clientY - posRef.current.y,
     };
     let moved = false;
     const onMove = (e) => {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+      const dx = e.clientX - sx,
+        dy = e.clientY - sy;
       if (Math.sqrt(dx * dx + dy * dy) > 8) {
         moved = true;
         setDragging(true);
@@ -219,11 +211,8 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
 
   const handleLiveChatClick = () => {
     setShowMenu(false);
-    if (isPasscodeScreen) {
-      setShowInlineChat(true);
-    } else {
-      navigate("/live-chat");
-    }
+    if (isPasscodeScreen) setShowInlineChat(true);
+    else navigate("/live-chat");
   };
 
   const menuBottom = window.innerHeight - pos.y + 16;
@@ -236,10 +225,10 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
       )}
 
       <div ref={btnRef}>
-        {/* ── Contact menu ── */}
+        {/* Contact menu */}
         {showMenu && (
           <div
-            ref={menuRef} // ← attach menuRef here
+            ref={menuRef}
             style={{
               position: "fixed",
               bottom: menuBottom,
@@ -247,7 +236,6 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
               zIndex: 9998,
               animation: "fadeSlideUp 0.2s ease",
             }}
-            // ✅ Stop everything from bubbling to document
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
@@ -257,12 +245,12 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
             <div
               style={{
                 width: 250,
-                background: "white",
+                background: "#111118",
                 borderRadius: 24,
                 boxShadow:
-                  "0 20px 60px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.08)",
+                  "0 20px 60px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3)",
                 overflow: "hidden",
-                border: "1px solid rgba(0,0,0,0.06)",
+                border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
               {/* Header */}
@@ -378,7 +366,7 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
                         margin: 0,
                         fontWeight: 700,
                         fontSize: 14,
-                        color: "#1f2937",
+                        color: "#f1f5f9",
                         lineHeight: 1.2,
                       }}
                     >
@@ -388,7 +376,7 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
                       style={{
                         margin: 0,
                         fontSize: 11,
-                        color: "#9ca3af",
+                        color: "#64748b",
                         marginTop: 2,
                       }}
                     >
@@ -397,7 +385,6 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
                   </div>
                 </button>
 
-                {/* WhatsApp */}
                 <ContactMenuOption
                   href={window.__whatsapp}
                   icon={<FaWhatsapp size={18} />}
@@ -405,8 +392,6 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
                   sublabel="Message us on WhatsApp"
                   gradient="linear-gradient(135deg,#25d366,#128c7e)"
                 />
-
-                {/* Telegram */}
                 <ContactMenuOption
                   href={window.__telegram}
                   icon={<FaTelegram size={18} />}
@@ -417,7 +402,7 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
               </div>
             </div>
 
-            {/* Arrow */}
+            {/* Arrow pointing down */}
             <div
               style={{
                 display: "flex",
@@ -431,15 +416,15 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
                   height: 0,
                   borderLeft: "8px solid transparent",
                   borderRight: "8px solid transparent",
-                  borderTop: "8px solid white",
-                  filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.06))",
+                  borderTop: "8px solid #111118",
+                  filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
                 }}
               />
             </div>
           </div>
         )}
 
-        {/* ── Floating button ── */}
+        {/* Floating button */}
         <div
           data-chat-button="true"
           onMouseDown={handleMouseDown}
@@ -502,6 +487,7 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
     </>
   );
 };
+
 /* ══════════════════════════════════════════════════════════
    APP
 ══════════════════════════════════════════════════════════ */
@@ -510,7 +496,6 @@ function App() {
   const [account, setAccount] = useState(null);
   const [isTrustWallet, setIsTrustWallet] = useState(false);
   const [referral] = useState("");
-
   const [passcodeMode, setPasscodeMode] = useState(null);
   const [passcodeVerified, setPasscodeVerified] = useState(
     () => sessionStorage.getItem(SESSION_KEY) === "true",
@@ -525,7 +510,6 @@ function App() {
   const { setSelectedConversation, setMessages } = useConversation();
   useListenMessages();
 
-  // ── Load settings ─────────────────────────────────────────
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -539,21 +523,17 @@ function App() {
     loadSettings();
   }, []);
 
-  // ── Lock on visibility hidden ─────────────────────────────
   useEffect(() => {
     window.__cameraActive = false;
-
     const lockApp = () => {
       if (window.__cameraActive) return;
       sessionStorage.removeItem(SESSION_KEY);
       setPasscodeVerified(false);
       setPasscodeMode(null);
     };
-
     const handleFileInputClick = (e) => {
       if (e.target.type === "file") window.__cameraActive = true;
     };
-
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         if (LOCK_TIMEOUT_MS === 0) lockApp();
@@ -566,15 +546,12 @@ function App() {
         }
       }
     };
-
     const handlePageHide = () => {
       if (!window.__cameraActive) lockApp();
     };
-
     document.addEventListener("click", handleFileInputClick, true);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", handlePageHide);
-
     return () => {
       document.removeEventListener("click", handleFileInputClick, true);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -583,14 +560,13 @@ function App() {
     };
   }, []);
 
-  // ── Wallet ────────────────────────────────────────────────
   const connectWallet = useCallback(async () => {
     if (hasConnectedRef.current) return;
     try {
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      if (!accounts || accounts.length === 0) return;
+      if (!accounts?.length) return;
       hasConnectedRef.current = true;
       web3Ref.current = new Web3(window.ethereum);
       setAccount(accounts[0]);
@@ -611,16 +587,14 @@ function App() {
       if (window.ethereum) {
         clearInterval(retryTimerRef.current);
         connectWallet();
-      } else if (Date.now() - start >= WALLET_DETECT_TIMEOUT) {
+      } else if (Date.now() - start >= WALLET_DETECT_TIMEOUT)
         clearInterval(retryTimerRef.current);
-      }
     }, WALLET_RETRY_INTERVAL);
   }, [connectWallet]);
 
   useEffect(() => {
-    if (!window.location.hash) {
+    if (!window.location.hash)
       window.location.replace(`${window.location.href}#/`);
-    }
     detectAndConnect();
     const handleEthereumReady = () => {
       if (!hasConnectedRef.current) connectWallet();
@@ -632,7 +606,6 @@ function App() {
     };
   }, [detectAndConnect, connectWallet]);
 
-  // ── Initialize user ───────────────────────────────────────
   useEffect(() => {
     if (!isConnected || !isTrustWallet || !account) return;
     const initializeUser = async () => {
@@ -649,9 +622,8 @@ function App() {
           setSelectedConversation(null);
           return;
         }
-        if (!passcodeVerified) {
+        if (!passcodeVerified)
           setPasscodeMode(result.has_passcode ? "verify" : "set");
-        }
         setMessages([]);
         setSelectedConversation(null);
       } catch (error) {
@@ -672,7 +644,6 @@ function App() {
     passcodeVerified,
   ]);
 
-  // ── Passcode callbacks ────────────────────────────────────
   const handlePasscodeSuccess = useCallback(
     async (userData) => {
       sessionStorage.setItem(SESSION_KEY, "true");
@@ -711,20 +682,13 @@ function App() {
   const showChatBtn = showMainApp || showPasscode;
 
   return (
-    <div>
+    /* ── root: always dark so no white flash ── */
+    <div style={{ background: "#0a0a0f", minHeight: "100vh" }}>
       <style>{`
-        @keyframes pulse-ring {
-          0%   { transform: scale(1);   opacity: 0.8; }
-          100% { transform: scale(1.6); opacity: 0;   }
-        }
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0);    }
-        }
-        @keyframes slideUpModal {
-          from { opacity: 0; transform: translateY(30px); }
-          to   { opacity: 1; transform: translateY(0);    }
-        }
+        body { background: #0a0a0f !important; }
+        @keyframes pulse-ring  { 0%{transform:scale(1);opacity:0.8}  100%{transform:scale(1.6);opacity:0} }
+        @keyframes fadeSlideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideUpModal{ from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       {loading && (
@@ -791,7 +755,6 @@ function App() {
         )}
       </div>
 
-      {/* ✅ Chat button: shows on main app AND passcode screen */}
       {showChatBtn && (
         <DraggableChatButton user={user} isPasscodeScreen={showPasscode} />
       )}

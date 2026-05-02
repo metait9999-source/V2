@@ -1,21 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 
 const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
-  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const [digits, setDigits] = useState(Array(6).fill(""));
+  const [confirmDigits, setConfirmDigits] = useState(Array(6).fill(""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [confirmDigits, setConfirmDigits] = useState(["", "", "", "", "", ""]);
   const [step, setStep] = useState("enter");
-  const hiddenInputRef = useRef(null);
+  const hiddenRef = useRef(null);
 
   const currentDigits = step === "confirm" ? confirmDigits : digits;
   const setCurrentDigits = step === "confirm" ? setConfirmDigits : setDigits;
 
   useEffect(() => {
-    setTimeout(() => hiddenInputRef.current?.focus(), 100);
+    setTimeout(() => hiddenRef.current?.focus(), 100);
   }, [step]);
 
-  const focusInput = () => hiddenInputRef.current?.focus();
+  const focusInput = () => hiddenRef.current?.focus();
 
   const handleInput = (e) => {
     const raw = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -23,40 +23,31 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
     while (arr.length < 6) arr.push("");
     setCurrentDigits(arr);
     setError("");
-
-    if (raw.length === 6) {
-      setTimeout(() => handleSubmit(arr), 100);
-    }
+    if (raw.length === 6) setTimeout(() => handleSubmit(arr), 100);
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Backspace") {
-      const current = currentDigits.join("");
-      if (current.length === 0) return;
-      const next = current.slice(0, -1).split("");
+      const cur = currentDigits.join("");
+      if (!cur.length) return;
+      const next = cur.slice(0, -1).split("");
       while (next.length < 6) next.push("");
       setCurrentDigits(next);
       setError("");
-      // Keep hidden input in sync
-      e.target.value = current.slice(0, -1);
+      e.target.value = cur.slice(0, -1);
       e.preventDefault();
     }
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 6);
-    if (!pasted) return;
-    const arr = pasted.split("");
+    const p = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!p) return;
+    const arr = p.split("");
     while (arr.length < 6) arr.push("");
     setCurrentDigits(arr);
     setError("");
-    if (pasted.length === 6) {
-      setTimeout(() => handleSubmit(arr), 100);
-    }
+    if (p.length === 6) setTimeout(() => handleSubmit(arr), 100);
   };
 
   const handleSubmit = async (digitArr) => {
@@ -67,22 +58,20 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
     if (mode === "set") {
       if (step === "enter") {
         setStep("confirm");
-        setConfirmDigits(["", "", "", "", "", ""]);
-        if (hiddenInputRef.current) hiddenInputRef.current.value = "";
-        setTimeout(() => hiddenInputRef.current?.focus(), 100);
+        setConfirmDigits(Array(6).fill(""));
+        if (hiddenRef.current) hiddenRef.current.value = "";
+        setTimeout(() => hiddenRef.current?.focus(), 100);
         return;
       }
-
       if (digits.join("") !== code) {
         setError("Passcodes do not match. Try again.");
-        setDigits(["", "", "", "", "", ""]);
-        setConfirmDigits(["", "", "", "", "", ""]);
+        setDigits(Array(6).fill(""));
+        setConfirmDigits(Array(6).fill(""));
         setStep("enter");
-        if (hiddenInputRef.current) hiddenInputRef.current.value = "";
-        setTimeout(() => hiddenInputRef.current?.focus(), 100);
+        if (hiddenRef.current) hiddenRef.current.value = "";
+        setTimeout(() => hiddenRef.current?.focus(), 100);
         return;
       }
-
       try {
         setLoading(true);
         const { setPasscode } = await import("../../api/auth.api");
@@ -92,13 +81,13 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         });
         onSuccess(res.data.user || null);
       } catch (err) {
-        const errMsg = err?.response?.data?.error || "";
-        if (errMsg === "Passcode already set") {
+        const msg = err?.response?.data?.error || "";
+        if (msg === "Passcode already set") {
           setError("Passcode already exists. Please verify instead.");
           setTimeout(() => onError("switch_to_verify"), 1500);
           return;
         }
-        setError(errMsg || "Failed to set passcode");
+        setError(msg || "Failed to set passcode");
       } finally {
         setLoading(false);
       }
@@ -115,9 +104,9 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
       onSuccess(res.data.user);
     } catch {
       setError("Incorrect passcode. Try again.");
-      setDigits(["", "", "", "", "", ""]);
-      if (hiddenInputRef.current) hiddenInputRef.current.value = "";
-      setTimeout(() => hiddenInputRef.current?.focus(), 100);
+      setDigits(Array(6).fill(""));
+      if (hiddenRef.current) hiddenRef.current.value = "";
+      setTimeout(() => hiddenRef.current?.focus(), 100);
     } finally {
       setLoading(false);
     }
@@ -129,24 +118,38 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
     <div
       className="fixed inset-0 flex flex-col items-center justify-center px-8"
       onClick={(e) => {
-        // ✅ Don't refocus if clicking the chat button or its children
         if (e.target.closest("[data-chat-button]")) return;
         focusInput();
       }}
-      style={{
-        background:
-          "linear-gradient(145deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%)",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
+      style={{ background: "#0a0a0f" }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
-
-      {/* Hidden real input */}
+      <style>{`
+        @keyframes floatUp {
+          0%,100% { transform:translateY(0) scale(1); opacity:var(--op); }
+          50%      { transform:translateY(-16px) scale(1.08); }
+        }
+        @keyframes shake {
+          0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)} 30%{transform:translateX(8px)}
+          45%{transform:translateX(-6px)} 60%{transform:translateX(6px)} 75%{transform:translateX(-3px)} 90%{transform:translateX(3px)}
+        }
+        @keyframes pulseGlow {
+          0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0)} 50%{box-shadow:0 0 24px 6px rgba(124,58,237,0.3)}
+        }
+        @keyframes scanLine {
+          0%{top:0%;opacity:0.6} 100%{top:100%;opacity:0}
+        }
+        @keyframes digitPop {
+          0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)}
+        }
+        @keyframes successFlash {
+          0%{background:rgba(16,185,129,0.08)} 50%{background:rgba(16,185,129,0.2)} 100%{background:rgba(16,185,129,0.08)}
+        }
+        @keyframes stepSlideIn {
+          from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)}
+        }
+      `}</style>
       <input
-        ref={hiddenInputRef}
+        ref={hiddenRef}
         type="tel"
         inputMode="numeric"
         maxLength={6}
@@ -163,32 +166,54 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         }}
       />
 
-      {/* Icon */}
-      <div
-        className="w-16 h-16 rounded-3xl flex items-center justify-center mb-8"
-        style={{ background: "rgba(255,255,255,0.15)" }}
-      >
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-          <rect
-            x="3"
-            y="11"
-            width="18"
-            height="11"
-            rx="2"
-            stroke="white"
-            strokeWidth="2"
-          />
-          <path
-            d="M7 11V7a5 5 0 0110 0v4"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <circle cx="12" cy="16" r="1.5" fill="white" />
-        </svg>
+      {/* Lock icon */}
+      <div className="relative flex items-center justify-center mb-5">
+        <div
+          className="absolute w-20 h-20 rounded-full"
+          style={{
+            background: "rgba(124,58,237,0.1)",
+            animation: "pulseGlow 2.5s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center relative z-10"
+          style={{
+            background:
+              "linear-gradient(135deg,rgba(124,58,237,0.25),rgba(168,85,247,0.15))",
+            border: "1px solid rgba(124,58,237,0.35)",
+          }}
+        >
+          <div className="absolute inset-0 rounded-2xl overflow-hidden">
+            <div
+              className="absolute w-full h-0.5"
+              style={{
+                background:
+                  "linear-gradient(90deg,transparent,rgba(167,139,250,0.5),transparent)",
+                animation: "scanLine 2.5s linear infinite",
+              }}
+            />
+          </div>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <rect
+              x="3"
+              y="11"
+              width="18"
+              height="11"
+              rx="2"
+              stroke="#a78bfa"
+              strokeWidth="2"
+            />
+            <path
+              d="M7 11V7a5 5 0 0110 0v4"
+              stroke="#a78bfa"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <circle cx="12" cy="16" r="1.5" fill="#a78bfa" />
+          </svg>
+        </div>
       </div>
 
-      {/* Title */}
       <p className="text-white font-black text-2xl mb-2 text-center">
         {mode === "set"
           ? step === "confirm"
@@ -204,7 +229,7 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
           : "Enter your 6-digit passcode to continue"}
       </p>
 
-      {/* Visual boxes — display only */}
+      {/* Digit boxes */}
       <div className="flex items-center gap-3 mb-6" onClick={focusInput}>
         {currentDigits.map((d, i) => (
           <div
@@ -216,7 +241,7 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
                 : "rgba(255,255,255,0.12)",
               border:
                 i === filledCount && !loading
-                  ? "2px solid rgba(255,255,255,0.9)" // active box highlight
+                  ? "2px solid rgba(255,255,255,0.9)"
                   : d
                     ? "2px solid rgba(255,255,255,0.6)"
                     : "2px solid rgba(255,255,255,0.2)",
@@ -229,16 +254,16 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         ))}
       </div>
 
-      {/* Clear button */}
+      {/* Clear */}
       {filledCount > 0 && !loading && (
         <button
           onClick={() => {
-            setCurrentDigits(["", "", "", "", "", ""]);
-            if (hiddenInputRef.current) hiddenInputRef.current.value = "";
+            setCurrentDigits(Array(6).fill(""));
+            if (hiddenRef.current) hiddenRef.current.value = "";
             setError("");
-            setTimeout(() => hiddenInputRef.current?.focus(), 50);
+            setTimeout(() => hiddenRef.current?.focus(), 50);
           }}
-          className="mb-4 text-white/50 text-xs font-medium underline underline-offset-2 hover:text-white/80 transition-colors"
+          className="mb-4 text-white/50 text-xs font-medium underline underline-offset-2"
         >
           Clear
         </button>
@@ -296,7 +321,7 @@ const PasscodeScreen = ({ mode, walletAddress, onSuccess, onError }) => {
         </div>
       )}
 
-      {/* Step indicator */}
+      {/* Step indicator for set mode */}
       {mode === "set" && (
         <div className="flex items-center gap-2 mt-6">
           <div

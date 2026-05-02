@@ -17,12 +17,22 @@ import Header from "../Header/Header";
 
 Chart.register(...registerables);
 
+/* ─── Theme constants (matches SideNav / Home dark palette) ─── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const DARK_BORDER2 = "rgba(255,255,255,0.06)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+// const TEXT_SUB      = "#475569";
+const ACCENT = "#7c3aed";
+
 /* ─── Coin logo with image fallback ─────────────────────────── */
 const COIN_COLORS = {
   BTC: "#f7931a",
   ETH: "#627eea",
   BCH: "#8dc351",
-  EOS: "#000000",
+  EOS: "#443f54",
   DOGE: "#c2a633",
   ADA: "#0033ad",
   LTC: "#345d9d",
@@ -30,7 +40,7 @@ const COIN_COLORS = {
   SOL: "#9945ff",
   XRP: "#346aa9",
 };
-const getCoinColor = (sym) => COIN_COLORS[sym?.toUpperCase()] || "#7c3aed";
+const getCoinColor = (sym) => COIN_COLORS[sym?.toUpperCase()] || ACCENT;
 
 const CoinLogo = ({ symbol, size = 40 }) => {
   const [err, setErr] = useState(false);
@@ -41,7 +51,7 @@ const CoinLogo = ({ symbol, size = 40 }) => {
         alt={symbol}
         width={size}
         height={size}
-        className="rounded-full object-cover flex-shrink-0"
+        className="rounded-full object-cover flex-shrink-0 bg-white"
         onError={() => setErr(true)}
       />
     );
@@ -61,7 +71,7 @@ const CoinLogo = ({ symbol, size = 40 }) => {
   );
 };
 
-/* ─── Clock SVG ──────────────────────────────────────────────── */
+/* ─── Icons ──────────────────────────────────────────────────── */
 const ClockIcon = ({ color = "#7c3aed", size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
     <circle cx="7" cy="7" r="6" stroke={color} strokeWidth="1.3" />
@@ -74,8 +84,7 @@ const ClockIcon = ({ color = "#7c3aed", size = 14 }) => (
   </svg>
 );
 
-/* ─── Chevron down ───────────────────────────────────────────── */
-const ChevronDown = ({ color = "#374151" }) => (
+const ChevronDown = ({ color = "#64748b" }) => (
   <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
     <path
       d="M1 1l4 4 4-4"
@@ -87,16 +96,15 @@ const ChevronDown = ({ color = "#374151" }) => (
   </svg>
 );
 
-/* ─── Bar chart icon ─────────────────────────────────────────── */
 const BarChartIcon = () => (
   <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-    <rect x="0" y="9" width="5" height="9" rx="1" fill="#9ca3af" />
-    <rect x="8" y="4" width="5" height="14" rx="1" fill="#9ca3af" />
-    <rect x="16" y="0" width="5" height="18" rx="1" fill="#6d28d9" />
+    <rect x="0" y="9" width="5" height="9" rx="1" fill="#475569" />
+    <rect x="8" y="4" width="5" height="14" rx="1" fill="#475569" />
+    <rect x="16" y="0" width="5" height="18" rx="1" fill="#7c3aed" />
   </svg>
 );
 
-/* ─── Sparkline (coin list) ──────────────────────────────────── */
+/* ─── Sparkline ──────────────────────────────────────────────── */
 const SparkLine = memo(({ change, color }) => {
   const ref = useRef(null);
   const chartRef = useRef(null);
@@ -168,9 +176,9 @@ const TradeAreaChart = memo(({ price, isPositive, timeframe }) => {
               const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
               g.addColorStop(
                 0,
-                isPositive ? "rgba(245,166,35,0.55)" : "rgba(239,68,68,0.45)",
+                isPositive ? "rgba(245,166,35,0.45)" : "rgba(239,68,68,0.35)",
               );
-              g.addColorStop(1, "rgba(255,255,255,0)");
+              g.addColorStop(1, "rgba(10,10,15,0)");
               return g;
             },
             tension: 0.35,
@@ -194,7 +202,7 @@ const TradeAreaChart = memo(({ price, isPositive, timeframe }) => {
 
 /* ════════════════════════════════════════════════════════════════
    SCREEN — Coin Market List
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const CoinMarketList = ({ onSelectCoin }) => {
   const [coins, setCoins] = useState([]);
   const { setLoading } = useUser();
@@ -213,14 +221,10 @@ const CoinMarketList = ({ onSelectCoin }) => {
   }, [setLoading]);
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* ══ Sticky Header ══ */}
-      <div className="">
-        <Header />
-      </div>
+    <div className="min-h-screen" style={{ background: DARK_BG }}>
+      <Header />
 
-      {/* Coin List */}
-      <div>
+      <div className="flex flex-col">
         {coins.map((coin, idx) => {
           const pct = parseFloat(coin.percent_change_24h);
           const isUp = pct >= 0;
@@ -230,22 +234,30 @@ const CoinMarketList = ({ onSelectCoin }) => {
           return (
             <div
               key={coin.id}
-              className={`flex items-center px-4 py-3 border-b border-gray-100 cursor-pointer active:bg-gray-50 ${
-                idx === 0 ? "bg-purple-50" : "bg-white"
-              }`}
+              className="flex items-center px-4 py-3 cursor-pointer"
+              style={{
+                borderBottom: `1px solid ${DARK_BORDER2}`,
+                background: idx === 0 ? "rgba(124,58,237,0.08)" : "transparent",
+              }}
               onClick={() => onSelectCoin(coin)}
             >
               {/* Logo */}
-              <div className="flex-shrink-0">
-                <CoinLogo symbol={coin.symbol} size={44} />
-              </div>
+              <CoinLogo symbol={coin.symbol} size={44} />
 
-              {/* Name + USDT */}
-              <div className="ml-3 w-14 flex-shrink-0">
-                <div className="text-sm font-bold text-gray-900">
+              {/* Name */}
+              <div className="ml-3 flex-shrink-0" style={{ width: "3.5rem" }}>
+                <div
+                  className="font-bold"
+                  style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                >
                   {coin.symbol}
                 </div>
-                <div className="text-xs text-gray-400 mt-0.5">USDT</div>
+                <div
+                  className="mt-0.5"
+                  style={{ fontSize: "3.2vw", color: TEXT_MUTED }}
+                >
+                  USDT
+                </div>
               </div>
 
               {/* Sparkline */}
@@ -253,10 +265,16 @@ const CoinMarketList = ({ onSelectCoin }) => {
                 <SparkLine change={pct} color={sparkColor} />
               </div>
 
-              {/* Price + % change */}
-              <div className="text-right flex-shrink-0 min-w-[100px]">
-                <div className="text-sm font-semibold text-gray-900">
-                  US${" "}
+              {/* Price + % */}
+              <div
+                className="text-right flex-shrink-0"
+                style={{ minWidth: "100px" }}
+              >
+                <div
+                  className="font-semibold"
+                  style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                >
+                  $
                   {priceUsd < 1
                     ? priceUsd.toFixed(5)
                     : priceUsd.toLocaleString("en-US", {
@@ -266,13 +284,17 @@ const CoinMarketList = ({ onSelectCoin }) => {
                 </div>
                 <div className="flex items-center justify-end gap-1 mt-0.5">
                   <span
-                    className={`text-xs font-medium ${
-                      isUp ? "text-green-500" : "text-red-500"
-                    }`}
+                    className="font-medium"
+                    style={{
+                      fontSize: "3.2vw",
+                      color: isUp ? "rgb(19,178,111)" : "rgb(207,32,47)",
+                    }}
                   >
                     {pct.toFixed(3)}%
                   </span>
-                  <span className="text-xs text-gray-400">24 Hrs</span>
+                  <span style={{ fontSize: "2.8vw", color: TEXT_MUTED }}>
+                    24 Hrs
+                  </span>
                 </div>
               </div>
             </div>
@@ -284,8 +306,8 @@ const CoinMarketList = ({ onSelectCoin }) => {
 };
 
 /* ════════════════════════════════════════════════════════════════
-   COIN SWITCH POPUP — opens when coin name is tapped
-   ════════════════════════════════════════════════════════════════ */
+   COIN SWITCH POPUP
+════════════════════════════════════════════════════════════════ */
 const CoinSwitchPopup = ({ currentCoin, onSelect, onClose }) => {
   const [coins, setCoins] = useState([]);
   useEffect(() => {
@@ -299,16 +321,35 @@ const CoinSwitchPopup = ({ currentCoin, onSelect, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-h-[70vh] overflow-y-auto">
+      <div
+        className="fixed inset-0 z-40"
+        style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
+        onClick={onClose}
+      />
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl max-h-[70vh] overflow-y-auto"
+        style={{ background: "#111118", border: `1px solid ${DARK_BORDER}` }}
+      >
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-9 h-1 bg-gray-200 rounded-full" />
+          <div
+            className="w-9 h-1 rounded-full"
+            style={{ background: "#1e293b" }}
+          />
         </div>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-          <span className="text-base font-bold text-gray-900">Select Coin</span>
+        <div
+          className="flex items-center justify-between px-5 py-3"
+          style={{ borderBottom: `1px solid ${DARK_BORDER}` }}
+        >
+          <span
+            className="font-bold"
+            style={{ color: TEXT_PRIMARY, fontSize: "1rem" }}
+          >
+            Select Coin
+          </span>
           <button
             onClick={onClose}
-            className="text-gray-500 text-xl leading-none bg-white"
+            className="text-xl leading-none"
+            style={{ color: TEXT_MUTED, background: "transparent" }}
           >
             ✕
           </button>
@@ -319,17 +360,24 @@ const CoinSwitchPopup = ({ currentCoin, onSelect, onClose }) => {
           return (
             <div
               key={c.id}
-              className={`flex items-center px-5 py-3 border-b border-gray-100 cursor-pointer active:bg-gray-50 ${
-                isSelected ? "bg-purple-50" : ""
-              }`}
+              className="flex items-center px-5 py-3 cursor-pointer"
+              style={{
+                borderBottom: `1px solid ${DARK_BORDER2}`,
+                background: isSelected
+                  ? "rgba(124,58,237,0.12)"
+                  : "transparent",
+              }}
               onClick={() => onSelect(c)}
             >
               <CoinLogo symbol={c.symbol} size={36} />
               <div className="ml-3 flex-1">
-                <div className="text-sm font-bold text-gray-900">
+                <div
+                  className="font-bold"
+                  style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                >
                   {c.symbol}
                 </div>
-                <div className="text-xs text-gray-400">
+                <div style={{ fontSize: "3.2vw", color: TEXT_MUTED }}>
                   US${" "}
                   {parseFloat(c.price_usd) < 1
                     ? parseFloat(c.price_usd).toFixed(5)
@@ -339,15 +387,20 @@ const CoinSwitchPopup = ({ currentCoin, onSelect, onClose }) => {
                 </div>
               </div>
               <div
-                className={`text-xs font-medium ${
-                  pct >= 0 ? "text-green-500" : "text-red-500"
-                }`}
+                className="font-medium"
+                style={{
+                  fontSize: "3.2vw",
+                  color: pct >= 0 ? "rgb(19,178,111)" : "rgb(207,32,47)",
+                }}
               >
                 {pct >= 0 ? "+" : ""}
                 {pct.toFixed(3)}%
               </div>
               {isSelected && (
-                <div className="ml-3 w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                <div
+                  className="ml-3 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: ACCENT }}
+                >
                   <span className="text-white text-xs">✓</span>
                 </div>
               )}
@@ -362,7 +415,7 @@ const CoinSwitchPopup = ({ currentCoin, onSelect, onClose }) => {
 
 /* ════════════════════════════════════════════════════════════════
    TRADE POPUP
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const TradePopup = ({
   market,
   displayName,
@@ -416,14 +469,12 @@ const TradePopup = ({
       return toast.error("Insufficient balance");
     if (0 >= parseInt(user?.trade_limit))
       return toast.error("Trade limit reached");
-
     try {
       setLoading(true);
       const result = await convertUSDTToCoin(amount, selectedWallet?.coin_id);
       const wAmount = selectedWallet?.coin_name === "Tether" ? amount : result;
       const order_id = Math.floor(100000 + Math.random() * 900000);
       const percent = parseInt(selectedProfit) / 100;
-
       await axios.post(`${API_BASE_URL}/tradeorder`, {
         order_id,
         order_type: type,
@@ -442,13 +493,10 @@ const TradePopup = ({
         profit_level: selectedProfit,
         is_profit: user?.is_profit,
       });
-
-      // ✅ call but don't watch its success state
       updateUserBalance(user.id, selectedWallet.coin_id, userCoinBalance - amt);
-
       toast.success("Trade order placed successfully!");
       setAmount("");
-      onClose(); // just close, no reload
+      onClose();
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -456,41 +504,71 @@ const TradePopup = ({
     }
   };
 
+  /* shared input/row style */
+  const rowCard = {
+    background: DARK_CARD,
+    border: `1px solid ${DARK_BORDER}`,
+    borderRadius: "0.75rem",
+  };
+
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl overflow-y-auto max-h-[90vh]">
+      <div
+        className="fixed inset-0 z-40"
+        style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
+        onClick={onClose}
+      />
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-y-auto max-h-[90vh]"
+        style={{ background: "#111118", border: `1px solid ${DARK_BORDER}` }}
+      >
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-9 h-1 bg-gray-200 rounded-full" />
+          <div
+            className="w-9 h-1 rounded-full"
+            style={{ background: "#1e293b" }}
+          />
         </div>
 
         {/* Title */}
         <div className="flex items-center justify-between px-5 py-3">
-          <span className="text-lg font-bold text-gray-900">
+          <span
+            className="font-bold"
+            style={{ color: TEXT_PRIMARY, fontSize: "1.1rem" }}
+          >
             {displayName} Coin Delivery
           </span>
           <button
             onClick={onClose}
-            className="text-indigo-500 text-xl font-light leading-none bg-white"
+            className="text-xl font-light leading-none"
+            style={{ color: "#818cf8", background: "transparent" }}
           >
             ✕
           </button>
         </div>
 
         {/* Coin + timer row */}
-        <div className="flex items-center justify-between px-5 pb-4 border-b border-gray-100">
+        <div
+          className="flex items-center justify-between px-5 pb-4"
+          style={{ borderBottom: `1px solid ${DARK_BORDER}` }}
+        >
           <div className="flex items-center gap-3">
             <CoinLogo symbol={symbolKey} size={38} />
             <div>
-              <div className="text-sm font-semibold text-gray-900">
+              <div
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
                 {displayName} Coin
               </div>
-              <div className="text-xs text-gray-400">
+              <div style={{ fontSize: "3.2vw", color: TEXT_MUTED }}>
                 {selectedType}&nbsp;
                 <span
-                  className={
-                    selectedType === "Buy" ? "text-green-500" : "text-red-500"
-                  }
+                  style={{
+                    color:
+                      selectedType === "Buy"
+                        ? "rgb(19,178,111)"
+                        : "rgb(207,32,47)",
+                  }}
                 >
                   {selectedType === "Buy" ? "Bullish" : "Bearish"}
                 </span>
@@ -499,12 +577,15 @@ const TradePopup = ({
           </div>
           <div className="text-right">
             <div className="flex items-center gap-1 justify-end">
-              <ClockIcon />
-              <span className="text-sm font-semibold text-gray-800">
+              <ClockIcon color={ACCENT} />
+              <span
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
                 {selectedTime}
               </span>
             </div>
-            <div className="text-xs text-gray-400 mt-0.5">
+            <div style={{ fontSize: "3.2vw", color: TEXT_MUTED, marginTop: 2 }}>
               {parseFloat(userBalance).toFixed(2)} USDT
             </div>
           </div>
@@ -512,16 +593,26 @@ const TradePopup = ({
 
         {/* Delivery time */}
         <div className="px-5 pt-4">
-          <div className="text-sm font-medium text-gray-800 mb-3">
+          <div
+            className="font-medium mb-3"
+            style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+          >
             Delivery time
           </div>
           <div className="flex items-center gap-3">
             <button
-              className="flex items-center gap-2 border border-gray-500 rounded-xl px-3 py-2.5 bg-gray-300"
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: `1px solid ${DARK_BORDER}`,
+              }}
               onClick={() => setTimePickerVisible(true)}
             >
-              <ClockIcon />
-              <span className="text-sm font-semibold text-gray-800">
+              <ClockIcon color={ACCENT} />
+              <span
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
                 {selectedTime}
               </span>
               <ChevronDown />
@@ -529,21 +620,31 @@ const TradePopup = ({
             <div className="flex gap-2 ml-auto">
               <button
                 onClick={() => setSelectedType("Buy")}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                  selectedType === "Buy"
-                    ? "bg-orange-400 text-white"
-                    : "bg-gray-100 text-gray-400"
-                }`}
+                className="px-5 py-2.5 rounded-full font-semibold transition-all"
+                style={{
+                  fontSize: "3.5vw",
+                  background:
+                    selectedType === "Buy"
+                      ? "linear-gradient(135deg,#f59e0b,#f97316)"
+                      : "rgba(255,255,255,0.06)",
+                  color: selectedType === "Buy" ? "#fff" : TEXT_MUTED,
+                  border: "none",
+                }}
               >
                 Bullish
               </button>
               <button
                 onClick={() => setSelectedType("Sell")}
-                className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                  selectedType === "Sell"
-                    ? "bg-red-500 text-white"
-                    : "bg-gray-100 text-gray-400"
-                }`}
+                className="px-5 py-2.5 rounded-full font-semibold transition-all"
+                style={{
+                  fontSize: "3.5vw",
+                  background:
+                    selectedType === "Sell"
+                      ? "linear-gradient(135deg,#ef4444,#dc2626)"
+                      : "rgba(255,255,255,0.06)",
+                  color: selectedType === "Sell" ? "#fff" : TEXT_MUTED,
+                  border: "none",
+                }}
               >
                 Bearish
               </button>
@@ -553,11 +654,19 @@ const TradePopup = ({
 
         {/* ROI */}
         <div className="px-5 pt-4">
-          <div className="text-sm font-medium text-gray-800 mb-2">
+          <div
+            className="font-medium mb-2"
+            style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+          >
             Return of Investment
           </div>
-          <div className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-white">
-            <span className="text-sm text-gray-700">(*{selectedProfit}%)</span>
+          <div
+            className="flex items-center justify-between px-4 py-3"
+            style={rowCard}
+          >
+            <span style={{ fontSize: "3.8vw", color: TEXT_MUTED }}>
+              (*{selectedProfit}%)
+            </span>
             <ChevronDown />
           </div>
         </div>
@@ -565,17 +674,41 @@ const TradePopup = ({
         {/* Purchase price */}
         <div className="px-5 pt-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-800">
+            <span
+              className="font-medium"
+              style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+            >
               Purchase price
             </span>
-            <span className="text-xs text-gray-500">Fee: 0.1%</span>
+            <span style={{ fontSize: "3.2vw", color: TEXT_MUTED }}>
+              Fee: 0.1%
+            </span>
           </div>
-          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-3 bg-white border-r border-gray-200 flex-shrink-0">
-              <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">T</span>
+          <div
+            className="flex items-center overflow-hidden"
+            style={{ ...rowCard, borderRadius: "0.75rem" }}
+          >
+            <div
+              className="flex items-center gap-2 px-3 py-3 flex-shrink-0"
+              style={{ borderRight: `1px solid ${DARK_BORDER}` }}
+            >
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center"
+                style={{ background: "#26a17b" }}
+              >
+                <span
+                  className="text-white font-bold"
+                  style={{ fontSize: "0.7rem" }}
+                >
+                  T
+                </span>
               </div>
-              <span className="text-sm font-semibold text-gray-800">USDT</span>
+              <span
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
+                USDT
+              </span>
             </div>
             <input
               type="number"
@@ -583,10 +716,20 @@ const TradePopup = ({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Amount"
-              className="flex-1 px-3 py-3 text-sm text-gray-800 outline-none bg-white placeholder-gray-300"
+              className="flex-1 px-3 py-3 outline-none"
+              style={{
+                background: "transparent",
+                color: TEXT_PRIMARY,
+                fontSize: "3.8vw",
+              }}
             />
             <button
-              className="px-4 py-3 text-sm font-bold text-gray-900 bg-white flex-shrink-0"
+              className="px-4 py-3 font-bold flex-shrink-0"
+              style={{
+                background: "transparent",
+                color: ACCENT,
+                fontSize: "3.5vw",
+              }}
               onClick={() =>
                 setAmount(Math.floor(parseFloat(userBalance)).toString())
               }
@@ -598,31 +741,35 @@ const TradePopup = ({
 
         {/* Balance info */}
         <div className="px-5 pt-3 pb-2">
-          <div className="text-sm text-gray-500">
+          <div style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
             Available Balance:
-            <span className="text-gray-800 font-medium ml-1">
+            <span className="font-medium ml-1" style={{ color: TEXT_PRIMARY }}>
               {parseFloat(userBalance).toFixed(4)}
             </span>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-sm text-gray-500">
-              At least:
-              <span className="text-gray-800 font-medium ml-1">
+            <span style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
+              At least:{" "}
+              <span className="font-medium" style={{ color: TEXT_PRIMARY }}>
                 {selectedMiniUsdt}
               </span>
             </span>
-            <span className="text-sm text-indigo-500 font-medium">
+            <span
+              className="font-medium"
+              style={{ fontSize: "3.5vw", color: "#818cf8" }}
+            >
               Expected: {estimation} USDT
             </span>
           </div>
         </div>
 
-        {/* Trade button inside popup */}
+        {/* Trade button */}
         <div className="px-5 pt-2 pb-8">
           <button
             onClick={handleSubmit}
-            className="w-full py-4 rounded-2xl text-white text-lg font-semibold"
+            className="w-full py-4 rounded-2xl text-white font-semibold"
             style={{
+              fontSize: "4.5vw",
               background: "linear-gradient(90deg,#f472b6 0%,#a855f7 100%)",
             }}
           >
@@ -634,20 +781,37 @@ const TradePopup = ({
         {timePickerVisible && (
           <>
             <div
-              className="fixed inset-0 bg-black/30 z-[60]"
+              className="fixed inset-0 z-[60]"
+              style={{ background: "rgba(0,0,0,0.5)" }}
               onClick={() => setTimePickerVisible(false)}
             />
-            <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl">
+            <div
+              className="fixed bottom-0 left-0 right-0 z-[70] rounded-t-3xl"
+              style={{
+                background: "#111118",
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
               <div className="flex justify-center pt-3 pb-1">
-                <div className="w-9 h-1 bg-gray-200 rounded-full" />
+                <div
+                  className="w-9 h-1 rounded-full"
+                  style={{ background: "#1e293b" }}
+                />
               </div>
-              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-                <span className="text-base font-bold text-gray-900">
+              <div
+                className="flex items-center justify-between px-5 py-3"
+                style={{ borderBottom: `1px solid ${DARK_BORDER}` }}
+              >
+                <span
+                  className="font-bold"
+                  style={{ color: TEXT_PRIMARY, fontSize: "1rem" }}
+                >
                   Delivery time
                 </span>
                 <button
                   onClick={() => setTimePickerVisible(false)}
-                  className="text-gray-600 text-xl leading-none bg-white"
+                  className="text-xl leading-none"
+                  style={{ color: TEXT_MUTED, background: "transparent" }}
                 >
                   ✕
                 </button>
@@ -655,9 +819,14 @@ const TradePopup = ({
               {(timerProfits || []).map((item, i) => (
                 <div
                   key={i}
-                  className={`flex items-center justify-between px-5 py-4 border-b border-gray-100 cursor-pointer active:bg-gray-50 ${
-                    item.timer === selectedTime ? "bg-purple-50" : ""
-                  }`}
+                  className="flex items-center justify-between px-5 py-4 cursor-pointer"
+                  style={{
+                    borderBottom: `1px solid ${DARK_BORDER2}`,
+                    background:
+                      item.timer === selectedTime
+                        ? "rgba(124,58,237,0.12)"
+                        : "transparent",
+                  }}
                   onClick={() => {
                     setSelectedTime(item.timer);
                     setSelectedProfit(item.profit);
@@ -666,15 +835,27 @@ const TradePopup = ({
                   }}
                 >
                   <div>
-                    <div className="text-sm font-semibold text-gray-900">
+                    <div
+                      className="font-semibold"
+                      style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                    >
                       {item.timer}
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
+                    <div
+                      style={{
+                        fontSize: "3.2vw",
+                        color: TEXT_MUTED,
+                        marginTop: 2,
+                      }}
+                    >
                       Profit: {item.profit}% · Min: {item.mini_usdt} USDT
                     </div>
                   </div>
                   {item.timer === selectedTime && (
-                    <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: ACCENT }}
+                    >
                       <span className="text-white text-xs">✓</span>
                     </div>
                   )}
@@ -691,7 +872,7 @@ const TradePopup = ({
 
 /* ════════════════════════════════════════════════════════════════
    SCREEN — Business / Trade View
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const BusinessView = ({ coin, type, onBack }) => {
   const { user, setLoading } = useUser();
   const { timerProfits } = useTimerProfit();
@@ -727,10 +908,6 @@ const BusinessView = ({ coin, type, onBack }) => {
       }
       setLoading(false);
     };
-    // if (success) {
-    //   // window.location.reload();
-    //   return;
-    // }
     load();
   }, [coin, type, wallets.length, setLoading]);
 
@@ -769,32 +946,39 @@ const BusinessView = ({ coin, type, onBack }) => {
     type === "crypto" ? market.symbol : market.symbol?.split("=")[0]?.trim();
 
   return (
-    /* pb-24 = space for the fixed Trade button */
-    <div className="bg-white min-h-screen relative pb-24">
-      {/* ══ Sticky Header ══ */}
-      <div className="">
-        <Header />
-      </div>
+    <div
+      className="min-h-screen relative pb-24"
+      style={{ background: DARK_BG }}
+    >
+      <Header />
 
-      <div className="flex items-center justify-between px-4 py-3 bg-purple-50">
+      {/* Coin info row */}
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{
+          background: "rgba(124,58,237,0.08)",
+          borderBottom: `1px solid ${DARK_BORDER}`,
+        }}
+      >
         <div className="flex items-center">
           <CoinLogo symbol={symbolKey} size={44} />
-
-          {/* Clickable coin name area */}
           <button
-            className="flex flex-col items-start bg-transparent hover:bg-transparent"
+            className="flex flex-col items-start ml-3"
+            style={{ background: "transparent", border: "none" }}
             onClick={() => setCoinSwitchVisible(true)}
           >
-            <div className="flex items-center gap-1 ">
-              <span className="text-base font-bold text-gray-900">
+            <div className="flex items-center gap-1">
+              <span
+                className="font-bold"
+                style={{ fontSize: "4.2vw", color: TEXT_PRIMARY }}
+              >
                 {displayName}
               </span>
               <ChevronDown />
             </div>
-            <div className="text-xs text-gray-400">USDT</div>
+            <div style={{ fontSize: "3.2vw", color: TEXT_MUTED }}>USDT</div>
           </button>
         </div>
-
         <Link
           to="/profit-stat"
           onClick={(e) => {
@@ -807,17 +991,22 @@ const BusinessView = ({ coin, type, onBack }) => {
 
       {/* Price block */}
       <div className="px-4 pt-4 pb-1">
-        <div className="text-3xl font-bold text-gray-900">
-          US${" "}
+        <div
+          className="font-bold"
+          style={{ fontSize: "7.5vw", color: TEXT_PRIMARY }}
+        >
+          $
           {parseFloat(priceVal).toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}
         </div>
         <div
-          className={`text-base mt-1 font-medium ${
-            isPositive ? "text-green-500" : "text-red-500"
-          }`}
+          className="mt-1 font-medium"
+          style={{
+            fontSize: "4vw",
+            color: isPositive ? "rgb(19,178,111)" : "rgb(207,32,47)",
+          }}
         >
           {changeAmt}
           {changePct != null && ` (${parseFloat(changePct).toFixed(2)}%)`}
@@ -833,16 +1022,23 @@ const BusinessView = ({ coin, type, onBack }) => {
         />
       </div>
 
-      {/* Timeframe tabs — active: blue #3b82f6 bold | inactive: gray #9ca3af */}
-      <div className="flex items-center px-4 py-2 gap-1 border-b border-gray-100">
+      {/* Timeframe tabs */}
+      <div
+        className="flex items-center px-4 py-2 gap-1"
+        style={{ borderBottom: `1px solid ${DARK_BORDER}` }}
+      >
         {["5M", "15M", "1H", "6H", "1D", "1W"].map((tf) => (
           <button
             key={tf}
             onClick={() => setActiveTab(tf)}
-            className="flex-1 py-1.5 text-sm rounded bg-white hover:bg-white"
+            className="flex-1 py-1.5 rounded transition-colors"
             style={{
-              color: activeTab === tf ? "#3b82f6" : "#9ca3af",
+              fontSize: "3.5vw",
+              background:
+                activeTab === tf ? "rgba(124,58,237,0.2)" : "transparent",
+              color: activeTab === tf ? "#a78bfa" : TEXT_MUTED,
               fontWeight: activeTab === tf ? "700" : "400",
+              border: "none",
             }}
           >
             {tf}
@@ -850,36 +1046,76 @@ const BusinessView = ({ coin, type, onBack }) => {
         ))}
       </div>
 
-      {/* Functions */}
+      {/* Functions (crypto only) */}
       {type === "crypto" && (
-        <div className="bg-gray-50 px-4 pt-4 pb-3">
-          <div className="text-lg font-bold text-gray-900 mb-3">Functions</div>
+        <div className="px-4 pt-4 pb-3">
+          <div
+            className="font-bold mb-3"
+            style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
+          >
+            Functions
+          </div>
           <div className="flex gap-3">
-            <div className="flex-1 bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-              <div className="text-xs text-gray-400 mb-1">24h volume</div>
-              <div className="text-sm font-semibold text-gray-800">
+            <div
+              className="flex-1 rounded-xl p-3"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "3.2vw",
+                  color: TEXT_MUTED,
+                  marginBottom: 4,
+                }}
+              >
+                24h volume
+              </div>
+              <div
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
                 {market?.volume24?.toLocaleString()}
               </div>
             </div>
-            <div className="flex-1 bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-              <div className="text-xs text-gray-400 mb-1">Market Cap</div>
-              <div className="text-sm font-semibold text-gray-800">
-                US$ {numberFormat(market?.market_cap_usd, 2)}
+            <div
+              className="flex-1 rounded-xl p-3"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "3.2vw",
+                  color: TEXT_MUTED,
+                  marginBottom: 4,
+                }}
+              >
+                Market Cap
+              </div>
+              <div
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
+                ${numberFormat(market?.market_cap_usd, 2)}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ══ Fixed Trade button at bottom of screen ══ */}
+      {/* Fixed Trade button */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white px-4 py-4"
-        style={{ boxShadow: "0 -2px 16px rgba(0,0,0,0.07)" }}
+        className="fixed bottom-0 left-0 right-0 z-40 px-4 py-4"
+        style={{ background: DARK_BG, borderTop: `1px solid ${DARK_BORDER}` }}
       >
         <button
           onClick={() => setTradePopupVisible(true)}
-          className="w-full py-4 rounded-2xl text-white text-lg font-semibold"
+          className="w-full py-4 rounded-2xl text-white font-semibold"
           style={{
+            fontSize: "4.5vw",
             background: "linear-gradient(90deg,#f472b6 0%,#a855f7 100%)",
           }}
         >
@@ -887,7 +1123,6 @@ const BusinessView = ({ coin, type, onBack }) => {
         </button>
       </div>
 
-      {/* Trade Popup */}
       {tradePopupVisible && (
         <TradePopup
           market={market}
@@ -908,7 +1143,6 @@ const BusinessView = ({ coin, type, onBack }) => {
         />
       )}
 
-      {/* Coin Switch Popup — triggered by tapping coin name */}
       {coinSwitchVisible && (
         <CoinSwitchPopup
           currentCoin={coin}
@@ -925,28 +1159,21 @@ const BusinessView = ({ coin, type, onBack }) => {
 
 /* ════════════════════════════════════════════════════════════════
    ROOT
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const Business = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const coin = searchParams.get("coin");
   const type = searchParams.get("type") || "crypto";
 
-  const handleSelectCoin = (c) => {
+  const handleSelectCoin = (c) =>
     setSearchParams({ coin: c.id, type: "crypto" });
-  };
-
   const handleBack = (switchedCoin) => {
-    if (switchedCoin?.id) {
+    if (switchedCoin?.id)
       setSearchParams({ coin: switchedCoin.id, type: "crypto" });
-    } else {
-      setSearchParams({});
-    }
+    else setSearchParams({});
   };
 
-  if (!coin) {
-    return <CoinMarketList onSelectCoin={handleSelectCoin} />;
-  }
-
+  if (!coin) return <CoinMarketList onSelectCoin={handleSelectCoin} />;
   return <BusinessView coin={coin} type={type} onBack={handleBack} />;
 };
 

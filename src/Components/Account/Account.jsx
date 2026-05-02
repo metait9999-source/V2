@@ -18,7 +18,6 @@ function Account() {
     () => user?.balance_visible === 1 || user?.balance_visible === true,
   );
 
-  // ── Fix: wrap in useCallback so it's stable across renders ──
   const fetchConvertedValues = useCallback(async () => {
     if (!wallets?.length) return;
     const newCoinValues = {};
@@ -47,20 +46,18 @@ function Account() {
       await axios.put(`${API_BASE_URL}/users/${user.id}/balance-visibility`, {
         balance_visible: newVal ? 1 : 0,
       });
-      // keep user context in sync
-      if (setUser) {
+      if (setUser)
         setUser((prev) => ({ ...prev, balance_visible: newVal ? 1 : 0 }));
-      }
     } catch {
-      // revert UI if API fails
       setBalanceVisible(!newVal);
     }
   };
 
   const totalBalance =
-    wallets?.reduce((sum, wallet) => {
-      return sum + parseFloat(wallet.coin_amount || 0);
-    }, 0) ?? 0;
+    wallets?.reduce(
+      (sum, wallet) => sum + parseFloat(wallet.coin_amount || 0),
+      0,
+    ) ?? 0;
 
   const filtered = wallets?.filter((w) =>
     w.coin_symbol.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -73,10 +70,10 @@ function Account() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header pageTitle={""} />
+    <div className="min-h-screen" style={{ background: "#0a0a0f" }}>
+      <Header pageTitle="" />
 
-      {/* ── Purple gradient banner ── */}
+      {/* ── Banner ── */}
       <div
         className="relative overflow-hidden px-5 pt-6 pb-6 mx-4 mt-4 rounded-3xl"
         style={{
@@ -84,7 +81,6 @@ function Account() {
             "linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#ec4899 100%)",
         }}
       >
-        {/* Decorative blobs */}
         <div
           className="absolute bottom-0 left-0 w-56 h-40 rounded-full opacity-20"
           style={{
@@ -103,16 +99,21 @@ function Account() {
         />
 
         <div className="relative z-10 flex items-start justify-between">
-          {/* Left — text + balance */}
           <div className="flex-1 pr-2">
-            <h1 className="text-white text-2xl font-extrabold leading-tight mb-0.5">
+            <h1
+              className="text-white font-extrabold leading-tight mb-0.5"
+              style={{ fontSize: "5.5vw" }}
+            >
               Send Crypto Now
             </h1>
-            <p className="text-white/80 text-sm leading-snug mb-4">
+            <p
+              className="text-white/80 leading-snug mb-4"
+              style={{ fontSize: "3.5vw" }}
+            >
               Choose a wallet to send crypto from
             </p>
 
-            {/* ── Total Balance frosted card ── */}
+            {/* Balance card */}
             <div
               className="rounded-2xl px-4 py-3"
               style={{
@@ -121,9 +122,11 @@ function Account() {
                 WebkitBackdropFilter: "blur(8px)",
               }}
             >
-              {/* Label + eye toggle row */}
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-white/70 text-xs font-semibold uppercase tracking-wider">
+                <span
+                  className="text-white/70 font-semibold uppercase tracking-wider"
+                  style={{ fontSize: "2.8vw" }}
+                >
                   Total Balance
                 </span>
                 <button
@@ -142,14 +145,6 @@ function Account() {
                     flexShrink: 0,
                     padding: 0,
                     transition: "background 0.2s, transform 0.15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.38)";
-                    e.currentTarget.style.transform = "scale(1.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.22)";
-                    e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
                   {balanceVisible ? (
@@ -184,8 +179,6 @@ function Account() {
                   )}
                 </button>
               </div>
-
-              {/* Total balance amount */}
               <p
                 className="text-white font-extrabold leading-none select-none"
                 style={{
@@ -196,30 +189,36 @@ function Account() {
               >
                 ${totalBalance.toFixed(2)}
               </p>
-
-              <p className="text-white/55 text-xs mt-1.5">
-                {wallets?.length ?? 0} wallet
-                {wallets?.length !== 1 ? "s" : ""}
+              <p className="text-white/55 mt-1.5" style={{ fontSize: "3vw" }}>
+                {wallets?.length ?? 0} wallet{wallets?.length !== 1 ? "s" : ""}
               </p>
             </div>
           </div>
 
-          {/* Right — wallet image */}
           <img
             src={imgWallet}
             alt="Wallet"
             className="w-28 h-24 object-contain flex-shrink-0"
-            style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.2))" }}
+            style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.4))" }}
           />
         </div>
       </div>
 
       {/* ── Select + Search ── */}
       <div className="px-4 py-4 flex items-center gap-3">
-        <h2 className="text-gray-900 font-extrabold text-lg whitespace-nowrap">
+        <h2
+          className="font-extrabold whitespace-nowrap"
+          style={{ color: "#f1f5f9", fontSize: "4.5vw" }}
+        >
           Select a wallet
         </h2>
-        <div className="flex-1 flex items-center gap-2 bg-white rounded-2xl px-3 py-2.5 shadow-sm border border-gray-100">
+        <div
+          className="flex-1 flex items-center gap-2 rounded-2xl px-3 py-2.5"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
           <svg
             width="15"
             height="15"
@@ -227,10 +226,10 @@ function Account() {
             fill="none"
             className="flex-shrink-0"
           >
-            <circle cx="7" cy="7" r="5" stroke="#9ca3af" strokeWidth="1.5" />
+            <circle cx="7" cy="7" r="5" stroke="#475569" strokeWidth="1.5" />
             <path
               d="M11 11l3 3"
-              stroke="#9ca3af"
+              stroke="#475569"
               strokeWidth="1.5"
               strokeLinecap="round"
             />
@@ -238,7 +237,8 @@ function Account() {
           <input
             type="search"
             placeholder="Search"
-            className="flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder-gray-400"
+            className="flex-1 bg-transparent outline-none"
+            style={{ color: "#f1f5f9", fontSize: "3.8vw" }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -246,13 +246,20 @@ function Account() {
       </div>
 
       {/* ── Wallet list ── */}
-      <div className="px-4 bg-white rounded-3xl mx-4 shadow-sm border border-gray-100 overflow-hidden">
+      <div
+        className="px-4 mx-4 rounded-3xl overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.07)",
+        }}
+      >
         {filtered?.map((wallet) => (
           <Link
             key={wallet.id}
             to="/funds"
             state={{ wallet, coinAmount: coinValues[wallet.coin_id] }}
-            className="flex items-center justify-between py-4 border-b border-gray-100 last:border-b-0"
+            className="flex items-center justify-between py-4 no-underline"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
             <div className="flex items-center gap-3">
               <img
@@ -261,22 +268,34 @@ function Account() {
                 alt={wallet.coin_symbol}
               />
               <div>
-                <p className="text-gray-900 font-bold text-base leading-tight">
+                <p
+                  className="font-bold leading-tight"
+                  style={{ color: "#f1f5f9", fontSize: "3.8vw" }}
+                >
                   {wallet.coin_symbol} Wallet
                 </p>
-                <p className="text-gray-400 text-sm mt-0.5">
+                <p
+                  className="mt-0.5"
+                  style={{ color: "#64748b", fontSize: "3.2vw" }}
+                >
                   {wallet.coin_symbol} Coin
                 </p>
               </div>
             </div>
 
             <div className="text-right">
-              <p className="text-gray-900 font-semibold text-sm">
+              <p
+                className="font-semibold"
+                style={{ color: "#f1f5f9", fontSize: "3.8vw" }}
+              >
                 {balanceVisible
                   ? `$${parseFloat(wallet.coin_amount || 0).toFixed(4)}`
                   : "$****"}
               </p>
-              <p className="text-gray-400 text-sm mt-0.5">
+              <p
+                className="mt-0.5"
+                style={{ color: "#64748b", fontSize: "3.2vw" }}
+              >
                 {balanceVisible
                   ? `${coinValues[wallet.coin_id] !== undefined ? coinValues[wallet.coin_id] : "0.0000"} ${wallet.coin_symbol}`
                   : `**** ${wallet.coin_symbol}`}
@@ -285,6 +304,9 @@ function Account() {
           </Link>
         ))}
       </div>
+
+      {/* bottom spacing */}
+      <div className="h-8" />
     </div>
   );
 }

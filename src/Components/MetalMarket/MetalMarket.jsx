@@ -9,6 +9,7 @@ import { useUser } from "../../context/UserContext";
 const MetalMarket = () => {
   const [marketData, setMarketData] = useState([]);
   const { setLoading } = useUser();
+
   useEffect(() => {
     setLoading(true);
     async function fetchMarketData() {
@@ -22,113 +23,95 @@ const MetalMarket = () => {
         setLoading(false);
       }
     }
-
     fetchMarketData();
   }, [setLoading]);
 
-  const activeWallet = {
-    id: 1,
-    coin_symbol: "ETH",
-    coin_name: "Etherum",
-    balance: 0.05,
-    usd_balance: 1467.5, // This can be calculated based on the current price of the coin
-    coin_logo: {
-      url: "/assets/images/btc_logo.png",
-      alt: "Bitcoin Logo",
-    },
-    status: "active", // Wallet status
-    last_transaction_date: "2024-07-15", // Last transaction date
-    transactions: [
-      {
-        id: 101,
-        date: "2024-07-10",
-        type: "Deposit",
-        amount: 0.01,
-        usd_value: 294.5,
-      },
-      {
-        id: 102,
-        date: "2024-07-08",
-        type: "Withdrawal",
-        amount: 0.005,
-        usd_value: 147.25,
-      },
-    ],
-  };
+  const activeWallet = { coin_symbol: "ETH" };
 
   return (
-    <>
-      <div className="market_pro_list">
-        {marketData.map((coin) => (
+    <div className="flex flex-col">
+      {marketData.map((coin) => {
+        const meta = coin?.response[0].meta;
+        const price = meta.regularMarketPrice;
+        const priceChange = price - meta.previousClose;
+        const isPositive = priceChange >= 0;
+        const symbolClean = coin?.symbol.split("=")[0].trim();
+
+        return (
           <Link
             key={coin.symbol}
-            className="pro_item"
-            to={`/business?coin=${coin?.symbol
-              .split("=")[0]
-              .trim()}&type=metal`}
+            to={`/business?coin=${symbolClean}&type=metal`}
+            className="flex items-center justify-between py-3 gap-2 no-underline"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <div className="pro_base">
+            {/* coin info */}
+            <div
+              className="flex items-center gap-2 flex-shrink-0"
+              style={{ width: "32vw" }}
+            >
               <img
-                src={`/assets/images/coins/${coin?.symbol
-                  .split("=")[0]
-                  .trim()
-                  .toLowerCase()}-logo.png`}
-                className="pro_base_icon"
+                src={`/assets/images/coins/${symbolClean.toLowerCase()}-logo.png`}
                 alt={`${coin.symbol} Logo`}
+                className="rounded-full object-contain flex-shrink-0"
+                style={{ width: "9vw", height: "9vw" }}
               />
               <div>
-                <div className="pro_title ff_NunitoBold fc-353F52">
-                  {getMetalCoinName(coin?.symbol.split("=")[0].trim())}
+                <div
+                  className="font-bold text-slate-100"
+                  style={{ fontSize: "3.8vw" }}
+                >
+                  {getMetalCoinName(symbolClean)}
                 </div>
-                <div className="pro_subtitle fc-5F6775">
-                  {activeWallet ? activeWallet.coin_symbol : ""} Wallet
+                <div
+                  className="text-slate-500 mt-0.5"
+                  style={{ fontSize: "3.2vw" }}
+                >
+                  {activeWallet.coin_symbol} Wallet
                 </div>
               </div>
             </div>
-            <div className="pro_line">
+
+            {/* chart */}
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div
-                className="lineBoard"
+                className="w-full"
                 style={{
+                  height: 56,
                   userSelect: "none",
-                  WebkitTapHighlightColor: "rgba(0, 0, 0, 0)",
-                  position: "relative",
+                  WebkitTapHighlightColor: "rgba(0,0,0,0)",
                 }}
               >
-                <div className="chart-wrapper">
-                  <Chart one={1.3} seven={1.4} four={1.5} />
-                </div>
+                <Chart one={1.3} seven={1.4} four={1.5} />
               </div>
             </div>
-            <div className="pro_detail">
-              <div className="pro_price fs-15 fc-353F52">
-                {/* US$ {numberFormat(coin?.regularMarketPrice)} */}
-                US$ {numberFormat(coin?.response[0].meta.regularMarketPrice, 3)}
+
+            {/* price + change */}
+            <div className="flex-shrink-0 text-right" style={{ width: "28vw" }}>
+              <div
+                className="font-bold text-slate-100"
+                style={{ fontSize: "3.8vw" }}
+              >
+                ${numberFormat(price, 3)}
               </div>
-              <div className="pro_change">
+              <div className="flex items-center justify-end gap-1 mt-0.5">
                 <span
-                  className="change_value fc-8CC351 m-r-10"
+                  className="font-semibold"
                   style={{
-                    color:
-                      coin?.response[0].meta.regularMarketPrice -
-                        coin?.response[0].meta.previousClose <
-                      0
-                        ? "rgb(207, 32, 47)"
-                        : "rgb(19, 178, 111)",
+                    fontSize: "3.2vw",
+                    color: isPositive ? "rgb(19,178,111)" : "rgb(207,32,47)",
                   }}
                 >
-                  {numberFormat(
-                    coin?.response[0].meta.regularMarketPrice -
-                      coin?.response[0].meta.previousClose,
-                    5
-                  )}
+                  {numberFormat(priceChange, 5)}
                 </span>
-                <span className="period">24 Hrs</span>
+                <span className="text-slate-500" style={{ fontSize: "2.8vw" }}>
+                  24 Hrs
+                </span>
               </div>
             </div>
           </Link>
-        ))}
-      </div>
-    </>
+        );
+      })}
+    </div>
   );
 };
 

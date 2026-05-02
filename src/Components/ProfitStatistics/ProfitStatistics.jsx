@@ -8,27 +8,32 @@ import { MdTrendingUp, MdTrendingDown, MdAccessTime } from "react-icons/md";
 import { RiArrowRightSLine } from "react-icons/ri";
 import { BsClockHistory, BsLightningChargeFill } from "react-icons/bs";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+/* ─── Theme ── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+const TEXT_SUB = "#475569";
+const ACCENT = "#7c3aed";
 
+/* ─── Helpers ── */
 const parseDuration = (duration) => {
   const durationMap = {
     S: 1000,
-    H: 60 * 60 * 1000,
-    D: 24 * 60 * 60 * 1000,
-    W: 7 * 24 * 60 * 60 * 1000,
-    M: 30 * 24 * 60 * 60 * 1000,
-    Y: 365 * 24 * 60 * 60 * 1000,
+    H: 3600000,
+    D: 86400000,
+    W: 604800000,
+    M: 2592000000,
+    Y: 31536000000,
   };
   const match = duration.match(/^(\d+)([SHDWMY])$/);
-  if (match) {
-    const [, number, unit] = match;
-    return parseInt(number, 10) * (durationMap[unit] || 0);
-  }
+  if (match) return parseInt(match[1]) * (durationMap[match[2]] || 0);
   return 0;
 };
 
-const getFormattedDeliveryTime = (createdAt) => {
-  return new Date(createdAt)
+const getFormattedDeliveryTime = (createdAt) =>
+  new Date(createdAt)
     .toLocaleString("en-US", {
       year: "numeric",
       month: "2-digit",
@@ -39,7 +44,6 @@ const getFormattedDeliveryTime = (createdAt) => {
       hour12: true,
     })
     .replace(",", "");
-};
 
 const extractUnit = (deliveryTime) => {
   const match = deliveryTime.match(/[SHDWMY]/);
@@ -63,7 +67,6 @@ const calculateDeliveryPrice = (
     Y: [5850, 5850],
   };
   const [gain, loss] = deltas[unit] || [0, 0];
-
   if (isProfit) {
     if (orderPosition === "buy")
       price +=
@@ -87,8 +90,7 @@ const calculateDeliveryPrice = (
   return price.toFixed(2);
 };
 
-// ─── Countdown ────────────────────────────────────────────────────────────────
-
+/* ─── Countdown ── */
 const Countdown = ({
   createdTime,
   duration,
@@ -98,11 +100,9 @@ const Countdown = ({
   runningOrders,
 }) => {
   const [timeLeft, setTimeLeft] = useState("");
-
   useEffect(() => {
     const deliveryTime = parseDuration(duration);
     const createdAt = new Date(createdTime);
-
     const updateTimer = () => {
       const diff = new Date(createdAt.getTime() + deliveryTime) - new Date();
       if (diff <= 0) {
@@ -111,20 +111,21 @@ const Countdown = ({
         setRunningOrders((prev) => prev.filter((item) => item.id !== id));
         return;
       }
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = String(
-        Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-      ).padStart(2, "0");
-      const minutes = String(
-        Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-      ).padStart(2, "0");
-      const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(
+      const days = Math.floor(diff / 86400000);
+      const hours = String(Math.floor((diff % 86400000) / 3600000)).padStart(
+        2,
+        "0",
+      );
+      const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(
+        2,
+        "0",
+      );
+      const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(
         2,
         "0",
       );
       const months = Math.floor(days / 30);
       const years = Math.floor(days / 365);
-
       if (years > 0)
         setTimeLeft(
           `${years}y ${Math.floor((days % 365) / 30)}mo ${hours}h ${minutes}m ${seconds}s`,
@@ -137,34 +138,39 @@ const Countdown = ({
         setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
       else setTimeLeft(`${hours}:${minutes}:${seconds}`);
     };
-
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [createdTime, duration, setStatus, id, runningOrders, setRunningOrders]);
 
   return (
-    <span className="font-mono tracking-wider text-orange-500 text-[13px] font-bold">
+    <span
+      className="font-mono tracking-wider font-bold"
+      style={{ color: "#f59e0b", fontSize: "3.2vw" }}
+    >
       {timeLeft}
     </span>
   );
 };
 
-// ─── Empty State (always uses imgNoData) ──────────────────────────────────────
-
+/* ─── Empty State ── */
 const EmptyState = ({ label = "No Data" }) => (
   <div className="flex flex-col items-center justify-center py-16 gap-3">
     <img
       src={imgNoData}
       alt="No Data"
-      className="w-32 h-32 object-contain opacity-70"
+      className="w-32 h-32 object-contain opacity-40"
     />
-    <p className="text-[13.5px] font-semibold text-gray-400">{label}</p>
+    <p
+      className="font-semibold"
+      style={{ color: TEXT_MUTED, fontSize: "3.5vw" }}
+    >
+      {label}
+    </p>
   </div>
 );
 
-// ─── Coin Image ───────────────────────────────────────────────────────────────
-
+/* ─── Coin Image ── */
 const CoinImg = ({ order }) => {
   const src =
     order?.order_type === "metal" || order?.order_type === "forex"
@@ -174,7 +180,8 @@ const CoinImg = ({ order }) => {
     <img
       src={src}
       alt={order?.coin_name}
-      className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 bg-gray-100"
+      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+      style={{ border: "2px solid rgba(255,255,255,0.1)" }}
       onError={(e) => {
         e.target.style.display = "none";
       }}
@@ -182,31 +189,46 @@ const CoinImg = ({ order }) => {
   );
 };
 
-// ─── Detail Row ───────────────────────────────────────────────────────────────
-
+/* ─── Detail Row ── */
 const DetailRow = ({ label, value, highlight, isProfit }) => (
   <div
-    className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all
-    ${
-      highlight
+    className="flex items-center justify-between px-4 py-3 rounded-xl"
+    style={{
+      background: highlight
         ? isProfit
-          ? "bg-emerald-50 border-emerald-100"
-          : "bg-red-50 border-red-100"
-        : "bg-gray-50 border-gray-100"
-    }`}
+          ? "rgba(16,185,129,0.1)"
+          : "rgba(239,68,68,0.1)"
+        : DARK_CARD,
+      border: `1px solid ${
+        highlight
+          ? isProfit
+            ? "rgba(16,185,129,0.2)"
+            : "rgba(239,68,68,0.2)"
+          : DARK_BORDER
+      }`,
+    }}
   >
-    <span className="text-[12px] text-gray-400 font-medium">{label}</span>
+    <span style={{ fontSize: "3.2vw", color: TEXT_MUTED, fontWeight: 500 }}>
+      {label}
+    </span>
     <span
-      className={`text-[13px] font-bold tracking-wide
-      ${highlight ? (isProfit ? "text-emerald-500" : "text-red-500") : "text-gray-800"}`}
+      style={{
+        fontSize: "3.4vw",
+        fontWeight: 700,
+        letterSpacing: "0.02em",
+        color: highlight
+          ? isProfit
+            ? "rgb(16,185,129)"
+            : "rgb(239,68,68)"
+          : TEXT_PRIMARY,
+      }}
     >
       {value}
     </span>
   </div>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
+/* ─── Main ── */
 const ProfitStatistics = () => {
   const [activeTab, setActiveTab] = useState("active");
   const [showPopup, setShowPopup] = useState(false);
@@ -248,35 +270,47 @@ const ProfitStatistics = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: DARK_BG }}>
       <Header pageTitle="Profit Statistics" />
 
-      {/* Tab switcher */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm px-4 pt-4 pb-0">
+      {/* ── Tab switcher ── */}
+      <div
+        className="sticky top-0 z-10 px-4 pt-4 pb-0"
+        style={{
+          background: "#0d0d14",
+          borderBottom: `1px solid ${DARK_BORDER}`,
+        }}
+      >
         <div className="flex gap-1 max-w-lg mx-auto">
           {tabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => switchTab(key)}
-              className={`relative flex-1 flex items-center justify-center gap-2 py-3 text-[13px] font-semibold rounded-t-xl transition-all duration-200 focus:outline-none
-                ${
-                  activeTab === key
-                    ? "text-indigo-600 bg-indigo-50/60"
-                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                }`}
+              className="relative flex-1 flex items-center justify-center gap-2 py-3 rounded-t-xl transition-all focus:outline-none"
+              style={{
+                fontSize: "3.5vw",
+                fontWeight: 600,
+                border: "none",
+                background:
+                  activeTab === key ? "rgba(124,58,237,0.12)" : "transparent",
+                color: activeTab === key ? "#a78bfa" : TEXT_MUTED,
+              }}
             >
               <Icon size={14} />
               {label}
               <span
-                className={`absolute bottom-0 left-4 right-4 h-[2.5px] rounded-full transition-all duration-300
-                ${activeTab === key ? "bg-indigo-500 opacity-100" : "opacity-0"}`}
+                className="absolute bottom-0 left-4 right-4 rounded-full transition-all"
+                style={{
+                  height: 2.5,
+                  background: activeTab === key ? ACCENT : "transparent",
+                }}
               />
             </button>
           ))}
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
         {/* Active Orders */}
         {activeTab === "active" &&
@@ -286,27 +320,52 @@ const ProfitStatistics = () => {
             runningOrders.map((order) => (
               <div
                 key={order.id}
-                className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all"
+                className="rounded-2xl p-4"
+                style={{
+                  background: DARK_CARD,
+                  border: `1px solid ${DARK_BORDER}`,
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <CoinImg order={order} />
                     <div>
-                      <p className="text-[14px] font-bold text-gray-800 tracking-wide">
+                      <p
+                        className="font-bold tracking-wide"
+                        style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                      >
                         {order?.trade_coin_symbol}/{order?.coin_symbol}
                       </p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <p
+                        style={{
+                          fontSize: "3vw",
+                          color: TEXT_MUTED,
+                          marginTop: 2,
+                        }}
+                      >
                         {getFormattedDeliveryTime(order.created_at)}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5">
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-500 text-[11px] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    {/* Running badge */}
+                    <span
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold"
+                      style={{
+                        background: "rgba(245,158,11,0.12)",
+                        border: "1px solid rgba(245,158,11,0.25)",
+                        color: "#f59e0b",
+                        fontSize: "2.8vw",
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                       Running
                     </span>
-                    <div className="flex items-center gap-1 text-gray-400">
+                    <div
+                      className="flex items-center gap-1"
+                      style={{ color: TEXT_MUTED }}
+                    >
                       <MdAccessTime size={11} />
                       <Countdown
                         createdTime={getFormattedDeliveryTime(order.created_at)}
@@ -337,16 +396,29 @@ const ProfitStatistics = () => {
                     setSelectedOrder(order);
                     setShowPopup(true);
                   }}
-                  className="w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md active:scale-[0.99] transition-all text-left"
+                  className="w-full rounded-2xl p-4 text-left transition-all"
+                  style={{
+                    background: DARK_CARD,
+                    border: `1px solid ${DARK_BORDER}`,
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <CoinImg order={order} />
                       <div>
-                        <p className="text-[14px] font-bold text-gray-800 tracking-wide">
+                        <p
+                          className="font-bold tracking-wide"
+                          style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                        >
                           {order?.trade_coin_symbol}/{order?.coin_symbol}
                         </p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">
+                        <p
+                          style={{
+                            fontSize: "3vw",
+                            color: TEXT_MUTED,
+                            marginTop: 2,
+                          }}
+                        >
                           {getFormattedDeliveryTime(order?.created_at)}
                         </p>
                       </div>
@@ -355,8 +427,13 @@ const ProfitStatistics = () => {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div
-                          className={`flex items-center gap-1 justify-end text-[12px] font-semibold
-                            ${isProfit ? "text-emerald-500" : "text-red-500"}`}
+                          className="flex items-center gap-1 justify-end font-semibold"
+                          style={{
+                            fontSize: "3.2vw",
+                            color: isProfit
+                              ? "rgb(16,185,129)"
+                              : "rgb(239,68,68)",
+                          }}
                         >
                           {isProfit ? (
                             <MdTrendingUp size={14} />
@@ -366,13 +443,21 @@ const ProfitStatistics = () => {
                           {isProfit ? "Profit" : "Loss"}
                         </div>
                         <p
-                          className={`text-[15px] font-bold mt-0.5
-                            ${isProfit ? "text-emerald-500" : "text-red-500"}`}
+                          className="font-bold mt-0.5"
+                          style={{
+                            fontSize: "4vw",
+                            color: isProfit
+                              ? "rgb(16,185,129)"
+                              : "rgb(239,68,68)",
+                          }}
                         >
                           US$ {order?.profit_amount}
                         </p>
                       </div>
-                      <RiArrowRightSLine size={18} className="text-gray-300" />
+                      <RiArrowRightSLine
+                        size={18}
+                        style={{ color: TEXT_SUB }}
+                      />
                     </div>
                   </div>
                 </button>
@@ -381,54 +466,84 @@ const ProfitStatistics = () => {
           ))}
       </div>
 
-      {/* Detail Popup */}
+      {/* ── Detail Popup ── */}
       {showPopup && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0"
+            style={{
+              background: "rgba(0,0,0,0.7)",
+              backdropFilter: "blur(6px)",
+            }}
             onClick={() => setShowPopup(false)}
           />
-          <div className="relative w-full sm:max-w-md bg-white border border-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
-            {/* Handle (mobile) */}
+          <div
+            className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden"
+            style={{
+              background: "#111118",
+              border: `1px solid ${DARK_BORDER}`,
+            }}
+          >
+            {/* Handle */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
-              <div className="w-10 h-1 rounded-full bg-gray-200" />
+              <div
+                className="w-10 h-1 rounded-full"
+                style={{ background: "#1e293b" }}
+              />
             </div>
 
-            {/* Popup Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            {/* Popup header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${DARK_BORDER}` }}
+            >
               <div className="flex items-center gap-3">
                 <CoinImg order={selectedOrder} />
                 <div>
-                  <p className="text-[15px] font-bold text-gray-800">
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+                  >
                     {selectedOrder?.trade_coin_symbol}/
                     {selectedOrder?.coin_symbol}
                   </p>
-                  <p className="text-[11px] text-gray-400">
+                  <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                     {getFormattedDeliveryTime(selectedOrder.created_at)}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowPopup(false)}
-                className="w-8 h-8 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-400 hover:border-red-200 transition-all"
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: `1px solid ${DARK_BORDER}`,
+                  color: TEXT_MUTED,
+                }}
               >
                 <IoClose size={16} />
               </button>
             </div>
 
-            {/* Popup Details */}
+            {/* Details */}
             <div className="p-5 space-y-2 max-h-[65vh] overflow-y-auto">
               <DetailRow label="Purchase Amount" value={selectedOrder.amount} />
               <DetailRow
                 label="Direction"
                 value={
                   <span
-                    className={`capitalize px-2.5 py-0.5 rounded-lg text-[12px] font-bold
-                    ${
-                      selectedOrder.order_position === "buy"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-red-50 text-red-500"
-                    }`}
+                    className="capitalize px-2.5 py-0.5 rounded-lg font-bold"
+                    style={{
+                      fontSize: "3vw",
+                      background:
+                        selectedOrder.order_position === "buy"
+                          ? "rgba(16,185,129,0.15)"
+                          : "rgba(239,68,68,0.15)",
+                      color:
+                        selectedOrder.order_position === "buy"
+                          ? "rgb(16,185,129)"
+                          : "rgb(239,68,68)",
+                    }}
                   >
                     {selectedOrder.order_position}
                   </span>

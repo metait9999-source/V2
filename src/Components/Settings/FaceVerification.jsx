@@ -5,6 +5,12 @@ import axios from "axios";
 import { API_BASE_URL } from "../../api/getApiURL";
 import { useUser } from "../../context/UserContext";
 
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+
 const FaceVerification = () => {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -15,25 +21,17 @@ const FaceVerification = () => {
   const [capturedFile, setCapturedFile] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ✅ Check if already verified on mount
   useEffect(() => {
-    if (user?.face_image) {
-      setStep("already_verified");
-    }
+    if (user?.face_image) setStep("already_verified");
   }, [user]);
 
-  const openCamera = () => {
-    fileInputRef.current?.click();
-  };
+  const openCamera = () => fileInputRef.current?.click();
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const fileAge = Date.now() - file.lastModified;
-    const isFreshPhoto = fileAge < 60 * 1000;
-
-    if (!isFreshPhoto) {
+    const isFresh = Date.now() - file.lastModified < 60000;
+    if (!isFresh) {
       e.target.value = "";
       setErrorMsg(
         "Please take a live selfie using the camera, not a photo from your gallery.",
@@ -41,7 +39,6 @@ const FaceVerification = () => {
       setStep("gallery_error");
       return;
     }
-
     setCapturedFile(file);
     setCapturedImage(URL.createObjectURL(file));
     setStep("preview");
@@ -58,10 +55,10 @@ const FaceVerification = () => {
     if (!capturedFile) return;
     setStep("uploading");
     try {
-      const formData = new FormData();
-      formData.append("user_id", user?.id);
-      formData.append("documents", capturedFile, "face.jpg");
-      await axios.post(`${API_BASE_URL}/users/face-verify`, formData, {
+      const fd = new FormData();
+      fd.append("user_id", user?.id);
+      fd.append("documents", capturedFile, "face.jpg");
+      await axios.post(`${API_BASE_URL}/users/face-verify`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setStep("done");
@@ -71,16 +68,23 @@ const FaceVerification = () => {
     }
   };
 
+  /* shared button styles */
+  const btnPrimary = {
+    fontSize: "4.5vw",
+    background: "linear-gradient(90deg,#10b981,#0d9488)",
+    boxShadow: "0 8px 24px rgba(16,185,129,0.4)",
+    border: "none",
+  };
+  const btnOutline = {
+    fontSize: "4vw",
+    background: DARK_CARD,
+    border: `2px solid ${DARK_BORDER}`,
+    color: TEXT_MUTED,
+  };
+
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "#f3f4f8", fontFamily: "'DM Sans', sans-serif" }}
-    >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
-      <Header pageTitle="Face Verification" onBack={() => navigate(-1)} />
+    <div className="min-h-screen flex flex-col" style={{ background: DARK_BG }}>
+      <Header pageTitle="Face Verification" />
 
       <input
         ref={fileInputRef}
@@ -95,7 +99,6 @@ const FaceVerification = () => {
         {/* ── ALREADY VERIFIED ── */}
         {step === "already_verified" && (
           <div className="flex flex-col items-center">
-            {/* Hero */}
             <div
               className="w-full rounded-3xl p-6 mb-5 flex flex-col items-center relative overflow-hidden"
               style={{
@@ -103,14 +106,13 @@ const FaceVerification = () => {
               }}
             >
               <div
-                className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+                className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"
                 style={{
                   background: "#fff",
                   filter: "blur(40px)",
                   transform: "translate(30%,-30%)",
                 }}
               />
-              {/* Face image preview */}
               <div className="w-28 h-28 rounded-full mb-4 overflow-hidden border-4 border-white/40 shadow-xl relative z-10">
                 <img
                   src={`${API_BASE_URL}/${user.face_image}`}
@@ -123,22 +125,39 @@ const FaceVerification = () => {
                   }}
                 />
               </div>
-              <p className="text-white font-black text-2xl mb-1 relative z-10">
+              <p
+                className="text-white font-black relative z-10"
+                style={{ fontSize: "6vw", marginBottom: 4 }}
+              >
                 Verified ✓
               </p>
-              <p className="text-white/70 text-sm text-center relative z-10">
+              <p
+                className="text-white/70 text-center relative z-10"
+                style={{ fontSize: "3.5vw" }}
+              >
                 Your face has been successfully verified
               </p>
             </div>
 
-            {/* Success card */}
-            <div className="w-full bg-white rounded-3xl shadow-sm p-5 mb-5">
-              <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <div
+              className="w-full rounded-3xl p-5 mb-5"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
+              <div
+                className="flex items-center gap-4 mb-5 pb-5"
+                style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}
+              >
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(16,185,129,0.15)" }}
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M20 6L9 17l-5-5"
-                      stroke="#10b981"
+                      stroke="rgb(16,185,129)"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -146,44 +165,53 @@ const FaceVerification = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="font-bold text-gray-800 text-sm">
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                  >
                     Face Verification Complete
                   </p>
-                  <p className="text-gray-400 text-xs mt-0.5">
+                  <p
+                    style={{ fontSize: "3vw", color: TEXT_MUTED, marginTop: 2 }}
+                  >
                     Your identity has been submitted for review
                   </p>
                 </div>
               </div>
-
-              {/* Status rows */}
               {[
                 {
                   label: "Status",
                   value: "Submitted",
-                  color: "#10b981",
-                  bg: "#d1fae5",
+                  color: "rgb(16,185,129)",
+                  bg: "rgba(16,185,129,0.12)",
                 },
                 {
                   label: "Method",
                   value: "Face Selfie",
-                  color: "#6366f1",
-                  bg: "#e0e7ff",
+                  color: "#818cf8",
+                  bg: "rgba(99,102,241,0.12)",
                 },
                 {
                   label: "Submitted",
                   value: "Photo on file",
-                  color: "#f59e0b",
-                  bg: "#fef3c7",
+                  color: "#fbbf24",
+                  bg: "rgba(245,158,11,0.12)",
                 },
               ].map((row) => (
                 <div
                   key={row.label}
                   className="flex items-center justify-between mb-3"
                 >
-                  <p className="text-gray-400 text-sm">{row.label}</p>
+                  <p style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
+                    {row.label}
+                  </p>
                   <span
-                    className="px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{ background: row.bg, color: row.color }}
+                    className="px-3 py-1 rounded-full font-semibold"
+                    style={{
+                      fontSize: "3vw",
+                      background: row.bg,
+                      color: row.color,
+                    }}
                   >
                     {row.value}
                   </span>
@@ -191,10 +219,12 @@ const FaceVerification = () => {
               ))}
             </div>
 
-            {/* Notice */}
             <div
               className="w-full rounded-2xl p-4 flex gap-3 mb-5"
-              style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}
+              style={{
+                background: "rgba(16,185,129,0.1)",
+                border: "1px solid rgba(16,185,129,0.2)",
+              }}
             >
               <svg
                 width="18"
@@ -207,38 +237,40 @@ const FaceVerification = () => {
                   cx="12"
                   cy="12"
                   r="10"
-                  stroke="#10b981"
+                  stroke="rgb(16,185,129)"
                   strokeWidth="2"
                 />
                 <path
                   d="M12 8v4M12 16h.01"
-                  stroke="#10b981"
+                  stroke="rgb(16,185,129)"
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
               </svg>
-              <p className="text-emerald-700 text-xs leading-relaxed">
+              <p
+                style={{
+                  fontSize: "3.2vw",
+                  color: "rgb(110,231,183)",
+                  lineHeight: 1.6,
+                }}
+              >
                 Your face photo has been submitted. Our team will review and
                 verify your identity. You will be notified once verification is
                 complete.
               </p>
             </div>
 
-            {/* Re-submit option */}
             <button
               onClick={() => setStep("intro")}
-              className="w-full py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold text-sm mb-3 transition-transform active:scale-95"
+              className="w-full py-3.5 rounded-2xl font-semibold mb-3 transition-transform active:scale-95"
+              style={btnOutline}
             >
               🔄 Re-submit Photo
             </button>
-
             <button
               onClick={() => navigate(-1)}
-              className="w-full py-4 rounded-2xl text-white font-black text-base transition-transform active:scale-95"
-              style={{
-                background: "linear-gradient(90deg,#10b981,#0d9488)",
-                boxShadow: "0 8px 24px rgba(16,185,129,0.4)",
-              }}
+              className="w-full py-4 rounded-2xl text-white font-black transition-transform active:scale-95"
+              style={btnPrimary}
             >
               Done
             </button>
@@ -255,7 +287,7 @@ const FaceVerification = () => {
               }}
             >
               <div
-                className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+                className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"
                 style={{
                   background: "#fff",
                   filter: "blur(40px)",
@@ -294,16 +326,31 @@ const FaceVerification = () => {
                   />
                 </svg>
               </div>
-              <p className="text-white font-black text-2xl mb-1 relative z-10">
+              <p
+                className="text-white font-black relative z-10"
+                style={{ fontSize: "6vw", marginBottom: 4 }}
+              >
                 Verify Your Face
               </p>
-              <p className="text-white/70 text-sm text-center relative z-10">
+              <p
+                className="text-white/70 text-center relative z-10"
+                style={{ fontSize: "3.5vw" }}
+              >
                 Take a live selfie to verify your identity
               </p>
             </div>
 
-            <div className="w-full bg-white rounded-3xl shadow-sm p-5 mb-4">
-              <p className="font-bold text-gray-800 text-sm mb-4">
+            <div
+              className="w-full rounded-3xl p-5 mb-4"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
+              <p
+                className="font-bold mb-4"
+                style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+              >
                 Before you start
               </p>
               <div className="space-y-3">
@@ -330,14 +377,25 @@ const FaceVerification = () => {
                   },
                 ].map((tip) => (
                   <div key={tip.title} className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 text-lg">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        background: "rgba(16,185,129,0.12)",
+                        fontSize: "1.2rem",
+                      }}
+                    >
                       {tip.emoji}
                     </div>
                     <div>
-                      <p className="text-gray-700 font-semibold text-sm">
+                      <p
+                        className="font-semibold"
+                        style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                      >
                         {tip.title}
                       </p>
-                      <p className="text-gray-400 text-xs">{tip.desc}</p>
+                      <p style={{ fontSize: "3.2vw", color: TEXT_MUTED }}>
+                        {tip.desc}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -346,7 +404,10 @@ const FaceVerification = () => {
 
             <div
               className="w-full rounded-2xl p-4 flex gap-3 mb-5"
-              style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+              style={{
+                background: "rgba(59,130,246,0.1)",
+                border: "1px solid rgba(59,130,246,0.2)",
+              }}
             >
               <svg
                 width="18"
@@ -359,30 +420,29 @@ const FaceVerification = () => {
                   cx="12"
                   cy="12"
                   r="10"
-                  stroke="#3b82f6"
+                  stroke="#60a5fa"
                   strokeWidth="2"
                 />
                 <path
                   d="M12 8v4M12 16h.01"
-                  stroke="#3b82f6"
+                  stroke="#60a5fa"
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
               </svg>
-              <p className="text-blue-600 text-xs leading-relaxed">
+              <p
+                style={{ fontSize: "3.2vw", color: "#93c5fd", lineHeight: 1.6 }}
+              >
                 If a picker appears, select{" "}
-                <strong className="text-blue-700">"Camera"</strong> to take a
+                <strong style={{ color: "#bfdbfe" }}>"Camera"</strong> to take a
                 live selfie.
               </p>
             </div>
 
             <button
               onClick={openCamera}
-              className="w-full py-4 rounded-2xl text-white font-black text-base transition-transform active:scale-95"
-              style={{
-                background: "linear-gradient(90deg,#10b981,#0d9488)",
-                boxShadow: "0 8px 24px rgba(16,185,129,0.4)",
-              }}
+              className="w-full py-4 rounded-2xl text-white font-black transition-transform active:scale-95"
+              style={btnPrimary}
             >
               📷 Take Selfie
             </button>
@@ -392,9 +452,12 @@ const FaceVerification = () => {
         {/* ── GALLERY ERROR ── */}
         {step === "gallery_error" && (
           <div className="flex-1 flex flex-col items-center justify-center py-10">
-            <div className="w-28 h-28 rounded-full mb-6 flex items-center justify-center bg-orange-100">
+            <div
+              className="w-28 h-28 rounded-full mb-6 flex items-center justify-center"
+              style={{ background: "rgba(249,115,22,0.15)" }}
+            >
               <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                <circle cx="28" cy="28" r="26" fill="#ffedd5" />
+                <circle cx="28" cy="28" r="26" fill="rgba(249,115,22,0.12)" />
                 <path
                   d="M28 18v12M28 34h.01"
                   stroke="#f97316"
@@ -403,18 +466,30 @@ const FaceVerification = () => {
                 />
               </svg>
             </div>
-            <p className="font-black text-gray-900 text-xl mb-2 text-center">
+            <p
+              className="font-black text-center mb-2"
+              style={{ fontSize: "5.5vw", color: TEXT_PRIMARY }}
+            >
               Live Photo Required
             </p>
-            <p className="text-gray-500 text-sm text-center leading-relaxed mb-5 px-4">
+            <p
+              className="text-center leading-relaxed mb-5 px-4"
+              style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+            >
               You selected a photo from your gallery. Please take a live selfie
               using your camera.
             </p>
             <div
-              className="w-full rounded-2xl p-4 mb-8 text-left"
-              style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+              className="w-full rounded-2xl p-4 mb-8"
+              style={{
+                background: "rgba(59,130,246,0.1)",
+                border: "1px solid rgba(59,130,246,0.2)",
+              }}
             >
-              <p className="text-blue-700 text-xs font-bold mb-3">
+              <p
+                className="font-bold mb-3"
+                style={{ fontSize: "3.2vw", color: "#93c5fd" }}
+              >
                 How to take a live selfie:
               </p>
               <div className="space-y-2.5">
@@ -424,10 +499,17 @@ const FaceVerification = () => {
                   "Take a fresh selfie with your front camera",
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 text-xs font-black">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-black"
+                      style={{
+                        background: "rgba(59,130,246,0.2)",
+                        color: "#60a5fa",
+                        fontSize: "3vw",
+                      }}
+                    >
                       {i + 1}
                     </div>
-                    <p className="text-blue-600 text-xs">{s}</p>
+                    <p style={{ fontSize: "3.2vw", color: "#93c5fd" }}>{s}</p>
                   </div>
                 ))}
               </div>
@@ -435,7 +517,8 @@ const FaceVerification = () => {
             <div className="w-full flex gap-3">
               <button
                 onClick={() => navigate(-1)}
-                className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold text-sm"
+                className="flex-1 py-3.5 rounded-2xl font-semibold"
+                style={btnOutline}
               >
                 Cancel
               </button>
@@ -444,8 +527,8 @@ const FaceVerification = () => {
                   setErrorMsg("");
                   setStep("intro");
                 }}
-                className="flex-1 py-3.5 rounded-2xl text-white font-bold text-sm transition-transform active:scale-95"
-                style={{ background: "linear-gradient(90deg,#10b981,#0d9488)" }}
+                className="flex-1 py-3.5 rounded-2xl text-white font-bold transition-transform active:scale-95"
+                style={{ ...btnPrimary, fontSize: "4vw", boxShadow: "none" }}
               >
                 Try Again
               </button>
@@ -456,13 +539,22 @@ const FaceVerification = () => {
         {/* ── PREVIEW ── */}
         {step === "preview" && capturedImage && (
           <div className="flex flex-col">
-            <div className="bg-white rounded-3xl shadow-sm p-4 mb-4">
-              <p className="font-bold text-gray-800 text-sm text-center mb-3">
+            <div
+              className="rounded-3xl p-4 mb-4"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
+              <p
+                className="font-bold text-center mb-3"
+                style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+              >
                 Does this look good?
               </p>
               <div
-                className="relative rounded-2xl overflow-hidden bg-black"
-                style={{ height: 420 }}
+                className="relative rounded-2xl overflow-hidden"
+                style={{ height: 420, background: "#000" }}
               >
                 <img
                   src={capturedImage}
@@ -474,14 +566,15 @@ const FaceVerification = () => {
             <div className="flex gap-3">
               <button
                 onClick={retake}
-                className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold text-sm"
+                className="flex-1 py-3.5 rounded-2xl font-semibold"
+                style={btnOutline}
               >
                 🔄 Retake
               </button>
               <button
                 onClick={submitFace}
-                className="flex-1 py-3.5 rounded-2xl text-white font-bold text-sm transition-transform active:scale-95"
-                style={{ background: "linear-gradient(90deg,#10b981,#0d9488)" }}
+                className="flex-1 py-3.5 rounded-2xl text-white font-bold transition-transform active:scale-95"
+                style={{ ...btnPrimary, fontSize: "4vw", boxShadow: "none" }}
               >
                 ✓ Submit
               </button>
@@ -518,42 +611,56 @@ const FaceVerification = () => {
                 />
               </svg>
             </div>
-            <p className="font-black text-gray-800 text-xl mb-2">
+            <p
+              className="font-black mb-2"
+              style={{ fontSize: "5.5vw", color: TEXT_PRIMARY }}
+            >
               Uploading...
             </p>
-            <p className="text-gray-400 text-sm text-center">
+            <p
+              className="text-center"
+              style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+            >
               Please wait while we process your photo
             </p>
           </div>
         )}
 
-        {/* ── DONE (after submit) ── */}
+        {/* ── DONE ── */}
         {step === "done" && (
           <div className="flex-1 flex flex-col items-center justify-center py-10">
-            <div className="w-28 h-28 rounded-full mb-6 flex items-center justify-center bg-emerald-100">
+            <div
+              className="w-28 h-28 rounded-full mb-6 flex items-center justify-center"
+              style={{ background: "rgba(16,185,129,0.15)" }}
+            >
               <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                <circle cx="28" cy="28" r="26" fill="#d1fae5" />
+                <circle cx="28" cy="28" r="26" fill="rgba(16,185,129,0.15)" />
                 <path
                   d="M16 28l9 9 17-17"
-                  stroke="#10b981"
+                  stroke="rgb(16,185,129)"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </svg>
             </div>
-            <p className="font-black text-gray-900 text-2xl mb-2">Submitted!</p>
-            <p className="text-gray-500 text-sm text-center leading-relaxed mb-10 px-6">
+            <p
+              className="font-black mb-2"
+              style={{ fontSize: "6vw", color: TEXT_PRIMARY }}
+            >
+              Submitted!
+            </p>
+            <p
+              className="text-center leading-relaxed mb-10 px-6"
+              style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+            >
               Your face photo has been submitted successfully. Our team will
               verify your identity shortly.
             </p>
             <button
               onClick={() => navigate(-1)}
-              className="w-full py-4 rounded-2xl text-white font-black text-base transition-transform active:scale-95"
-              style={{
-                background: "linear-gradient(90deg,#10b981,#0d9488)",
-                boxShadow: "0 8px 24px rgba(16,185,129,0.4)",
-              }}
+              className="w-full py-4 rounded-2xl text-white font-black transition-transform active:scale-95"
+              style={btnPrimary}
             >
               Done
             </button>
@@ -563,27 +670,37 @@ const FaceVerification = () => {
         {/* ── ERROR ── */}
         {step === "error" && (
           <div className="flex-1 flex flex-col items-center justify-center py-10">
-            <div className="w-28 h-28 rounded-full mb-6 flex items-center justify-center bg-red-100">
+            <div
+              className="w-28 h-28 rounded-full mb-6 flex items-center justify-center"
+              style={{ background: "rgba(239,68,68,0.15)" }}
+            >
               <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                <circle cx="28" cy="28" r="26" fill="#fee2e2" />
+                <circle cx="28" cy="28" r="26" fill="rgba(239,68,68,0.12)" />
                 <path
                   d="M28 18v12M28 34h.01"
-                  stroke="#ef4444"
+                  stroke="rgb(239,68,68)"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                 />
               </svg>
             </div>
-            <p className="font-black text-gray-900 text-xl mb-2">
+            <p
+              className="font-black mb-2"
+              style={{ fontSize: "5.5vw", color: TEXT_PRIMARY }}
+            >
               Upload Failed
             </p>
-            <p className="text-gray-500 text-sm text-center mb-8 px-4">
+            <p
+              className="text-center mb-8 px-4"
+              style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+            >
               {errorMsg}
             </p>
             <div className="w-full flex gap-3">
               <button
                 onClick={() => navigate(-1)}
-                className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 font-semibold text-sm"
+                className="flex-1 py-3.5 rounded-2xl font-semibold"
+                style={btnOutline}
               >
                 Cancel
               </button>
@@ -592,8 +709,8 @@ const FaceVerification = () => {
                   setErrorMsg("");
                   setStep("intro");
                 }}
-                className="flex-1 py-3.5 rounded-2xl text-white font-bold text-sm transition-transform active:scale-95"
-                style={{ background: "linear-gradient(90deg,#10b981,#0d9488)" }}
+                className="flex-1 py-3.5 rounded-2xl text-white font-bold transition-transform active:scale-95"
+                style={{ ...btnPrimary, fontSize: "4vw", boxShadow: "none" }}
               >
                 Try Again
               </button>

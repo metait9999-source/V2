@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
@@ -12,21 +12,43 @@ import {
   cancelMiningSubscription,
 } from "../../api/mining.api";
 
+/* ─── Theme ── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const DARK_BORDER2 = "rgba(255,255,255,0.06)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+
+/* ─── Status badges ── */
 const statusStyle = {
-  active: "bg-green-100 text-green-700",
-  completed: "bg-gray-100 text-gray-500",
-  cancelled: "bg-red-100 text-red-500",
+  active: {
+    background: "rgba(16,185,129,0.12)",
+    color: "rgb(16,185,129)",
+    border: "1px solid rgba(16,185,129,0.2)",
+  },
+  completed: {
+    background: "rgba(100,116,139,0.12)",
+    color: "#64748b",
+    border: "1px solid rgba(100,116,139,0.2)",
+  },
+  cancelled: {
+    background: "rgba(239,68,68,0.12)",
+    color: "rgb(239,68,68)",
+    border: "1px solid rgba(239,68,68,0.2)",
+  },
 };
 
 /* ── Confirm Modal ── */
 const ConfirmModal = ({ amount, qty, onConfirm, onClose, loading }) => (
   <div
     className="fixed inset-0 z-50 flex items-center justify-center px-6"
-    style={{ background: "rgba(0,0,0,0.55)" }}
+    style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
     onClick={onClose}
   >
     <div
-      className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl bg-white"
+      className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+      style={{ background: "#111118", border: `1px solid ${DARK_BORDER}` }}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="px-8 pt-10 pb-8 text-center">
@@ -34,7 +56,7 @@ const ConfirmModal = ({ amount, qty, onConfirm, onClose, loading }) => (
         <div
           className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
           style={{
-            background: "linear-gradient(135deg, #6366f1, #a855f7)",
+            background: "linear-gradient(135deg,#6366f1,#a855f7)",
             boxShadow: "0 8px 24px rgba(99,102,241,0.4)",
           }}
         >
@@ -50,19 +72,30 @@ const ConfirmModal = ({ amount, qty, onConfirm, onClose, loading }) => (
         </div>
 
         <div className="mb-2">
-          <span className="font-black text-4xl" style={{ color: "#84cc16" }}>
+          <span
+            className="font-black"
+            style={{ fontSize: "9vw", color: "#84cc16" }}
+          >
             {Number(amount).toLocaleString()}
           </span>
-          <span className="text-gray-800 font-bold text-2xl ml-2">USDT</span>
+          <span
+            className="font-bold ml-2"
+            style={{ fontSize: "6vw", color: TEXT_PRIMARY }}
+          >
+            USDT
+          </span>
         </div>
 
         {qty > 1 && (
-          <p className="text-gray-400 text-sm mb-2">
+          <p className="mb-2" style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
             {qty} machines × {Number(amount / qty).toLocaleString()} USDT each
           </p>
         )}
 
-        <p className="text-gray-800 font-bold text-xl leading-snug mb-8">
+        <p
+          className="font-bold leading-snug mb-8"
+          style={{ fontSize: "5vw", color: TEXT_PRIMARY }}
+        >
           Your escrow amount
           <br />
           Mining machine leasing
@@ -71,16 +104,17 @@ const ConfirmModal = ({ amount, qty, onConfirm, onClose, loading }) => (
         <button
           onClick={onConfirm}
           disabled={loading}
-          className="w-full py-4 rounded-2xl text-white font-extrabold text-base mb-5 active:scale-95 transition-transform disabled:opacity-50"
+          className="w-full py-4 rounded-2xl text-white font-extrabold mb-5 active:scale-95 transition-transform disabled:opacity-50"
           style={{
-            background: "linear-gradient(90deg, #f472b6, #a855f7)",
+            fontSize: "4.5vw",
+            background: "linear-gradient(90deg,#f472b6,#a855f7)",
             boxShadow: "0 8px 24px rgba(168,85,247,0.35)",
           }}
         >
           {loading ? "Processing..." : "Confirm"}
         </button>
 
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <p style={{ fontSize: "3.5vw", color: TEXT_MUTED, lineHeight: 1.6 }}>
           The daily income of the miner will be automatically deposited into
           your wallet account
         </p>
@@ -109,16 +143,14 @@ const LeaseMining = () => {
 
   const totalCost = machine ? parseFloat(machine.rent_amount) * qty : 0;
 
-  // Fetch package from API if not passed via state
   useEffect(() => {
     if (!location.state?.machine) {
       setLoadingPackage(true);
       getMiningPackages()
         .then((res) => {
           const pkg = res.data.find((p) => p.id === parseInt(id));
-          if (pkg) {
-            setMachine(pkg);
-          } else {
+          if (pkg) setMachine(pkg);
+          else {
             toast.error("Package not found");
             navigate("/mining");
           }
@@ -131,12 +163,7 @@ const LeaseMining = () => {
     }
   }, [id, location.state, navigate]);
 
-  // Fetch user subscriptions
-  useEffect(() => {
-    if (user?.id) fetchSubscriptions();
-  }, [user?.id]);
-
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       setLoadingHistory(true);
       const res = await getUserMiningSubscriptions(user.id);
@@ -146,7 +173,11 @@ const LeaseMining = () => {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id) fetchSubscriptions();
+  }, [user?.id, fetchSubscriptions]);
 
   const handleConfirm = async () => {
     try {
@@ -178,18 +209,17 @@ const LeaseMining = () => {
     }
   };
 
-  // Loading package state
   if (loadingPackage) {
     return (
       <div
         className="flex flex-col overflow-hidden"
-        style={{ height: "100dvh", background: "#f3f4f8" }}
+        style={{ height: "100dvh", background: DARK_BG }}
       >
         <div className="flex-shrink-0">
           <Header pageTitle="Leasehold Mining" />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-gray-400 text-sm">Loading...</p>
+          <p style={{ color: TEXT_MUTED, fontSize: "3.5vw" }}>Loading...</p>
         </div>
       </div>
     );
@@ -201,7 +231,7 @@ const LeaseMining = () => {
     <>
       <div
         className="flex flex-col overflow-hidden"
-        style={{ height: "100dvh", background: "#f3f4f8" }}
+        style={{ height: "100dvh", background: DARK_BG }}
       >
         {/* ── Scrollable area ── */}
         <div className="flex-1 overflow-y-auto">
@@ -209,15 +239,14 @@ const LeaseMining = () => {
           <div
             className="relative overflow-hidden px-5 pb-16"
             style={{
-              background: `linear-gradient(135deg, ${machine.color}ee 0%, #a855f7 60%, #ec4899 100%)`,
+              background: `linear-gradient(135deg,${machine.color}ee 0%,#a855f7 60%,#ec4899 100%)`,
             }}
           >
             <div
-              className="absolute"
+              className="absolute pointer-events-none rounded-full"
               style={{
                 width: 200,
                 height: 200,
-                borderRadius: "50%",
                 background: "rgba(255,255,255,0.07)",
                 top: -50,
                 right: -50,
@@ -242,10 +271,16 @@ const LeaseMining = () => {
                   <MachineIcon size={56} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-yellow-300 font-black text-lg mb-1">
+                  <p
+                    className="text-yellow-300 font-black mb-1"
+                    style={{ fontSize: "4.5vw" }}
+                  >
                     {machine.name}
                   </p>
-                  <p className="text-white/80 text-sm leading-snug mb-3">
+                  <p
+                    className="text-white/80 leading-snug mb-3"
+                    style={{ fontSize: "3.3vw" }}
+                  >
                     Financial product — not redeemable within{" "}
                     {machine.duration_days} days
                   </p>
@@ -253,20 +288,28 @@ const LeaseMining = () => {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setQty(Math.max(1, qty - 1))}
-                      className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white font-bold text-lg active:scale-90 transition-transform"
+                      className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white font-bold active:scale-90 transition-transform"
+                      style={{ fontSize: "5vw" }}
                     >
                       −
                     </button>
-                    <span className="text-white font-bold text-lg w-6 text-center">
+                    <span
+                      className="text-white font-bold w-6 text-center"
+                      style={{ fontSize: "4.5vw" }}
+                    >
                       {qty}
                     </span>
                     <button
                       onClick={() => setQty(qty + 1)}
-                      className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white font-bold text-lg active:scale-90 transition-transform"
+                      className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white font-bold active:scale-90 transition-transform"
+                      style={{ fontSize: "5vw" }}
                     >
                       +
                     </button>
-                    <span className="text-white/80 text-sm font-medium ml-1">
+                    <span
+                      className="text-white/80 font-medium ml-1"
+                      style={{ fontSize: "3.5vw" }}
+                    >
                       {totalCost.toLocaleString()} USDT
                     </span>
                   </div>
@@ -281,13 +324,22 @@ const LeaseMining = () => {
           {/* Info cards — overlap header */}
           <div className="px-4 -mt-6 space-y-4 relative z-10 pb-6">
             {/* Introduction */}
-            <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+            <div
+              className="rounded-3xl overflow-hidden"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
               <div className="px-5 pt-5 pb-2">
-                <h2 className="text-gray-900 font-black text-base mb-1">
+                <h2
+                  className="font-black"
+                  style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+                >
                   Introduction
                 </h2>
               </div>
-              <div className="px-5 pb-5 divide-y divide-gray-50">
+              <div className="px-5 pb-5">
                 {[
                   { label: "Output", value: `${machine.daily_rate}% USDT/Day` },
                   { label: "Computing power", value: machine.computing },
@@ -304,9 +356,15 @@ const LeaseMining = () => {
                   <div
                     key={row.label}
                     className="flex items-center justify-between py-3"
+                    style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
                   >
-                    <span className="text-gray-500 text-sm">{row.label}</span>
-                    <span className="text-gray-900 font-bold text-sm">
+                    <span style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
+                      {row.label}
+                    </span>
+                    <span
+                      className="font-bold"
+                      style={{ fontSize: "3.5vw", color: TEXT_PRIMARY }}
+                    >
                       {row.value}
                     </span>
                   </div>
@@ -315,14 +373,24 @@ const LeaseMining = () => {
             </div>
 
             {/* Choose us */}
-            <div className="bg-white rounded-3xl shadow-sm p-5">
-              <h2 className="text-gray-900 font-black text-base mb-4">
+            <div
+              className="rounded-3xl p-5"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
+              <h2
+                className="font-black mb-4"
+                style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+              >
                 Choose us
               </h2>
               <div
                 className="rounded-2xl p-4 space-y-3"
                 style={{
-                  background: "linear-gradient(135deg, #f0f0ff, #fdf0ff)",
+                  background: "rgba(99,102,241,0.08)",
+                  border: "1px solid rgba(99,102,241,0.15)",
                 }}
               >
                 {BENEFITS.map((b, i) => (
@@ -346,23 +414,41 @@ const LeaseMining = () => {
                         />
                       </svg>
                     </div>
-                    <span className="text-gray-700 text-sm">{b}</span>
+                    <span style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
+                      {b}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* My subscriptions */}
-            <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+            <div
+              className="rounded-3xl overflow-hidden"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
+            >
               <div
                 className="flex items-center justify-between px-5 py-4 cursor-pointer"
                 onClick={() => setShowHistory(!showHistory)}
               >
-                <h2 className="text-gray-900 font-black text-base">
+                <h2
+                  className="font-black"
+                  style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+                >
                   My Subscriptions
                   {subscriptions.filter((s) => s.status === "active").length >
                     0 && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                    <span
+                      className="ml-2 px-2 py-0.5 rounded-full font-bold"
+                      style={{
+                        fontSize: "2.8vw",
+                        background: "rgba(16,185,129,0.15)",
+                        color: "rgb(16,185,129)",
+                      }}
+                    >
                       {
                         subscriptions.filter((s) => s.status === "active")
                           .length
@@ -383,7 +469,7 @@ const LeaseMining = () => {
                 >
                   <path
                     d="M4 6l4 4 4-4"
-                    stroke="#9ca3af"
+                    stroke={TEXT_MUTED}
                     strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -394,11 +480,17 @@ const LeaseMining = () => {
               {showHistory && (
                 <div className="px-5 pb-5">
                   {loadingHistory ? (
-                    <p className="text-gray-400 text-sm text-center py-4">
+                    <p
+                      className="text-center py-4"
+                      style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+                    >
                       Loading...
                     </p>
                   ) : subscriptions.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-4">
+                    <p
+                      className="text-center py-4"
+                      style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+                    >
                       No subscriptions yet
                     </p>
                   ) : (
@@ -406,7 +498,8 @@ const LeaseMining = () => {
                       {subscriptions.map((sub) => (
                         <div
                           key={sub.id}
-                          className="border border-gray-100 rounded-2xl overflow-hidden"
+                          className="rounded-2xl overflow-hidden"
+                          style={{ border: `1px solid ${DARK_BORDER}` }}
                         >
                           <div
                             className="h-0.5 w-full"
@@ -417,53 +510,103 @@ const LeaseMining = () => {
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <div>
-                                <p className="font-bold text-gray-800 text-xs">
+                                <p
+                                  className="font-bold"
+                                  style={{
+                                    fontSize: "3.2vw",
+                                    color: TEXT_PRIMARY,
+                                  }}
+                                >
                                   {sub.package_name}
                                 </p>
-                                <p className="text-gray-400 text-xs">
+                                <p
+                                  style={{ fontSize: "3vw", color: TEXT_MUTED }}
+                                >
                                   {sub.duration_days} days · Qty: {sub.quantity}
                                 </p>
                               </div>
                               <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusStyle[sub.status]}`}
+                                className="px-2 py-0.5 rounded-full font-semibold"
+                                style={{
+                                  fontSize: "2.8vw",
+                                  ...(statusStyle[sub.status] ||
+                                    statusStyle.completed),
+                                }}
                               >
                                 {sub.status}
                               </span>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-50">
+                            <div
+                              className="grid grid-cols-3 gap-2 pt-2"
+                              style={{ borderTop: `1px solid ${DARK_BORDER2}` }}
+                            >
                               <div>
-                                <p className="text-gray-400 text-xs">
+                                <p
+                                  style={{ fontSize: "3vw", color: TEXT_MUTED }}
+                                >
                                   Rent paid
                                 </p>
-                                <p className="text-gray-800 font-bold text-xs">
+                                <p
+                                  className="font-bold"
+                                  style={{
+                                    fontSize: "3.2vw",
+                                    color: TEXT_PRIMARY,
+                                  }}
+                                >
                                   {Number(sub.rent_amount).toLocaleString()}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-gray-400 text-xs">Daily</p>
                                 <p
-                                  className="font-bold text-xs"
-                                  style={{ color: "#7c3aed" }}
+                                  style={{ fontSize: "3vw", color: TEXT_MUTED }}
+                                >
+                                  Daily
+                                </p>
+                                <p
+                                  className="font-bold"
+                                  style={{
+                                    fontSize: "3.2vw",
+                                    color: "#a78bfa",
+                                  }}
                                 >
                                   {sub.daily_rate}%
                                 </p>
                               </div>
                               <div>
-                                <p className="text-gray-400 text-xs">Earned</p>
-                                <p className="text-green-600 font-bold text-xs">
+                                <p
+                                  style={{ fontSize: "3vw", color: TEXT_MUTED }}
+                                >
+                                  Earned
+                                </p>
+                                <p
+                                  className="font-bold"
+                                  style={{
+                                    fontSize: "3.2vw",
+                                    color: "rgb(16,185,129)",
+                                  }}
+                                >
                                   +{Number(sub.total_earned).toFixed(4)}
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                              <p className="text-gray-400 text-xs">
+                            <div
+                              className="flex items-center justify-between mt-2 pt-2"
+                              style={{ borderTop: `1px solid ${DARK_BORDER2}` }}
+                            >
+                              <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                                 Ends{" "}
                                 {format(new Date(sub.end_date), "dd MMM yyyy")}
                               </p>
                               {sub.status === "active" && (
                                 <button
                                   onClick={() => handleCancel(sub.id)}
-                                  className="text-xs text-red-400 font-medium underline underline-offset-2"
+                                  className="font-medium underline underline-offset-2"
+                                  style={{
+                                    fontSize: "3vw",
+                                    color: "rgb(239,68,68)",
+                                    background: "transparent",
+                                    border: "none",
+                                  }}
                                 >
                                   Cancel
                                 </button>
@@ -483,14 +626,15 @@ const LeaseMining = () => {
 
         {/* ── Lease button ── */}
         <div
-          className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100"
-          style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+          className="flex-shrink-0 px-4 py-4"
+          style={{ background: DARK_BG, borderTop: `1px solid ${DARK_BORDER}` }}
         >
           <button
             onClick={() => setShowConfirm(true)}
-            className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-extrabold text-base text-white active:scale-95 transition-transform"
+            className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-extrabold text-white active:scale-95 transition-transform"
             style={{
-              background: "linear-gradient(90deg, #f472b6, #a855f7)",
+              fontSize: "4.5vw",
+              background: "linear-gradient(90deg,#f472b6,#a855f7)",
               boxShadow: "0 8px 24px rgba(168,85,247,0.4)",
             }}
           >
@@ -514,8 +658,8 @@ const LeaseMining = () => {
             </svg>
             <span>Lease now</span>
             <span
-              className="ml-2 px-3 py-1 rounded-xl text-sm font-bold"
-              style={{ background: "rgba(255,255,255,0.25)" }}
+              className="ml-2 px-3 py-1 rounded-xl font-bold"
+              style={{ fontSize: "3.5vw", background: "rgba(255,255,255,0.2)" }}
             >
               {totalCost.toLocaleString()} USDT
             </span>
@@ -523,7 +667,6 @@ const LeaseMining = () => {
         </div>
       </div>
 
-      {/* Confirm modal */}
       {showConfirm && (
         <ConfirmModal
           amount={totalCost}

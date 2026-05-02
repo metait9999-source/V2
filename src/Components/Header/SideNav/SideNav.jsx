@@ -10,7 +10,7 @@ import { MdOutlineShowChart } from "react-icons/md";
 import { GiMining } from "react-icons/gi";
 import { TbChartBar } from "react-icons/tb";
 
-const appName = "Meta";
+const appName = "Trust Pro";
 
 const navItems = [
   {
@@ -55,14 +55,14 @@ const navItems = [
     reactIcon: <TbChartBar />,
     reactIconStyle: { fontSize: 22, color: "#fff" },
   },
-  // ── Mixed example: still use an image for this one ──
-  // {
-  //   label: "News",
-  //   to: "/news",
-  //   icon: "/assets/images/menu/news.png",
-  //   iconBg: "linear-gradient(135deg,#f97316,#ef4444)",
-  //   iconStyle: { width: 20, height: 20 },
-  // },
+
+  {
+    label: "Transaction",
+    to: "/transaction",
+    icon: "/assets/images/menu/transaction.png",
+    iconBg: "linear-gradient(135deg,#f97316,#ef4444)",
+    iconStyle: { width: 22, height: 22 },
+  },
 ];
 
 const DEFAULT_ICON_BG = "linear-gradient(135deg,#6366f1,#a855f7)";
@@ -272,7 +272,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   {appName}
                 </h1>
                 <div
-                  className="text-white text-sm font-semibold px-3 py-1 rounded-full shadow"
+                  className="!text-white text-sm font-semibold px-3 py-1 rounded-full shadow"
                   style={{
                     background: "linear-gradient(90deg,#7c3aed,#6366f1)",
                   }}
@@ -304,11 +304,11 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   >
                     {balanceVisible ? (
                       <svg
-                        width="15"
-                        height="15"
+                        width="18"
+                        height="18"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#64748b"
+                        stroke="white"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -318,11 +318,11 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                       </svg>
                     ) : (
                       <svg
-                        width="15"
-                        height="15"
+                        width="18"
+                        height="18"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#64748b"
+                        stroke="white"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -342,9 +342,9 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   >
                     <span
                       style={{
-                        color: "#475569",
-                        fontSize: "0.8rem",
-                        fontWeight: 500,
+                        color: "white",
+                        fontSize: "0.9rem",
+                        fontWeight: 700,
                       }}
                     >
                       Main Wallet
@@ -354,7 +354,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                       height="12"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#334155"
+                      stroke="white"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -373,7 +373,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                     ...blurStyle,
                   }}
                 >
-                  <BiDollar size={23} />
+                  <BiDollar size={26} />
                   {totalBalance.toFixed(2)}
                 </p>
               </div>

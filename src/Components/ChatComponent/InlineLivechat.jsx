@@ -18,17 +18,121 @@ import { RiAdminFill } from "react-icons/ri";
 import useTyping from "../utils/useTyping";
 import { useSocketContext } from "../../context/SocketContext";
 
+const inlineStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .ilc-root {
+    --bg-base: #000000;
+    --bg-surface: #0d0d0d;
+    --bg-elevated: #141414;
+    --bg-hover: #1a1a1a;
+    --bg-active: #1e1e1e;
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-default: rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.65);
+    --text-muted: rgba(255,255,255,0.35);
+    --accent: #7c3aed;
+    --accent-light: #a78bfa;
+    --accent-subtle: rgba(124,58,237,0.15);
+    --accent-border: rgba(124,58,237,0.3);
+    --glow: rgba(124,58,237,0.22);
+    --pink: #f43f5e;
+    --green: #22c55e;
+  }
+
+  @keyframes ilcSlideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes ilcTypingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  @keyframes ilcMsgIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes ilcPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+    50% { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+  }
+
+  .ilc-msg-row {
+    animation: ilcMsgIn 0.2s ease-out;
+  }
+
+  .ilc-faq-btn {
+    transition: all 0.15s ease !important;
+  }
+  .ilc-faq-btn:hover {
+    background: rgba(124,58,237,0.2) !important;
+    border-color: rgba(124,58,237,0.5) !important;
+    color: #c4b5fd !important;
+    transform: translateY(-1px);
+  }
+  .ilc-faq-btn:active {
+    transform: translateY(0) scale(0.99);
+  }
+
+  .ilc-input-wrap:focus-within {
+    border-color: rgba(124,58,237,0.45) !important;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.08) !important;
+  }
+
+  .ilc-send-btn:not(:disabled):hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 22px rgba(124,58,237,0.45) !important;
+  }
+  .ilc-send-btn:not(:disabled):active {
+    transform: scale(0.95);
+  }
+
+  .ilc-back-btn:hover {
+    background: rgba(255,255,255,0.15) !important;
+  }
+
+  .ilc-attach-btn:hover {
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.7) !important;
+  }
+
+  .ilc-scroll-btn:hover {
+    background: #1a1a1a !important;
+    transform: translateY(-2px);
+  }
+
+  .ilc-empty-faq:hover {
+    background: #1a1a1a !important;
+    border-color: rgba(255,255,255,0.16) !important;
+    transform: translateY(-1px);
+  }
+
+  .ilc-messages::-webkit-scrollbar {
+    width: 3px;
+  }
+  .ilc-messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ilc-messages::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+  }
+`;
+
 const InlineLiveChat = ({ user, onClose }) => {
   const { data: convData } = useGetAllConversation(user?.id);
   useListenMessages();
 
   const { socket } = useSocketContext();
-
   const { typingUsers, setSelectedConversation, setMessages } =
     useConversation();
   const { messages } = useGetMessages();
 
-  // ── convId: both state (for re-render) and ref (for instant access) ──
   const convIdRef = useRef(null);
   const [convId, setConvIdState] = useState(null);
 
@@ -50,7 +154,6 @@ const InlineLiveChat = ({ user, onClose }) => {
   const fileInputRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  // key by String for zustand consistency
   const isTyping = typingUsers?.[String(convId)];
 
   const { emitTyping, emitStopTyping } = useTyping({
@@ -59,7 +162,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     senderName: user?.name || "User",
   });
 
-  // ── Set global flag so useListenMessages knows inline chat is open ──
   useEffect(() => {
     window.__inlineChatConvId = convId;
     return () => {
@@ -67,7 +169,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     };
   }, [convId]);
 
-  // ── Set convId + set zustand selectedConversation ─────────
   useEffect(() => {
     if (convData?.[0]) {
       const conv = convData[0];
@@ -77,7 +178,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     }
   }, [convData, setSelectedConversation, setConvId]);
 
-  // ── Message block status ──────────────────────────────────
   useEffect(() => {
     if (!user?.id) return;
     fetch(`${API_BASE_URL}/users/${user.id}`)
@@ -86,7 +186,6 @@ const InlineLiveChat = ({ user, onClose }) => {
       .catch(console.error);
   }, [user?.id]);
 
-  // ── Root FAQs ─────────────────────────────────────────────
   useEffect(() => {
     axios
       .get(`${API_BASE_URL}/chat-faqs/root`)
@@ -94,7 +193,6 @@ const InlineLiveChat = ({ user, onClose }) => {
       .catch((e) => console.error("FAQs load error:", e));
   }, []);
 
-  // ── Scroll ────────────────────────────────────────────────
   const scrollToBottom = (smooth = true) =>
     chatEndRef.current?.scrollIntoView({
       behavior: smooth ? "smooth" : "auto",
@@ -110,7 +208,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
   };
 
-  // ── File handling ─────────────────────────────────────────
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -124,7 +221,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     if (fileInputRef.current) fileInputRef.current.value = null;
   };
 
-  // ── Send message ──────────────────────────────────────────
   const sendMessage = async () => {
     if (!message.trim() && !file) return;
     if (sending) return;
@@ -146,10 +242,7 @@ const InlineLiveChat = ({ user, onClose }) => {
         if (newConvId && !convIdRef.current) {
           setConvId(newConvId);
           window.__inlineChatConvId = newConvId;
-          setSelectedConversation({
-            ...res.data,
-            conversation_id: newConvId,
-          });
+          setSelectedConversation({ ...res.data, conversation_id: newConvId });
         }
         setMessages((prev) => [...prev, res.data]);
       }
@@ -171,7 +264,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     }
   };
 
-  // ── FAQ selection — FIXED ─────────────────────────────────
   const handleFaqSelect = async (faq) => {
     if (sending) return;
     if (!user?.id) return;
@@ -186,18 +278,13 @@ const InlineLiveChat = ({ user, onClose }) => {
 
       const res = await axios.post(`${API_BASE_URL}/messages/send`, fd);
 
-      // ✅ Resolve convId immediately using ref — don't wait for state update
       const newConvId = res.data?.conversation_id;
       if (newConvId && !convIdRef.current) {
-        setConvId(newConvId); // updates both ref and state
+        setConvId(newConvId);
         window.__inlineChatConvId = newConvId;
-        setSelectedConversation({
-          ...res.data,
-          conversation_id: newConvId,
-        });
+        setSelectedConversation({ ...res.data, conversation_id: newConvId });
       }
 
-      // ✅ Use resolved convId for bot reply — ref is always current
       const resolvedConvId = convIdRef.current ?? newConvId;
 
       const childRes = await axios.get(
@@ -206,12 +293,7 @@ const InlineLiveChat = ({ user, onClose }) => {
       const { parent, children } = childRes.data;
       const safeChildren = Array.isArray(children) ? children : [];
 
-      // ✅ Ensure user message has correct conversation_id
-      const userMessage = {
-        ...res.data,
-        conversation_id: resolvedConvId,
-      };
-
+      const userMessage = { ...res.data, conversation_id: resolvedConvId };
       const botReply = {
         id: `bot-${Date.now()}`,
         sender_id: null,
@@ -219,19 +301,16 @@ const InlineLiveChat = ({ user, onClose }) => {
         message_text: parent?.answer ?? "",
         faq_options: safeChildren.length > 0 ? safeChildren : null,
         created_at: new Date().toISOString(),
-        conversation_id: resolvedConvId, // ✅ always correct
+        conversation_id: resolvedConvId,
       };
 
-      // ✅ User message first, bot reply second
       setMessages((prev) => [...prev, userMessage, botReply]);
 
-      // mark seen for bot reply
       if (socket && resolvedConvId) {
-        const seenAt = new Date().toISOString();
         socket.emit("markSeen", {
           conversationId: resolvedConvId,
           recipientId: 0,
-          seenAt,
+          seenAt: new Date().toISOString(),
         });
       }
     } catch (err) {
@@ -241,7 +320,6 @@ const InlineLiveChat = ({ user, onClose }) => {
     }
   };
 
-  // ── Time format ───────────────────────────────────────────
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
     const secs = Math.floor((new Date() - date) / 1000);
@@ -252,7 +330,6 @@ const InlineLiveChat = ({ user, onClose }) => {
       : format(date, "hh:mm a");
   };
 
-  // ✅ Filter uses ref as fallback so it's never stale
   const filteredMessages = Array.isArray(messages)
     ? messages.filter(
         (m) =>
@@ -265,38 +342,69 @@ const InlineLiveChat = ({ user, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex flex-col bg-[#f3f4f8]"
+      className="ilc-root"
       style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000,
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--bg-base)",
         fontFamily: "'DM Sans', sans-serif",
-        animation: "slideUpModal 0.28s cubic-bezier(0.34,1.56,0.64,1)",
+        animation: "ilcSlideUp 0.28s cubic-bezier(0.34,1.56,0.64,1)",
       }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
+      <style>{inlineStyles}</style>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 py-3.5 flex-shrink-0"
         style={{
-          background: "linear-gradient(135deg,#6366f1,#a855f7)",
-          boxShadow: "0 4px 20px rgba(99,102,241,0.35)",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "13px 16px",
+          flexShrink: 0,
+          background: "var(--bg-surface)",
+          borderBottom: "1px solid var(--border-subtle)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
         }}
       >
         <button
           onClick={onClose}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-shrink-0"
-          style={{ background: "rgba(255,255,255,0.2)", border: "none" }}
+          className="ilc-back-btn"
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "11px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--text-secondary)",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid var(--border-default)",
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "background 0.15s",
+          }}
         >
-          <IoArrowBack size={18} />
+          <IoArrowBack size={17} />
         </button>
 
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: "rgba(255,255,255,0.25)" }}
+          style={{
+            width: "38px",
+            height: "38px",
+            borderRadius: "12px",
+            background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            border: "1px solid rgba(124,58,237,0.4)",
+            boxShadow: "0 4px 16px rgba(124,58,237,0.25)",
+          }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path
               d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
               stroke="white"
@@ -307,40 +415,90 @@ const InlineLiveChat = ({ user, onClose }) => {
           </svg>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-extrabold text-[15px] leading-tight m-0">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            style={{
+              color: "var(--text-primary)",
+              fontWeight: 700,
+              fontSize: "14.5px",
+              lineHeight: 1.2,
+              margin: 0,
+            }}
+          >
             Support Chat
           </p>
           {isTyping ? (
-            <p className="text-white/90 text-[11px] m-0 flex items-center gap-1">
+            <p
+              style={{
+                color: "var(--accent-light)",
+                fontSize: "11px",
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
               <span>typing</span>
-              <span className="flex gap-0.5 items-center">
+              <span
+                style={{ display: "flex", gap: "3px", alignItems: "center" }}
+              >
                 {[0, 0.2, 0.4].map((delay, i) => (
                   <span
                     key={i}
-                    className="w-1 h-1 rounded-full bg-white/80 inline-block"
                     style={{
-                      animation: `typingBounce 1.2s infinite ease-in-out ${delay}s`,
+                      width: "4px",
+                      height: "4px",
+                      borderRadius: "50%",
+                      background: "var(--accent-light)",
+                      display: "inline-block",
+                      animation: `ilcTypingBounce 1.2s infinite ease-in-out ${delay}s`,
                     }}
                   />
                 ))}
               </span>
             </p>
           ) : (
-            <p className="text-white/75 text-[11px] m-0">We're here to help</p>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontSize: "11px",
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "var(--green)",
+                  display: "inline-block",
+                  animation: "ilcPulse 2s infinite",
+                }}
+              />
+              We're here to help
+            </p>
           )}
         </div>
       </div>
 
-      {/* ── Messages ── */}
+      {/* Messages */}
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4"
-        style={{ overscrollBehavior: "contain" }}
+        className="ilc-messages"
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "16px",
+          overscrollBehavior: "contain",
+          background: "var(--bg-base)",
+        }}
       >
         {hasMessages ? (
-          <div className="flex flex-col gap-1">
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             {filteredMessages.map((msg, index) => {
               const isMe = !!user?.id && msg.sender_id === user.id;
               const prevMsg = filteredMessages[index - 1];
@@ -365,43 +523,87 @@ const InlineLiveChat = ({ user, onClose }) => {
               }
 
               return (
-                <div key={msg.id || index}>
+                <div key={msg.id || index} className="ilc-msg-row">
                   {showTime && (
-                    <div className="flex justify-center my-4">
-                      <span className="text-[10px] text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-100">
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        margin: "16px 0",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          color: "var(--text-muted)",
+                          background: "var(--bg-elevated)",
+                          border: "1px solid var(--border-subtle)",
+                          padding: "3px 12px",
+                          borderRadius: "20px",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
                         {formatTime(msg.created_at)}
                       </span>
                     </div>
                   )}
 
                   <div
-                    className={`flex items-end gap-2 mb-1 ${isMe ? "justify-end" : "justify-start"}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-end",
+                      gap: "8px",
+                      marginBottom: "2px",
+                      justifyContent: isMe ? "flex-end" : "flex-start",
+                    }}
                   >
                     {!isMe && (
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
                         style={{
-                          background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          border: "1px solid rgba(124,58,237,0.3)",
                         }}
                       >
-                        <RiAdminFill size={20} />
+                        <RiAdminFill size={20} color="white" />
                       </div>
                     )}
 
                     <div
-                      className={`flex flex-col gap-1 max-w-[78%] ${isMe ? "items-end" : "items-start"}`}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "3px",
+                        maxWidth: "75%",
+                        alignItems: isMe ? "flex-end" : "flex-start",
+                      }}
                     >
                       {msg.message_text && (
                         <div
-                          className="px-4 py-2.5 rounded-2xl text-[13.5px] leading-relaxed shadow-sm break-words"
                           style={{
+                            padding: "10px 14px",
+                            borderRadius: "18px",
+                            fontSize: "13.5px",
+                            lineHeight: "1.55",
+                            wordBreak: "break-word",
                             background: isMe
-                              ? "linear-gradient(135deg,#6366f1,#a855f7)"
-                              : "white",
-                            color: isMe ? "white" : "#1f2937",
-                            borderBottomRightRadius: isMe ? 4 : 18,
-                            borderBottomLeftRadius: isMe ? 18 : 4,
-                            border: isMe ? "none" : "1px solid #f3f4f6",
+                              ? "linear-gradient(135deg,#5b21b6,#7c3aed)"
+                              : "var(--bg-elevated)",
+                            color: "var(--text-primary)",
+                            borderBottomRightRadius: isMe ? "4px" : "18px",
+                            borderBottomLeftRadius: isMe ? "18px" : "4px",
+                            border: isMe
+                              ? "none"
+                              : "1px solid var(--border-default)",
+                            boxShadow: isMe
+                              ? "0 4px 16px rgba(124,58,237,0.25)"
+                              : "0 1px 4px rgba(0,0,0,0.4)",
                           }}
                         >
                           {msg.message_text}
@@ -417,24 +619,43 @@ const InlineLiveChat = ({ user, onClose }) => {
                               `${API_BASE_URL}/${msg.message_image}`,
                             )
                           }
-                          className="max-w-[220px] rounded-2xl cursor-pointer border border-gray-100"
+                          style={{
+                            maxWidth: "220px",
+                            borderRadius: "14px",
+                            cursor: "pointer",
+                            border: "1px solid var(--border-default)",
+                          }}
                         />
                       )}
 
                       {faqOptions && faqOptions.length > 0 && (
-                        <div className="flex flex-col gap-1.5 mt-1 w-full">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                            marginTop: "4px",
+                            width: "100%",
+                          }}
+                        >
                           {faqOptions.map((faq) => (
                             <button
                               key={faq.id}
                               onClick={() => handleFaqSelect(faq)}
                               disabled={sending}
-                              className="text-left px-4 py-2.5 rounded-2xl text-[12.5px] font-semibold disabled:opacity-50 transition-all"
+                              className="ilc-faq-btn"
                               style={{
-                                border: "2px solid #c7d2fe",
-                                background: "white",
-                                color: "#4338ca",
-                                fontFamily: "inherit",
+                                textAlign: "left",
+                                padding: "9px 14px",
+                                borderRadius: "12px",
+                                fontSize: "12.5px",
+                                fontWeight: 600,
                                 cursor: sending ? "not-allowed" : "pointer",
+                                background: "rgba(124,58,237,0.1)",
+                                border: "1px solid rgba(124,58,237,0.3)",
+                                color: "#c4b5fd",
+                                fontFamily: "inherit",
+                                opacity: sending ? 0.5 : 1,
                               }}
                             >
                               💬 {faq.question}
@@ -443,21 +664,28 @@ const InlineLiveChat = ({ user, onClose }) => {
                         </div>
                       )}
 
-                      {/* ── Read receipt ── */}
                       <div
-                        className={`flex items-center gap-1 ${isMe ? "justify-end" : "justify-start"}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          justifyContent: isMe ? "flex-end" : "flex-start",
+                        }}
                       >
                         {isMe && (
                           <span
-                            className="text-[10px] font-semibold transition-all duration-300"
-                            style={{ color: msg.seen ? "#6366f1" : "#d1d5db" }}
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              color: msg.seen
+                                ? "#a78bfa"
+                                : "rgba(255,255,255,0.25)",
+                              transition: "color 0.3s",
+                              letterSpacing: "0.01em",
+                            }}
                           >
                             {msg.seen
-                              ? `✓✓ Read${
-                                  msg.seen_at
-                                    ? ` ${format(new Date(msg.seen_at), "hh:mm a")}`
-                                    : ""
-                                }`
+                              ? `✓✓ Read${msg.seen_at ? ` ${format(new Date(msg.seen_at), "hh:mm a")}` : ""}`
                               : "✓ Sent"}
                           </span>
                         )}
@@ -466,9 +694,18 @@ const InlineLiveChat = ({ user, onClose }) => {
 
                     {isMe && (
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
                         style={{
-                          background: "linear-gradient(135deg,#f472b6,#f43f5e)",
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg,#be185d,#f43f5e)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "white",
+                          flexShrink: 0,
                         }}
                       >
                         {(user?.name || "U").charAt(0).toUpperCase()}
@@ -479,27 +716,52 @@ const InlineLiveChat = ({ user, onClose }) => {
               );
             })}
 
-            {/* ── Typing bubble ── */}
+            {/* Typing bubble */}
             {isTyping && (
-              <div className="flex items-end gap-2 mb-1 justify-start">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: "8px",
+                  marginBottom: "4px",
+                }}
+              >
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid rgba(124,58,237,0.3)",
                   }}
                 >
-                  <RiAdminFill size={16} />
+                  <RiAdminFill size={20} color="white" />
                 </div>
                 <div
-                  className="px-4 py-3 rounded-2xl shadow-sm flex items-center gap-1.5 bg-white border border-gray-100"
-                  style={{ borderBottomLeftRadius: 4 }}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "18px",
+                    borderBottomLeftRadius: "4px",
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--border-default)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
                 >
                   {[0, 0.2, 0.4].map((delay, i) => (
                     <span
                       key={i}
-                      className="w-2 h-2 rounded-full bg-gray-400 inline-block"
                       style={{
-                        animation: `typingBounce 1.2s infinite ease-in-out ${delay}s`,
+                        width: "7px",
+                        height: "7px",
+                        borderRadius: "50%",
+                        background: "rgba(255,255,255,0.35)",
+                        display: "inline-block",
+                        animation: `ilcTypingBounce 1.2s infinite ease-in-out ${delay}s`,
                       }}
                     />
                   ))}
@@ -508,13 +770,30 @@ const InlineLiveChat = ({ user, onClose }) => {
             )}
           </div>
         ) : (
-          /* ── Empty state with FAQs ── */
-          <div className="flex flex-col items-center justify-center min-h-full py-8 px-4 text-center">
+          /* Empty state */
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "100%",
+              padding: "32px 16px",
+              textAlign: "center",
+            }}
+          >
             <div
-              className="w-[72px] h-[72px] rounded-3xl flex items-center justify-center mb-4"
               style={{
-                background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                boxShadow: "0 8px 24px rgba(99,102,241,0.35)",
+                width: "72px",
+                height: "72px",
+                borderRadius: "22px",
+                background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "20px",
+                boxShadow: "0 8px 32px rgba(124,58,237,0.35)",
+                border: "1px solid rgba(124,58,237,0.4)",
               }}
             >
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -527,36 +806,90 @@ const InlineLiveChat = ({ user, onClose }) => {
                 />
               </svg>
             </div>
-            <p className="font-black text-[20px] text-gray-900 mb-1">
+            <p
+              style={{
+                fontWeight: 800,
+                color: "var(--text-primary)",
+                fontSize: "20px",
+                margin: "0 0 6px",
+              }}
+            >
               Hi {user?.name || "there"} 👋
             </p>
-            <p className="text-gray-500 text-sm mb-6 max-w-[280px]">
+            <p
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "13.5px",
+                lineHeight: 1.6,
+                margin: "0 0 24px",
+                maxWidth: "280px",
+              }}
+            >
               How can we help you today? Choose a topic below or send us a
               message.
             </p>
+
             {rootFaqs.length > 0 && (
-              <div className="w-full max-w-[360px] mb-6">
-                <p className="text-[11px] text-gray-400 font-bold uppercase tracking-[0.05em] mb-3 text-left">
+              <div style={{ width: "100%", maxWidth: "360px" }}>
+                <p
+                  style={{
+                    fontSize: "10px",
+                    color: "var(--text-muted)",
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    marginBottom: "10px",
+                    textAlign: "left",
+                  }}
+                >
                   Quick Help
                 </p>
-                <div className="flex flex-col gap-2">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
                   {rootFaqs.map((faq) => (
                     <button
                       key={faq.id}
                       onClick={() => handleFaqSelect(faq)}
                       disabled={sending}
-                      className="text-left px-4 py-3 rounded-[18px] flex items-center gap-3 disabled:opacity-50 transition-all"
+                      className="ilc-empty-faq"
                       style={{
-                        border: "2px solid #e5e7eb",
-                        background: "white",
-                        color: "#374151",
-                        fontSize: 13,
+                        textAlign: "left",
+                        padding: "12px 16px",
+                        borderRadius: "14px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        background: "var(--bg-elevated)",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
                         fontWeight: 600,
                         fontFamily: "inherit",
                         cursor: sending ? "not-allowed" : "pointer",
+                        transition: "all 0.15s ease",
+                        opacity: sending ? 0.5 : 1,
                       }}
                     >
-                      <span className="w-7 h-7 rounded-[10px] bg-indigo-50 text-indigo-500 flex items-center justify-center flex-shrink-0 text-sm">
+                      <span
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "10px",
+                          background: "rgba(124,58,237,0.15)",
+                          border: "1px solid rgba(124,58,237,0.25)",
+                          color: "#a78bfa",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          fontSize: "14px",
+                        }}
+                      >
                         💬
                       </span>
                       {faq.question}
@@ -570,67 +903,179 @@ const InlineLiveChat = ({ user, onClose }) => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Scroll button */}
       {showScrollBtn && (
         <button
           onClick={() => scrollToBottom()}
-          className="fixed bottom-20 right-4 z-[10010] w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-md cursor-pointer"
+          className="ilc-scroll-btn"
+          style={{
+            position: "fixed",
+            bottom: "80px",
+            right: "16px",
+            zIndex: 10010,
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-strong)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            transition: "all 0.15s",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.6)",
+          }}
         >
-          <IoChevronDown size={18} />
+          <IoChevronDown size={17} />
         </button>
       )}
 
-      {/* ── Input area ── */}
+      {/* Input area */}
       {isBlocked ? (
-        <div className="flex-shrink-0 px-4 py-4 bg-red-50 border-t border-red-100 text-center">
-          <p className="text-red-500 text-sm font-semibold m-0">
+        <div
+          style={{
+            flexShrink: 0,
+            padding: "14px 16px",
+            background: "rgba(239,68,68,0.07)",
+            borderTop: "1px solid rgba(239,68,68,0.18)",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              color: "#fca5a5",
+              fontSize: "13px",
+              fontWeight: 600,
+              margin: 0,
+            }}
+          >
             🚫 Your account has been blocked from sending messages
           </p>
         </div>
       ) : (
         <div
-          className="flex-shrink-0 bg-white border-t border-gray-100 px-4 py-3"
-          style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+          style={{
+            flexShrink: 0,
+            background: "var(--bg-surface)",
+            borderTop: "1px solid var(--border-subtle)",
+            padding: "12px 14px",
+            boxShadow: "0 -8px 28px rgba(0,0,0,0.5)",
+          }}
         >
           {filePreview && (
-            <div className="flex items-center gap-3 mb-3 p-2.5 bg-gray-50 rounded-2xl border border-gray-100">
-              <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "10px",
+                padding: "10px",
+                background: "var(--bg-elevated)",
+                borderRadius: "14px",
+                border: "1px solid var(--border-default)",
+              }}
+            >
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                }}
+              >
                 <img
                   src={filePreview}
                   alt="preview"
-                  className="w-full h-full object-cover"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] text-gray-600 font-medium truncate m-0">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    fontWeight: 500,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    margin: 0,
+                  }}
+                >
                   {file?.name}
                 </p>
-                <p className="text-[10px] text-gray-400 m-0">Ready to send</p>
+                <p
+                  style={{
+                    fontSize: "10px",
+                    color: "var(--text-muted)",
+                    margin: 0,
+                  }}
+                >
+                  Ready to send
+                </p>
               </div>
               <button
                 onClick={removeFile}
-                className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: "var(--bg-hover)",
+                  border: "1px solid var(--border-default)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                  flexShrink: 0,
+                }}
               >
-                <IoClose size={14} />
+                <IoClose size={13} />
               </button>
             </div>
           )}
 
-          <div className="flex items-end gap-2">
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500"
+              className="ilc-attach-btn"
+              style={{
+                flexShrink: 0,
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border-default)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
             >
-              <IoImageOutline size={19} />
+              <IoImageOutline size={18} />
             </button>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={handleFileChange}
-              className="hidden"
+              style={{ display: "none" }}
             />
 
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-500/15 transition-all">
+            <div
+              className="ilc-input-wrap"
+              style={{
+                flex: 1,
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border-default)",
+                borderRadius: "14px",
+                padding: "9px 14px",
+                transition: "all 0.2s",
+              }}
+            >
               <textarea
                 value={message}
                 onChange={(e) => {
@@ -642,20 +1087,44 @@ const InlineLiveChat = ({ user, onClose }) => {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 rows={1}
-                className="w-full bg-transparent text-[13.5px] text-gray-800 placeholder-gray-400 resize-none focus:outline-none max-h-28"
-                style={{ lineHeight: "1.5", fontFamily: "inherit" }}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "var(--text-primary)",
+                  fontSize: "13.5px",
+                  resize: "none",
+                  lineHeight: "1.5",
+                  fontFamily: "inherit",
+                  maxHeight: "110px",
+                  caretColor: "#a78bfa",
+                }}
               />
             </div>
 
             <button
               onClick={sendMessage}
               disabled={sending || (!message.trim() && !file)}
-              className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-white disabled:opacity-40"
+              className="ilc-send-btn"
               style={{
-                background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                boxShadow: "0 4px 12px rgba(99,102,241,0.4)",
+                flexShrink: 0,
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: "linear-gradient(135deg,#5b21b6,#7c3aed)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
                 border: "none",
-                cursor: "pointer",
+                cursor:
+                  sending || (!message.trim() && !file)
+                    ? "not-allowed"
+                    : "pointer",
+                transition: "all 0.15s",
+                opacity: sending || (!message.trim() && !file) ? 0.4 : 1,
+                boxShadow: "0 4px 14px rgba(124,58,237,0.35)",
               }}
             >
               {sending ? (
@@ -681,34 +1150,61 @@ const InlineLiveChat = ({ user, onClose }) => {
                   />
                 </svg>
               ) : (
-                <IoSend size={16} />
+                <IoSend size={15} />
               )}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Full image viewer ── */}
+      {/* Full image viewer */}
       {selectedImage && (
         <div
           onClick={() => setSelectedImage(null)}
-          className="fixed inset-0 z-[10001] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10001,
+            background: "rgba(0,0,0,0.94)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-lg w-full"
+            style={{ position: "relative", maxWidth: "520px", width: "100%" }}
           >
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute -top-10 right-0 text-white/70 flex items-center gap-1.5 text-sm"
-              style={{ background: "none", border: "none", cursor: "pointer" }}
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: 0,
+                color: "rgba(255,255,255,0.6)",
+                background: "none",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "13px",
+                cursor: "pointer",
+              }}
             >
-              <IoClose size={18} /> Close
+              <IoClose size={17} /> Close
             </button>
             <img
               src={selectedImage}
               alt="Full size"
-              className="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+              style={{
+                width: "100%",
+                maxHeight: "80vh",
+                objectFit: "contain",
+                borderRadius: "16px",
+                border: "1px solid var(--border-default)",
+              }}
             />
           </div>
         </div>

@@ -2,6 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 
+/* ─── Theme ── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+
 const FEATURES = [
   {
     icon: (
@@ -90,44 +97,11 @@ const HelpLoanLanding = () => {
   return (
     <div
       className="flex flex-col overflow-hidden"
-      style={{
-        height: "100dvh",
-        background: "#f3f4f8",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
+      style={{ height: "100dvh", background: DARK_BG }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
-
-      {/* Header with history button */}
-      <div className="flex-shrink-0 relative">
+      {/* Header */}
+      <div className="flex-shrink-0">
         <Header pageTitle="Help Loan" />
-        <button
-          onClick={() => navigate("/loan-history")}
-          className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"
-          style={{ background: "#eef2ff", color: "#6366f1" }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"
-              stroke="#6366f1"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <rect
-              x="9"
-              y="3"
-              width="6"
-              height="4"
-              rx="1"
-              stroke="#6366f1"
-              strokeWidth="2"
-            />
-          </svg>
-          History
-        </button>
       </div>
 
       {/* Scrollable content */}
@@ -137,39 +111,42 @@ const HelpLoanLanding = () => {
           className="mx-4 mt-3 rounded-3xl p-6 relative overflow-hidden"
           style={{
             background:
-              "linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)",
+              "linear-gradient(135deg,#6366f1 0%,#a855f7 55%,#ec4899 100%)",
           }}
         >
           <div
-            className="absolute"
+            className="absolute pointer-events-none rounded-full"
             style={{
               width: 160,
               height: 160,
-              borderRadius: "50%",
               background: "rgba(255,255,255,0.07)",
               top: -40,
               right: -30,
             }}
           />
           <div
-            className="absolute"
+            className="absolute pointer-events-none rounded-full"
             style={{
               width: 80,
               height: 80,
-              borderRadius: "50%",
               background: "rgba(255,255,255,0.06)",
               bottom: -20,
               left: 20,
             }}
           />
-
           <div className="relative z-10">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-white/70 text-xs font-semibold mb-1">
+                <p
+                  className="text-white/70 font-semibold mb-1"
+                  style={{ fontSize: "3vw" }}
+                >
                   Quick Loan
                 </p>
-                <p className="text-white font-black text-3xl leading-tight">
+                <p
+                  className="text-white font-black leading-tight"
+                  style={{ fontSize: "7.5vw" }}
+                >
                   Up to
                   <br />
                   50,000 USDT
@@ -196,7 +173,6 @@ const HelpLoanLanding = () => {
                 </svg>
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: "Min Period", value: "7 Days" },
@@ -208,8 +184,15 @@ const HelpLoanLanding = () => {
                   className="text-center rounded-2xl py-2.5"
                   style={{ background: "rgba(255,255,255,0.13)" }}
                 >
-                  <p className="text-white font-black text-sm">{s.value}</p>
-                  <p className="text-white/60 text-xs">{s.label}</p>
+                  <p
+                    className="text-white font-black"
+                    style={{ fontSize: "3.8vw" }}
+                  >
+                    {s.value}
+                  </p>
+                  <p className="text-white/60" style={{ fontSize: "3vw" }}>
+                    {s.label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -218,22 +201,43 @@ const HelpLoanLanding = () => {
 
         {/* Features */}
         <div className="px-4 mt-4">
-          <p className="text-gray-900 font-black text-base mb-3">
+          <p
+            className="font-black mb-3"
+            style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
+          >
             Why choose us?
           </p>
           <div className="grid grid-cols-2 gap-3">
             {FEATURES.map((f) => (
-              <div key={f.title} className="bg-white rounded-2xl p-4 shadow-sm">
+              <div
+                key={f.title}
+                className="rounded-2xl p-4"
+                style={{
+                  background: DARK_CARD,
+                  border: `1px solid ${DARK_BORDER}`,
+                }}
+              >
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
                   style={{ background: f.color }}
                 >
                   {f.icon}
                 </div>
-                <p className="text-gray-900 font-bold text-sm mb-0.5">
+                <p
+                  className="font-bold mb-0.5"
+                  style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                >
                   {f.title}
                 </p>
-                <p className="text-gray-400 text-xs leading-snug">{f.desc}</p>
+                <p
+                  style={{
+                    fontSize: "3.2vw",
+                    color: TEXT_MUTED,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {f.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -241,17 +245,27 @@ const HelpLoanLanding = () => {
 
         {/* How it works */}
         <div className="px-4 mt-5">
-          <p className="text-gray-900 font-black text-base mb-3">
+          <p
+            className="font-black mb-3"
+            style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
+          >
             How it works
           </p>
-          <div className="bg-white rounded-3xl shadow-sm p-5 space-y-4">
+          <div
+            className="rounded-3xl p-5 space-y-4"
+            style={{
+              background: DARK_CARD,
+              border: `1px solid ${DARK_BORDER}`,
+            }}
+          >
             {STEPS_INFO.map((s, i) => (
               <div key={s.num} className="flex items-start gap-4">
                 <div className="flex flex-col items-center">
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-black flex-shrink-0"
                     style={{
-                      background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                      fontSize: "3.5vw",
+                      background: "linear-gradient(135deg,#6366f1,#a855f7)",
                       color: "white",
                     }}
                   >
@@ -260,11 +274,14 @@ const HelpLoanLanding = () => {
                   {i < STEPS_INFO.length - 1 && (
                     <div
                       className="w-0.5 h-6 mt-1 rounded-full"
-                      style={{ background: "#e9d5ff" }}
+                      style={{ background: "rgba(168,85,247,0.3)" }}
                     />
                   )}
                 </div>
-                <p className="text-gray-700 text-sm font-medium pt-2 leading-snug">
+                <p
+                  className="font-medium pt-2 leading-snug"
+                  style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+                >
                   {s.label}
                 </p>
               </div>
@@ -275,7 +292,10 @@ const HelpLoanLanding = () => {
         {/* Notice */}
         <div
           className="mx-4 mt-4 mb-2 rounded-2xl p-4 flex gap-3"
-          style={{ background: "#fff7ed", border: "1px solid #fed7aa" }}
+          style={{
+            background: "rgba(249,115,22,0.1)",
+            border: "1px solid rgba(249,115,22,0.25)",
+          }}
         >
           <svg
             width="18"
@@ -297,7 +317,7 @@ const HelpLoanLanding = () => {
               strokeLinecap="round"
             />
           </svg>
-          <p className="text-orange-700 text-xs leading-relaxed">
+          <p style={{ fontSize: "3.2vw", color: "#fb923c", lineHeight: 1.6 }}>
             Loans are subject to credit review. Approval is not guaranteed.
             Please ensure you can repay before applying.
           </p>
@@ -306,16 +326,48 @@ const HelpLoanLanding = () => {
         <div className="h-4" />
       </div>
 
-      {/* CTA button */}
+      {/* CTA buttons */}
       <div
-        className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100"
-        style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+        className="flex-shrink-0 px-4 py-4 flex gap-3"
+        style={{ background: DARK_BG, borderTop: `1px solid ${DARK_BORDER}` }}
       >
+        {/* Loan History */}
+        <button
+          onClick={() => navigate("/loan-history")}
+          className="flex items-center gap-2 px-4 py-4 rounded-2xl font-bold flex-shrink-0 transition-transform active:scale-95"
+          style={{
+            fontSize: "3.5vw",
+            background: "rgba(99,102,241,0.12)",
+            color: "#818cf8",
+            border: "1px solid rgba(99,102,241,0.25)",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"
+              stroke="#818cf8"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <rect
+              x="9"
+              y="3"
+              width="6"
+              height="4"
+              rx="1"
+              stroke="#818cf8"
+              strokeWidth="2"
+            />
+          </svg>
+          History
+        </button>
+        {/* Apply */}
         <button
           onClick={() => navigate("/help-loan")}
-          className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-extrabold text-base text-white active:scale-95 transition-transform"
+          className="flex-1 py-4 rounded-2xl flex items-center justify-center gap-2 font-extrabold text-white active:scale-95 transition-transform"
           style={{
-            background: "linear-gradient(90deg, #f472b6, #a855f7)",
+            fontSize: "4.5vw",
+            background: "linear-gradient(90deg,#f472b6,#a855f7)",
             boxShadow: "0 8px 24px rgba(168,85,247,0.35)",
           }}
         >

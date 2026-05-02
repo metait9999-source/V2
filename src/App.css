@@ -4,6 +4,7 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  background-color: #000;
 }
 h1 {
   color: #333;
@@ -20,12 +21,12 @@ h1 {
 }
 
 .standard-ui {
-  background-color: #f0f0f0;
+  background-color: black;
 }
 
 .trust-wallet-connect,
 .trust-wallet-ui {
-  background-color: #fff;
+  background-color: black;
 }
 
 button {

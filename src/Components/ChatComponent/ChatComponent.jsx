@@ -17,6 +17,105 @@ import useListenMessages from "../../hooks/useListenMessages";
 import useTyping from "../utils/useTyping";
 import { RiAdminFill } from "react-icons/ri";
 
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .chat-root {
+    --bg-base: #000000;
+    --bg-surface: #0d0d0d;
+    --bg-elevated: #141414;
+    --bg-hover: #1a1a1a;
+    --bg-active: #202020;
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-default: rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.65);
+    --text-muted: rgba(255,255,255,0.35);
+    --accent: #7c3aed;
+    --accent-light: #a78bfa;
+    --accent-subtle: rgba(124,58,237,0.15);
+    --accent-border: rgba(124,58,237,0.35);
+    --glow: rgba(124,58,237,0.2);
+    --bubble-out-start: #6d28d9;
+    --bubble-out-end: #7c3aed;
+    --bubble-in: #141414;
+    --pink: #f43f5e;
+    --pink-light: #fb7185;
+    --green: #22c55e;
+  }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  @keyframes msgSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulseOnline {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .chat-msg-new {
+    animation: msgSlideIn 0.2s ease-out;
+  }
+
+  .chat-faq-chip:hover {
+    background: rgba(124,58,237,0.2) !important;
+    border-color: rgba(124,58,237,0.55) !important;
+    transform: translateY(-1px);
+  }
+
+  .chat-faq-chip:active {
+    transform: translateY(0);
+  }
+
+  .chat-input-field:focus-within {
+    border-color: rgba(124,58,237,0.45) !important;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.08) !important;
+  }
+
+  .chat-send-btn:not(:disabled):hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 20px rgba(124,58,237,0.45) !important;
+  }
+
+  .chat-send-btn:not(:disabled):active {
+    transform: scale(0.95);
+  }
+
+  .chat-scroll-btn:hover {
+    background: #1a1a1a !important;
+    transform: translateY(-2px);
+  }
+
+  .chat-attach-btn:hover {
+    background: var(--bg-hover) !important;
+    border-color: var(--border-strong) !important;
+    color: rgba(255,255,255,0.7) !important;
+  }
+
+  .chat-messages-area::-webkit-scrollbar {
+    width: 3px;
+  }
+  .chat-messages-area::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chat-messages-area::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+  }
+`;
+
 const ChatComponent = () => {
   const { user } = useUser();
   const { data } = useGetAllConversation(user?.id);
@@ -195,28 +294,34 @@ const ChatComponent = () => {
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className="chat-root"
       style={{
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
         height: "100dvh",
-        background: "#f3f4f8",
+        background: "var(--bg-base)",
         fontFamily: "'DM Sans', sans-serif",
       }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
+      <style>{styles}</style>
       <Header pageTitle="Support Chat" />
 
-      {/* ── Messages ── */}
+      {/* Messages */}
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-4"
-        style={{ overscrollBehavior: "contain" }}
+        className="chat-messages-area"
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "16px",
+          overscrollBehavior: "contain",
+          background: "var(--bg-base)",
+        }}
       >
         {hasMessages ? (
-          <div className="space-y-1">
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             {messages.map((msg, index) => {
               const isMe = msg.sender_id === user?.id;
               const prevMsg = messages[index - 1];
@@ -241,44 +346,89 @@ const ChatComponent = () => {
               }
 
               return (
-                <div key={msg.id || index}>
+                <div key={msg.id || index} className="chat-msg-new">
                   {showTime && (
-                    <div className="flex items-center justify-center my-4">
-                      <span className="text-[10px] text-gray-400 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "16px 0",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          color: "var(--text-muted)",
+                          background: "var(--bg-elevated)",
+                          border: "1px solid var(--border-subtle)",
+                          padding: "3px 12px",
+                          borderRadius: "20px",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
                         {formatTime(msg.created_at)}
                       </span>
                     </div>
                   )}
 
                   <div
-                    className={`flex items-end gap-2 mb-1 ${isMe ? "justify-end" : "justify-start"}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-end",
+                      gap: "8px",
+                      marginBottom: "2px",
+                      justifyContent: isMe ? "flex-end" : "flex-start",
+                    }}
                   >
                     {!isMe && (
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 mb-1 shadow-sm"
                         style={{
-                          background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          marginBottom: "2px",
+                          border: "1px solid rgba(124,58,237,0.3)",
                         }}
                       >
-                        <RiAdminFill size={20} />
+                        <RiAdminFill size={20} color="white" />
                       </div>
                     )}
 
                     <div
-                      className={`flex flex-col gap-1 max-w-[78%] ${isMe ? "items-end" : "items-start"}`}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "3px",
+                        maxWidth: "75%",
+                        alignItems: isMe ? "flex-end" : "flex-start",
+                      }}
                     >
                       {msg.message_text && (
                         <div
-                          className="px-4 py-2.5 rounded-2xl text-[13.5px] leading-relaxed shadow-sm"
                           style={{
-                            background: isMe
-                              ? "linear-gradient(135deg,#6366f1,#a855f7)"
-                              : "white",
-                            color: isMe ? "white" : "#1f2937",
-                            borderBottomRightRadius: isMe ? 4 : 18,
-                            borderBottomLeftRadius: isMe ? 18 : 4,
-                            border: isMe ? "none" : "1px solid #f3f4f6",
+                            padding: "10px 14px",
+                            borderRadius: "18px",
+                            fontSize: "13.5px",
+                            lineHeight: "1.55",
                             wordBreak: "break-word",
+                            background: isMe
+                              ? "linear-gradient(135deg, #5b21b6, #7c3aed)"
+                              : "var(--bg-elevated)",
+                            color: "var(--text-primary)",
+                            borderBottomRightRadius: isMe ? "4px" : "18px",
+                            borderBottomLeftRadius: isMe ? "18px" : "4px",
+                            border: isMe
+                              ? "none"
+                              : "1px solid var(--border-default)",
+                            boxShadow: isMe
+                              ? "0 4px 16px rgba(124,58,237,0.25)"
+                              : "0 1px 4px rgba(0,0,0,0.4)",
                           }}
                         >
                           {msg.message_text}
@@ -294,24 +444,45 @@ const ChatComponent = () => {
                               `${API_BASE_URL}/${msg.message_image}`,
                             )
                           }
-                          className="max-w-[220px] rounded-2xl cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-gray-100"
+                          style={{
+                            maxWidth: "220px",
+                            borderRadius: "14px",
+                            cursor: "pointer",
+                            border: "1px solid var(--border-default)",
+                            transition: "opacity 0.15s",
+                          }}
                         />
                       )}
 
                       {faqOptions && faqOptions.length > 0 && (
-                        <div className="flex flex-col gap-1.5 mt-1 w-full">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                            marginTop: "4px",
+                            width: "100%",
+                          }}
+                        >
                           {faqOptions.map((faq) => (
                             <button
                               key={faq.id}
                               onClick={() => handleFaqSelect(faq)}
                               disabled={sending}
-                              className="text-left px-4 py-2.5 rounded-2xl text-[12.5px] font-semibold transition-all active:scale-[0.98] disabled:opacity-50"
+                              className="chat-faq-chip"
                               style={{
-                                border: "2px solid #c7d2fe",
-                                background: "white",
-                                color: "#4338ca",
+                                textAlign: "left",
+                                padding: "9px 14px",
+                                borderRadius: "12px",
+                                fontSize: "12.5px",
+                                fontWeight: 600,
                                 cursor: sending ? "not-allowed" : "pointer",
+                                background: "rgba(124,58,237,0.1)",
+                                border: "1px solid rgba(124,58,237,0.3)",
+                                color: "#c4b5fd",
                                 fontFamily: "inherit",
+                                transition: "all 0.15s ease",
+                                opacity: sending ? 0.5 : 1,
                               }}
                             >
                               💬 {faq.question}
@@ -320,17 +491,26 @@ const ChatComponent = () => {
                         </div>
                       )}
 
-                      {/* ── Timestamp + Read receipt ── */}
                       <div
-                        className={`flex items-center gap-1 px-1 ${isMe ? "justify-end" : "justify-start"}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "0 2px",
+                          justifyContent: isMe ? "flex-end" : "flex-start",
+                        }}
                       >
-                        {/* <p className="text-[10px] text-gray-400 m-0">
-                          {format(new Date(msg.created_at), "hh:mm a")}
-                        </p> */}
                         {isMe && (
                           <span
-                            className="text-[10px] font-semibold transition-all duration-300"
-                            style={{ color: msg.seen ? "#6366f1" : "#d1d5db" }}
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              color: msg.seen
+                                ? "#a78bfa"
+                                : "rgba(255,255,255,0.25)",
+                              transition: "color 0.3s",
+                              letterSpacing: "0.01em",
+                            }}
                           >
                             {msg.seen
                               ? `✓✓ Read${msg.seen_at ? ` ${format(new Date(msg.seen_at), "hh:mm a")}` : ""}`
@@ -342,9 +522,20 @@ const ChatComponent = () => {
 
                     {isMe && (
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 mb-1 shadow-sm"
                         style={{
-                          background: "linear-gradient(135deg,#f472b6,#f43f5e)",
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          background:
+                            "linear-gradient(135deg, #be185d, #f43f5e)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "white",
+                          flexShrink: 0,
+                          marginBottom: "2px",
                         }}
                       >
                         {(user?.name || "U").charAt(0).toUpperCase()}
@@ -355,26 +546,52 @@ const ChatComponent = () => {
               );
             })}
 
-            {/* ── Typing indicator ── */}
+            {/* Typing indicator */}
             {isTyping && (
-              <div className="flex items-end gap-2 mb-1 justify-start">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: "8px",
+                  marginBottom: "4px",
+                  justifyContent: "flex-start",
+                }}
+              >
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 shadow-sm"
                   style={{
-                    background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid rgba(124,58,237,0.3)",
                   }}
                 >
-                  <RiAdminFill size={16} />
+                  <RiAdminFill size={20} color="white" />
                 </div>
                 <div
-                  className="px-4 py-3 rounded-2xl shadow-sm flex items-center gap-1.5 bg-white border border-gray-100"
-                  style={{ borderBottomLeftRadius: 4 }}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "18px",
+                    borderBottomLeftRadius: "4px",
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--border-default)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
                 >
                   {[0, 0.2, 0.4].map((delay, i) => (
                     <span
                       key={i}
-                      className="w-2 h-2 rounded-full bg-gray-400 inline-block"
                       style={{
+                        width: "7px",
+                        height: "7px",
+                        borderRadius: "50%",
+                        background: "rgba(255,255,255,0.4)",
+                        display: "inline-block",
                         animation: `typingBounce 1.2s infinite ease-in-out ${delay}s`,
                       }}
                     />
@@ -384,12 +601,33 @@ const ChatComponent = () => {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-full py-8 px-4 text-center">
+          /* Empty state */
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "100%",
+              padding: "32px 16px",
+              textAlign: "center",
+            }}
+          >
             <div
-              className="w-20 h-20 rounded-3xl mb-4 flex items-center justify-center shadow-xl"
-              style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)" }}
+              style={{
+                width: "72px",
+                height: "72px",
+                borderRadius: "22px",
+                background: "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "20px",
+                boxShadow: "0 8px 32px rgba(124,58,237,0.35)",
+                border: "1px solid rgba(124,58,237,0.4)",
+              }}
             >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
                   stroke="white"
@@ -399,46 +637,87 @@ const ChatComponent = () => {
                 />
               </svg>
             </div>
-            <p className="font-black text-gray-900 text-xl mb-1">
+            <p
+              style={{
+                fontWeight: 800,
+                color: "var(--text-primary)",
+                fontSize: "20px",
+                margin: "0 0 6px",
+              }}
+            >
               Hi {user?.name || "there"} 👋
             </p>
-            <p className="text-gray-500 text-sm leading-relaxed mb-6 max-w-xs">
+            <p
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "13.5px",
+                lineHeight: 1.6,
+                margin: "0 0 24px",
+                maxWidth: "280px",
+              }}
+            >
               How can we help you today? Choose a topic or send us a message.
             </p>
+
             {rootFaqs.length > 0 && (
-              <div className="w-full max-w-sm mb-6">
-                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-3 text-left">
+              <div style={{ width: "100%", maxWidth: "360px" }}>
+                <p
+                  style={{
+                    fontSize: "10px",
+                    color: "var(--text-muted)",
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    marginBottom: "10px",
+                    textAlign: "left",
+                  }}
+                >
                   Quick Help
                 </p>
-                <div className="flex flex-col gap-2">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
                   {rootFaqs.map((faq) => (
                     <button
                       key={faq.id}
                       onClick={() => handleFaqSelect(faq)}
                       disabled={sending}
-                      className="text-left px-4 py-3 rounded-2xl flex items-center gap-3 transition-all active:scale-[0.98] disabled:opacity-50"
+                      className="chat-faq-chip"
                       style={{
-                        border: "2px solid #e5e7eb",
-                        background: "white",
-                        color: "#374151",
-                        fontSize: 13,
+                        textAlign: "left",
+                        padding: "12px 16px",
+                        borderRadius: "14px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        background: "var(--bg-elevated)",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--text-primary)",
+                        fontSize: "13px",
                         fontWeight: 600,
                         fontFamily: "inherit",
                         cursor: sending ? "not-allowed" : "pointer",
+                        transition: "all 0.15s ease",
+                        opacity: sending ? 0.5 : 1,
                       }}
                     >
                       <span
                         style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 10,
-                          background: "#eef2ff",
-                          color: "#6366f1",
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "10px",
+                          background: "rgba(124,58,237,0.15)",
+                          border: "1px solid rgba(124,58,237,0.25)",
+                          color: "#a78bfa",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           flexShrink: 0,
-                          fontSize: 14,
+                          fontSize: "14px",
                         }}
                       >
                         💬
@@ -454,66 +733,179 @@ const ChatComponent = () => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Scroll to bottom button */}
       {showScrollBtn && (
         <button
           onClick={() => scrollToBottom()}
-          className="fixed bottom-24 right-4 z-10 w-9 h-9 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all active:scale-95"
+          className="chat-scroll-btn"
+          style={{
+            position: "fixed",
+            bottom: "88px",
+            right: "16px",
+            zIndex: 10,
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-strong)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            transition: "all 0.15s",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+          }}
         >
-          <IoChevronDown size={18} />
+          <IoChevronDown size={17} />
         </button>
       )}
 
+      {/* Input area */}
       {isBlocked ? (
-        <div className="flex-shrink-0 px-4 py-4 bg-red-50 border-t border-red-100 text-center">
-          <p className="text-red-500 text-sm font-semibold">
+        <div
+          style={{
+            flexShrink: 0,
+            padding: "14px 16px",
+            background: "rgba(239,68,68,0.08)",
+            borderTop: "1px solid rgba(239,68,68,0.2)",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              color: "#fca5a5",
+              fontSize: "13px",
+              fontWeight: 600,
+              margin: 0,
+            }}
+          >
             🚫 Your account has been blocked from sending messages
           </p>
         </div>
       ) : (
         <div
-          className="flex-shrink-0 bg-white border-t border-gray-100 px-4 py-3"
-          style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+          style={{
+            flexShrink: 0,
+            background: "var(--bg-surface)",
+            borderTop: "1px solid var(--border-subtle)",
+            padding: "12px 14px",
+            boxShadow: "0 -8px 24px rgba(0,0,0,0.4)",
+          }}
         >
           {filePreview && (
-            <div className="flex items-center gap-3 mb-3 p-2.5 bg-gray-50 rounded-2xl border border-gray-100">
-              <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "10px",
+                padding: "10px",
+                background: "var(--bg-elevated)",
+                borderRadius: "14px",
+                border: "1px solid var(--border-default)",
+              }}
+            >
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                }}
+              >
                 <img
                   src={filePreview}
                   alt="preview"
-                  className="w-full h-full object-cover"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] text-gray-600 font-medium truncate">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                    fontWeight: 500,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    margin: 0,
+                  }}
+                >
                   {file?.name}
                 </p>
-                <p className="text-[10px] text-gray-400">Ready to send</p>
+                <p
+                  style={{
+                    fontSize: "10px",
+                    color: "var(--text-muted)",
+                    margin: 0,
+                  }}
+                >
+                  Ready to send
+                </p>
               </div>
               <button
                 onClick={removeFile}
-                className="w-7 h-7 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: "var(--bg-hover)",
+                  border: "1px solid var(--border-default)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                  flexShrink: 0,
+                }}
               >
-                <IoClose size={14} />
+                <IoClose size={13} />
               </button>
             </div>
           )}
 
-          <div className="flex items-end gap-2">
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all active:scale-95"
+              className="chat-attach-btn"
+              style={{
+                flexShrink: 0,
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border-default)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
             >
-              <IoImageOutline size={19} />
+              <IoImageOutline size={18} />
             </button>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={handleFileChange}
-              className="hidden"
+              style={{ display: "none" }}
             />
 
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-500/15 transition-all">
+            <div
+              className="chat-input-field"
+              style={{
+                flex: 1,
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border-default)",
+                borderRadius: "14px",
+                padding: "9px 14px",
+                transition: "all 0.2s",
+              }}
+            >
               <textarea
                 value={message}
                 onChange={(e) => {
@@ -524,18 +916,44 @@ const ChatComponent = () => {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 rows={1}
-                className="w-full bg-transparent text-[13.5px] text-gray-800 placeholder-gray-400 resize-none focus:outline-none max-h-28"
-                style={{ lineHeight: "1.5", fontFamily: "inherit" }}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "var(--text-primary)",
+                  fontSize: "13.5px",
+                  resize: "none",
+                  lineHeight: "1.5",
+                  fontFamily: "inherit",
+                  maxHeight: "110px",
+                  caretColor: "#a78bfa",
+                }}
               />
             </div>
 
             <button
               onClick={sendMessage}
               disabled={sending || (!message.trim() && !file)}
-              className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-40"
+              className="chat-send-btn"
               style={{
-                background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                boxShadow: "0 4px 12px rgba(99,102,241,0.4)",
+                flexShrink: 0,
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: "linear-gradient(135deg,#5b21b6,#7c3aed)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                border: "none",
+                cursor:
+                  sending || (!message.trim() && !file)
+                    ? "not-allowed"
+                    : "pointer",
+                transition: "all 0.15s",
+                opacity: sending || (!message.trim() && !file) ? 0.4 : 1,
+                boxShadow: "0 4px 14px rgba(124,58,237,0.35)",
               }}
             >
               {sending ? (
@@ -561,32 +979,61 @@ const ChatComponent = () => {
                   />
                 </svg>
               ) : (
-                <IoSend size={16} />
+                <IoSend size={15} />
               )}
             </button>
           </div>
         </div>
       )}
 
+      {/* Full image viewer */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-[1000] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.92)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
         >
           <div
-            className="relative max-w-lg w-full"
             onClick={(e) => e.stopPropagation()}
+            style={{ position: "relative", maxWidth: "520px", width: "100%" }}
           >
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute -top-10 right-0 text-white/70 hover:text-white flex items-center gap-1.5 text-sm transition-colors"
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: 0,
+                color: "rgba(255,255,255,0.6)",
+                background: "none",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "13px",
+                cursor: "pointer",
+              }}
             >
-              <IoClose size={18} /> Close
+              <IoClose size={17} /> Close
             </button>
             <img
               src={selectedImage}
               alt="Full size"
-              className="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+              style={{
+                width: "100%",
+                maxHeight: "80vh",
+                objectFit: "contain",
+                borderRadius: "16px",
+                border: "1px solid var(--border-default)",
+              }}
             />
           </div>
         </div>

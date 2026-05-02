@@ -11,15 +11,42 @@ import {
   cancelSubscription,
 } from "../../api/arbitrage.api";
 import { useNavigate } from "react-router";
+import { IoMdArrowRoundBack } from "react-icons/io";
+
+/* ─── Theme ── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_CARD2 = "#111118";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const DARK_BORDER2 = "rgba(255,255,255,0.06)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+const TEXT_SUB = "#475569";
+const ACCENT = "#7c3aed";
 
 const SUPPORTED_COINS = ["USDT", "BTC", "ETH"];
+const COIN_COLORS = { USDT: "#26a17b", BTC: "#f7931a", ETH: "#627eea" };
 
-const COIN_COLORS = {
-  USDT: "#26a17b",
-  BTC: "#f7931a",
-  ETH: "#627eea",
+/* ─── Status badge styles (dark-friendly) ── */
+const statusStyle = {
+  active: {
+    background: "rgba(16,185,129,0.12)",
+    color: "rgb(16,185,129)",
+    border: "1px solid rgba(16,185,129,0.2)",
+  },
+  completed: {
+    background: "rgba(100,116,139,0.12)",
+    color: "white",
+    border: "1px solid rgba(100,116,139,0.2)",
+  },
+  cancelled: {
+    background: "rgba(239,68,68,0.12)",
+    color: "rgb(239,68,68)",
+    border: "1px solid rgba(239,68,68,0.2)",
+  },
 };
 
+/* ─── Icons ── */
 const CoinLogo = ({ symbol, size = 36, selected = false, onClick }) => (
   <button
     onClick={onClick}
@@ -28,8 +55,10 @@ const CoinLogo = ({ symbol, size = 36, selected = false, onClick }) => (
       height: size,
       borderRadius: "50%",
       padding: 0,
-      border: selected ? "2.5px solid #7c3aed" : "2.5px solid transparent",
-      boxShadow: selected ? "0 0 0 2px #ede9fe" : "none",
+      border: selected
+        ? `2.5px solid ${ACCENT}`
+        : "2.5px solid rgba(255,255,255,0.1)",
+      boxShadow: selected ? `0 0 0 2px rgba(124,58,237,0.3)` : "none",
       background: "none",
       cursor: onClick ? "pointer" : "default",
       flexShrink: 0,
@@ -47,7 +76,7 @@ const CoinLogo = ({ symbol, size = 36, selected = false, onClick }) => (
       }}
       onError={(e) => {
         e.target.style.display = "none";
-        e.target.parentNode.style.background = COIN_COLORS[symbol] || "#ccc";
+        e.target.parentNode.style.background = COIN_COLORS[symbol] || "#333";
       }}
     />
   </button>
@@ -80,10 +109,10 @@ const CheckIcon = () => (
     fill="none"
     className="flex-shrink-0 mt-0.5"
   >
-    <circle cx="8" cy="8" r="7" fill="#6366f1" opacity=".12" />
+    <circle cx="8" cy="8" r="7" fill="#6366f1" opacity=".2" />
     <path
       d="M5 8l2 2 4-4"
-      stroke="#6366f1"
+      stroke="#818cf8"
       strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -95,7 +124,7 @@ const ArrowsUpDown = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
     <path
       d="M5 2L3 4l2 2M3 4h7M9 12l2-2-2-2M11 10H4"
-      stroke="#6366f1"
+      stroke="#818cf8"
       strokeWidth="1.4"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -103,15 +132,9 @@ const ArrowsUpDown = () => (
   </svg>
 );
 
-const statusStyle = {
-  active: "bg-green-100 text-green-700",
-  completed: "bg-gray-100 text-gray-500",
-  cancelled: "bg-red-100 text-red-500",
-};
-
 /* ════════════════════════════════════════════════════════════════
    WALLET BALANCE BAR
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const WalletBalanceBar = ({ wallets }) => {
   const supported =
     wallets?.filter((w) =>
@@ -120,15 +143,27 @@ const WalletBalanceBar = ({ wallets }) => {
 
   return (
     <div className="mx-4 mb-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-50">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+      >
+        <div
+          className="px-4 py-3"
+          style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
+        >
+          <p
+            className="font-semibold uppercase tracking-wide"
+            style={{ fontSize: "3vw", color: TEXT_MUTED }}
+          >
             My Wallets
           </p>
         </div>
-        <div className="divide-y divide-gray-50">
+        <div>
           {supported.length === 0 ? (
-            <div className="px-4 py-4 text-center text-gray-400 text-sm">
+            <div
+              className="px-4 py-4 text-center"
+              style={{ color: TEXT_MUTED, fontSize: "3.5vw" }}
+            >
               No wallets found
             </div>
           ) : (
@@ -136,12 +171,13 @@ const WalletBalanceBar = ({ wallets }) => {
               <div
                 key={w.id}
                 className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center"
                     style={{
-                      background: `${COIN_COLORS[w.coin_symbol] || "#ccc"}20`,
+                      background: `${COIN_COLORS[w.coin_symbol] || "#333"}25`,
                     }}
                   >
                     <img
@@ -154,17 +190,25 @@ const WalletBalanceBar = ({ wallets }) => {
                     />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">
+                    <p
+                      className="font-semibold"
+                      style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                    >
                       {w.coin_symbol}
                     </p>
-                    <p className="text-xs text-gray-400">{w.coin_name}</p>
+                    <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
+                      {w.coin_name}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-gray-800">
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                  >
                     {parseFloat(w.coin_amount || 0).toFixed(4)}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                     ≈ US$ {parseFloat(w.usd_amount || 0).toFixed(2)}
                   </p>
                 </div>
@@ -179,7 +223,7 @@ const WalletBalanceBar = ({ wallets }) => {
 
 /* ════════════════════════════════════════════════════════════════
    HOSTING WORK PAGE
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const HostingWorkPage = ({
   onGoToArbitrage,
   packages,
@@ -191,26 +235,24 @@ const HostingWorkPage = ({
   const totalEarned = subscriptions
     .reduce((sum, s) => sum + parseFloat(s.total_earned || 0), 0)
     .toFixed(4);
-
   const todayEarned = subscriptions
-    .filter((s) => {
-      if (!s.last_paid_at) return false;
-      return (
-        new Date(s.last_paid_at).toDateString() === new Date().toDateString()
-      );
-    })
-    .reduce((sum, s) => {
-      return sum + (parseFloat(s.amount) * parseFloat(s.daily_rate)) / 100;
-    }, 0)
+    .filter(
+      (s) =>
+        s.last_paid_at &&
+        new Date(s.last_paid_at).toDateString() === new Date().toDateString(),
+    )
+    .reduce(
+      (sum, s) => sum + (parseFloat(s.amount) * parseFloat(s.daily_rate)) / 100,
+      0,
+    )
     .toFixed(4);
-
   const activeCount = subscriptions.filter((s) => s.status === "active").length;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen pb-8" style={{ background: DARK_BG }}>
       <Header pageTitle="Arbitrage" />
 
-      {/* Hero gradient header */}
+      {/* Hero */}
       <div
         className="relative overflow-hidden flex flex-col items-center pt-6 pb-12 px-5"
         style={{
@@ -219,7 +261,6 @@ const HostingWorkPage = ({
         }}
       >
         <div
-          className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
           style={{
             background: "#fff",
             filter: "blur(48px)",
@@ -227,58 +268,37 @@ const HostingWorkPage = ({
           }}
         />
         <div
-          className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-15"
+          className="pointer-events-none absolute rounded-full"
           style={{
+            bottom: 0,
+            left: 0,
+            width: "40vw",
+            height: "40vw",
             background: "#a5b4fc",
             filter: "blur(36px)",
             transform: "translate(-20%,40%)",
+            opacity: 0.15,
           }}
         />
 
-        <p className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-2 relative z-10">
+        <p
+          className="text-white/70 font-semibold tracking-widest uppercase relative z-10 mb-2"
+          style={{ fontSize: "3vw" }}
+        >
           Total Earnings
         </p>
         <div
-          className="text-white font-black text-5xl mb-1 relative z-10"
-          style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: "-1px" }}
+          className="text-white font-black relative z-10 mb-1"
+          style={{ fontSize: "10vw", letterSpacing: "-1px" }}
         >
-          US$ {totalEarned}
+          ${totalEarned}
         </div>
-        <p className="text-white/60 text-xs relative z-10 mb-6">
+        <p
+          className="text-white/60 relative z-10 mb-6"
+          style={{ fontSize: "3vw" }}
+        >
           {activeCount} active subscription{activeCount !== 1 ? "s" : ""}
         </p>
-
-        <button
-          onClick={() => onGoToArbitrage(null)}
-          className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-base relative z-10 transition-transform active:scale-95"
-          style={{
-            background: "linear-gradient(90deg,#f472b6,#a855f7)",
-            boxShadow: "0 8px 24px rgba(168,85,247,0.45)",
-          }}
-        >
-          <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
-            <rect
-              x="0"
-              y="8"
-              width="4"
-              height="8"
-              rx="1"
-              fill="white"
-              opacity=".8"
-            />
-            <rect
-              x="7"
-              y="4"
-              width="4"
-              height="12"
-              rx="1"
-              fill="white"
-              opacity=".9"
-            />
-            <rect x="14" y="0" width="4" height="16" rx="1" fill="white" />
-          </svg>
-          Start Hosting
-        </button>
       </div>
 
       {/* Stats row */}
@@ -291,70 +311,123 @@ const HostingWorkPage = ({
           ].map((s) => (
             <div
               key={s.label}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 text-center"
+              className="rounded-2xl p-3 text-center"
+              style={{
+                background: DARK_CARD2,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
             >
-              <p className="text-gray-400 text-xs mb-1">{s.label}</p>
-              <p className="text-gray-800 font-bold text-base">{s.value}</p>
-              <p className="text-gray-400 text-xs">{s.unit}</p>
+              <p
+                style={{ fontSize: "3vw", color: TEXT_MUTED, marginBottom: 4 }}
+              >
+                {s.label}
+              </p>
+              <p
+                className="font-bold"
+                style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
+              >
+                {s.value}
+              </p>
+              <p style={{ fontSize: "2.8vw", color: TEXT_MUTED }}>{s.unit}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Wallet balances */}
       <WalletBalanceBar wallets={wallets} />
 
       {/* Packages */}
       <div className="px-4 mb-4">
         <p
-          className="text-gray-900 font-extrabold text-lg mb-3"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
+          className="font-extrabold mb-3"
+          style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
         >
           Arbitrage Products
         </p>
         {packages.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
-            <p className="text-gray-400 text-sm">No packages available</p>
+          <div
+            className="rounded-3xl p-8 text-center"
+            style={{
+              background: DARK_CARD,
+              border: `1px solid ${DARK_BORDER}`,
+            }}
+          >
+            <p style={{ color: TEXT_MUTED, fontSize: "3.5vw" }}>
+              No packages available
+            </p>
           </div>
         ) : (
           packages.map((pkg) => (
             <div
               key={pkg.id}
-              className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4"
+              className="rounded-3xl overflow-hidden mb-4"
+              style={{
+                background: DARK_CARD,
+                border: `1px solid ${DARK_BORDER}`,
+              }}
             >
               <div
                 className="h-1 w-full"
                 style={{ background: "linear-gradient(90deg,#7c3aed,#ec4899)" }}
               />
               <div className="px-5 pt-4 pb-5">
-                <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
+                <div
+                  className="flex items-start gap-3 mb-4 pb-4"
+                  style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
+                >
                   <div
-                    className="px-3 py-1 rounded-xl text-sm font-bold flex-shrink-0"
+                    className="px-3 py-1 rounded-xl font-bold flex-shrink-0"
                     style={{
-                      background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
-                      color: "#7c3aed",
+                      background: "rgba(124,58,237,0.2)",
+                      color: "#a78bfa",
+                      fontSize: "3.5vw",
                     }}
                   >
                     {pkg.duration_days} Days
                   </div>
-                  <p className="text-gray-500 text-sm leading-snug">
+                  <p
+                    style={{
+                      color: TEXT_MUTED,
+                      fontSize: "3.5vw",
+                      lineHeight: 1.5,
+                    }}
+                  >
                     Financial product — redeemable within {pkg.duration_days}{" "}
                     days
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Amount range</p>
-                    <p className="text-gray-800 font-semibold text-sm">
+                    <p
+                      style={{
+                        color: TEXT_MUTED,
+                        fontSize: "3vw",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Amount range
+                    </p>
+                    <p
+                      className="font-semibold"
+                      style={{ fontSize: "3.5vw", color: TEXT_PRIMARY }}
+                    >
                       {Number(pkg.min_amount).toLocaleString()} –{" "}
                       {Number(pkg.max_amount).toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Daily income</p>
                     <p
-                      className="font-bold text-sm"
-                      style={{ color: "#7c3aed" }}
+                      style={{
+                        color: TEXT_MUTED,
+                        fontSize: "3vw",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Daily income
+                    </p>
+                    <p
+                      className="font-bold"
+                      style={{ fontSize: "3.5vw", color: ACCENT }}
                     >
                       {pkg.daily_rate_min}–{pkg.daily_rate_max}%
                     </p>
@@ -362,7 +435,13 @@ const HostingWorkPage = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-xs mb-2">
+                    <p
+                      style={{
+                        color: TEXT_MUTED,
+                        fontSize: "3vw",
+                        marginBottom: 8,
+                      }}
+                    >
                       Supported coins
                     </p>
                     <div className="flex items-center gap-1.5">
@@ -373,8 +452,9 @@ const HostingWorkPage = ({
                   </div>
                   <button
                     onClick={() => onGoToArbitrage(pkg)}
-                    className="px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-transform active:scale-95"
+                    className="px-6 py-2.5 rounded-xl text-white font-bold transition-transform active:scale-95"
                     style={{
+                      fontSize: "3.5vw",
                       background: "linear-gradient(90deg,#f472b6,#a855f7)",
                       boxShadow: "0 4px 14px rgba(168,85,247,0.35)",
                     }}
@@ -391,19 +471,33 @@ const HostingWorkPage = ({
       {/* Subscription history */}
       <div className="px-4">
         <p
-          className="text-gray-900 font-extrabold text-lg mb-3"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
+          className="font-extrabold mb-3"
+          style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
         >
           My Subscriptions
         </p>
         {loadingHistory ? (
-          <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
-            <p className="text-gray-400 text-sm">Loading...</p>
+          <div
+            className="rounded-3xl p-8 text-center"
+            style={{
+              background: DARK_CARD,
+              border: `1px solid ${DARK_BORDER}`,
+            }}
+          >
+            <p style={{ color: TEXT_MUTED, fontSize: "3.5vw" }}>Loading...</p>
           </div>
         ) : subscriptions.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
-            <p className="text-gray-400 text-sm">No subscriptions yet</p>
-            <p className="text-gray-300 text-xs mt-1">
+          <div
+            className="rounded-3xl p-8 text-center"
+            style={{
+              background: DARK_CARD,
+              border: `1px solid ${DARK_BORDER}`,
+            }}
+          >
+            <p style={{ color: TEXT_MUTED, fontSize: "3.5vw" }}>
+              No subscriptions yet
+            </p>
+            <p style={{ color: TEXT_SUB, fontSize: "3vw", marginTop: 4 }}>
               Subscribe to a package to start earning
             </p>
           </div>
@@ -412,7 +506,11 @@ const HostingWorkPage = ({
             {subscriptions.map((sub) => (
               <div
                 key={sub.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                className="rounded-2xl overflow-hidden"
+                style={{
+                  background: DARK_CARD,
+                  border: `1px solid ${DARK_BORDER}`,
+                }}
               >
                 <div
                   className="h-0.5 w-full"
@@ -423,50 +521,105 @@ const HostingWorkPage = ({
                 <div className="px-4 py-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="font-bold text-gray-800 text-sm">
+                      <p
+                        className="font-bold"
+                        style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                      >
                         {sub.package_name}
                       </p>
-                      <p className="text-gray-400 text-xs mt-0.5">
+                      <p
+                        style={{
+                          fontSize: "3vw",
+                          color: TEXT_MUTED,
+                          marginTop: 2,
+                        }}
+                      >
                         {sub.duration_days} days · {sub.coin_id}
                       </p>
                     </div>
                     <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyle[sub.status]}`}
+                      className="px-2.5 py-1 rounded-full font-semibold"
+                      style={{
+                        fontSize: "3vw",
+                        ...(statusStyle[sub.status] || statusStyle.completed),
+                      }}
                     >
                       {sub.status}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-50">
+                  <div
+                    className="grid grid-cols-3 gap-3 pt-3"
+                    style={{ borderTop: `1px solid ${DARK_BORDER2}` }}
+                  >
                     <div>
-                      <p className="text-gray-400 text-xs mb-0.5">Principal</p>
-                      <p className="text-gray-800 font-semibold text-sm">
+                      <p
+                        style={{
+                          fontSize: "3vw",
+                          color: TEXT_MUTED,
+                          marginBottom: 2,
+                        }}
+                      >
+                        Principal
+                      </p>
+                      <p
+                        className="font-semibold"
+                        style={{ fontSize: "3.5vw", color: TEXT_PRIMARY }}
+                      >
                         {Number(sub.amount).toLocaleString()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-xs mb-0.5">Daily rate</p>
                       <p
-                        className="font-semibold text-sm"
-                        style={{ color: "#7c3aed" }}
+                        style={{
+                          fontSize: "3vw",
+                          color: TEXT_MUTED,
+                          marginBottom: 2,
+                        }}
+                      >
+                        Daily rate
+                      </p>
+                      <p
+                        className="font-semibold"
+                        style={{ fontSize: "3.5vw", color: "#a78bfa" }}
                       >
                         {sub.daily_rate}%
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-xs mb-0.5">Earned</p>
-                      <p className="text-green-600 font-semibold text-sm">
+                      <p
+                        style={{
+                          fontSize: "3vw",
+                          color: TEXT_MUTED,
+                          marginBottom: 2,
+                        }}
+                      >
+                        Earned
+                      </p>
+                      <p
+                        className="font-semibold"
+                        style={{ fontSize: "3.5vw", color: "rgb(16,185,129)" }}
+                      >
                         +{Number(sub.total_earned).toFixed(4)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                    <p className="text-gray-400 text-xs">
+                  <div
+                    className="flex items-center justify-between mt-3 pt-3"
+                    style={{ borderTop: `1px solid ${DARK_BORDER2}` }}
+                  >
+                    <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                       Ends {format(new Date(sub.end_date), "dd MMM yyyy")}
                     </p>
                     {sub.status === "active" && (
                       <button
                         onClick={() => onCancelSubscription(sub.id)}
-                        className="text-xs text-red-400 font-medium underline underline-offset-2"
+                        className="font-medium underline underline-offset-2"
+                        style={{
+                          fontSize: "3vw",
+                          color: "rgb(239,68,68)",
+                          background: "transparent",
+                          border: "none",
+                        }}
                       >
                         Cancel
                       </button>
@@ -484,7 +637,7 @@ const HostingWorkPage = ({
 
 /* ════════════════════════════════════════════════════════════════
    ARBITRAGE DETAIL PAGE
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
   const { user } = useUser();
   const [amount, setAmount] = useState("");
@@ -494,17 +647,15 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
   const navigate = useNavigate();
 
   const pkg = selectedPackage;
-
-  // Get user balance for selected coin
   const selectedWallet = wallets?.find(
     (w) => w.coin_symbol?.toUpperCase() === selectedCoin,
   );
   const maxBalance = parseFloat(selectedWallet?.coin_amount || 0);
-
   const expectedEarnings =
     pkg && amount
       ? ((parseFloat(amount) * parseFloat(pkg.daily_rate_min)) / 100).toFixed(2)
       : "0.00";
+  const isInsufficientBalance = parseFloat(amount) > maxBalance;
 
   const benefits = [
     "Daily income is sent to your USDT, BTC, ETH wallet",
@@ -513,40 +664,25 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
     "Artificial intelligence works 24 hours a day",
   ];
 
-  const isInsufficientBalance = parseFloat(amount) > maxBalance;
-
   const handleSubscribe = async () => {
-    if (!pkg) {
-      toast.error("Please select a package");
-      return;
-    }
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error("Please enter an amount");
-      return;
-    }
-    if (parseFloat(amount) < parseFloat(pkg.min_amount)) {
-      toast.error(
+    if (!pkg) return toast.error("Please select a package");
+    if (!amount || parseFloat(amount) <= 0)
+      return toast.error("Please enter an amount");
+    if (parseFloat(amount) < parseFloat(pkg.min_amount))
+      return toast.error(
         `Minimum amount is ${Number(pkg.min_amount).toLocaleString()}`,
       );
-      return;
-    }
-    if (parseFloat(amount) > parseFloat(pkg.max_amount)) {
-      toast.error(
+    if (parseFloat(amount) > parseFloat(pkg.max_amount))
+      return toast.error(
         `Maximum amount is ${Number(pkg.max_amount).toLocaleString()}`,
       );
-      return;
-    }
-    if (isInsufficientBalance) {
-      toast.error("Insufficient balance");
-      return;
-    }
-
+    if (isInsufficientBalance) return toast.error("Insufficient balance");
     try {
       setSubmitting(true);
       await subscribePackage({
         userId: user.id,
         packageId: pkg.id,
-        coinId: selectedWallet?.coin_id, // ✅ use coin_id not coin_symbol
+        coinId: selectedWallet?.coin_id,
         amount: parseFloat(amount),
       });
       toast.success("Subscribed successfully!");
@@ -559,26 +695,44 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
     }
   };
 
-  // ── Recharge handler ──────────────────────────────────────
   const handleRecharge = () => {
     const wallet = wallets?.find(
       (w) => w.coin_symbol?.toUpperCase() === selectedCoin,
     );
-    if (wallet) {
-      navigate("/funds", {
-        state: {
-          wallet,
-          coinAmount: wallet.coin_amount,
-        },
-      });
-    } else {
-      toast.error("Wallet not found for selected coin");
-    }
+    if (wallet)
+      navigate("/funds", { state: { wallet, coinAmount: wallet.coin_amount } });
+    else toast.error("Wallet not found for selected coin");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
-      <Header pageTitle="Arbitrage" />
+    <div className="min-h-screen pb-8" style={{ background: DARK_BG }}>
+      {/* Custom header with onBack wired to hosting page */}
+      <div
+        className="flex items-center justify-between px-4 py-3 sticky top-0 z-10"
+        style={{
+          background: "#0a0a0f",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+        }}
+      >
+        <button
+          onClick={onBack}
+          className="w-9 h-9 flex items-center justify-center rounded-full flex-shrink-0"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <IoMdArrowRoundBack color="white" size={25} />
+        </button>
+        <span
+          className="font-semibold truncate mx-3 flex-1 text-center"
+          style={{ color: "#f1f5f9", fontSize: "4.2vw" }}
+        >
+          Arbitrage
+        </span>
+        <div className="w-9 h-9" />
+      </div>
 
       {/* Gradient header */}
       <div
@@ -590,7 +744,7 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
         }}
       >
         <div
-          className="absolute top-0 right-0 w-52 h-52 rounded-full opacity-20"
+          className="absolute top-0 right-0 w-52 h-52 rounded-full opacity-20 pointer-events-none"
           style={{
             background: "#fff",
             filter: "blur(48px)",
@@ -598,13 +752,16 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
           }}
         />
         <p
-          className="text-white font-extrabold text-xl relative z-10"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
+          className="text-white font-extrabold relative z-10"
+          style={{ fontSize: "5.5vw" }}
         >
           {pkg ? pkg.name : "AI Arbitrage"}
         </p>
         {pkg && (
-          <p className="text-white/70 text-sm relative z-10 mt-1">
+          <p
+            className="text-white/70 relative z-10 mt-1"
+            style={{ fontSize: "3.5vw" }}
+          >
             {pkg.duration_days} days · {pkg.daily_rate_min}–{pkg.daily_rate_max}
             % daily
           </p>
@@ -623,27 +780,34 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
           <div className="px-5 py-5 flex items-center justify-between">
             <div>
               <p
-                className="text-cyan-300 text-xl font-extrabold mb-1"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                className="text-cyan-300 font-extrabold mb-1"
+                style={{ fontSize: "5.5vw" }}
               >
                 Join AI Arbitrage
               </p>
-              <p className="text-indigo-200 text-sm">Zero risk, fast return</p>
+              <p className="text-indigo-200" style={{ fontSize: "3.5vw" }}>
+                Zero risk, fast return
+              </p>
             </div>
             <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
               <div
                 className="w-12 h-14 rounded-2xl flex flex-col items-center justify-center gap-1"
                 style={{
-                  background: "rgba(255,255,255,0.92)",
-                  boxShadow: "0 4px 16px rgba(99,102,241,0.4)",
+                  background: "rgba(255,255,255,0.12)",
+                  boxShadow: "0 4px 16px rgba(99,102,241,0.3)",
                 }}
               >
                 <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
                 </div>
                 <div className="w-6 h-1.5 rounded-full bg-cyan-400" />
-                <p className="text-indigo-600 text-xs font-bold">AI</p>
+                <p
+                  className="text-indigo-200 font-bold"
+                  style={{ fontSize: "3vw" }}
+                >
+                  AI
+                </p>
               </div>
             </div>
           </div>
@@ -651,26 +815,36 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
       </div>
 
       {/* Main detail card */}
-      <div className="mx-4 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+      <div
+        className="mx-4 rounded-3xl overflow-hidden mb-4"
+        style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+      >
         <div
           className="h-1"
           style={{ background: "linear-gradient(90deg,#7c3aed,#ec4899)" }}
         />
         <div className="px-5 py-5">
           {/* Header row */}
-          <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-100">
+          <div
+            className="flex items-center justify-between mb-5 pb-4"
+            style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
+          >
             <div className="flex items-center gap-2">
               <ShieldIcon />
-              <span className="text-gray-800 font-bold text-base">
+              <span
+                className="font-bold"
+                style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+              >
                 AI Arbitrage
               </span>
             </div>
             {pkg && (
               <div
-                className="px-3 py-1 rounded-xl text-sm font-bold"
+                className="px-3 py-1 rounded-xl font-bold"
                 style={{
-                  background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
-                  color: "#7c3aed",
+                  background: "rgba(124,58,237,0.2)",
+                  color: "#a78bfa",
+                  fontSize: "3.5vw",
                 }}
               >
                 {pkg.duration_days} Days
@@ -679,39 +853,60 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
           </div>
 
           {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-5 pb-5 border-b border-gray-100">
+          <div
+            className="grid grid-cols-2 gap-x-6 gap-y-4 mb-5 pb-5"
+            style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
+          >
             <div>
-              <p className="text-gray-400 text-xs mb-1">Amount range</p>
-              <p className="text-gray-800 font-semibold text-sm">
+              <p
+                style={{ color: TEXT_MUTED, fontSize: "3vw", marginBottom: 4 }}
+              >
+                Amount range
+              </p>
+              <p
+                className="font-semibold"
+                style={{ fontSize: "3.5vw", color: TEXT_PRIMARY }}
+              >
                 {pkg
                   ? `${Number(pkg.min_amount).toLocaleString()} – ${Number(pkg.max_amount).toLocaleString()}`
                   : "—"}
               </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-1">Daily income</p>
               <p
-                className="font-extrabold text-sm"
-                style={{ color: "#7c3aed" }}
+                style={{ color: TEXT_MUTED, fontSize: "3vw", marginBottom: 4 }}
+              >
+                Daily income
+              </p>
+              <p
+                className="font-extrabold"
+                style={{ fontSize: "3.5vw", color: "#a78bfa" }}
               >
                 {pkg ? `${pkg.daily_rate_min}–${pkg.daily_rate_max}%` : "—"}
               </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-1">
+              <p
+                style={{ color: TEXT_MUTED, fontSize: "3vw", marginBottom: 4 }}
+              >
                 Available ({selectedCoin})
               </p>
-              <p className="text-gray-800 font-semibold text-sm">
+              <p
+                className="font-semibold"
+                style={{ fontSize: "3.5vw", color: TEXT_PRIMARY }}
+              >
                 {maxBalance.toFixed(4)}
               </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-1">
+              <p
+                style={{ color: TEXT_MUTED, fontSize: "3vw", marginBottom: 4 }}
+              >
                 Expected earnings/day
               </p>
               <p
-                className="font-extrabold text-sm"
-                style={{ color: "#22c55e" }}
+                className="font-extrabold"
+                style={{ fontSize: "3.5vw", color: "rgb(16,185,129)" }}
               >
                 {expectedEarnings}
               </p>
@@ -719,8 +914,18 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
           </div>
 
           {/* Coin selector */}
-          <div className="mb-5 pb-5 border-b border-gray-100">
-            <p className="text-gray-500 text-xs font-medium mb-3">
+          <div
+            className="mb-5 pb-5"
+            style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
+          >
+            <p
+              style={{
+                color: TEXT_MUTED,
+                fontSize: "3vw",
+                fontWeight: 500,
+                marginBottom: 12,
+              }}
+            >
               Select coin
             </p>
             <div className="flex items-center gap-3">
@@ -733,9 +938,10 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
                     onClick={() => setSelectedCoin(symbol)}
                   />
                   <span
-                    className="text-xs font-semibold"
+                    className="font-semibold"
                     style={{
-                      color: selectedCoin === symbol ? "#7c3aed" : "#9ca3af",
+                      fontSize: "3vw",
+                      color: selectedCoin === symbol ? "#a78bfa" : TEXT_MUTED,
                     }}
                   >
                     {symbol}
@@ -745,21 +951,25 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
             </div>
           </div>
 
+          {/* Amount input */}
           <div className="mb-4">
-            {/* Label + balance + max/recharge */}
             <div className="flex items-center justify-between mb-2">
-              <p className="text-gray-700 font-semibold text-sm">
+              <p
+                className="font-semibold"
+                style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+              >
                 Hosting Amount
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
+                <span style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                   {maxBalance.toFixed(4)} {selectedCoin}
                 </span>
                 {maxBalance <= 0 ? (
                   <button
                     onClick={handleRecharge}
-                    className="text-xs font-bold px-2.5 py-1 rounded-lg text-white"
+                    className="font-bold px-2.5 py-1 rounded-lg text-white"
                     style={{
+                      fontSize: "3vw",
                       background: "linear-gradient(90deg,#f472b6,#a855f7)",
                     }}
                   >
@@ -771,8 +981,13 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
                       setAmount(maxBalance.toString());
                       setSliderVal(100);
                     }}
-                    className="text-xs font-semibold"
-                    style={{ color: "#7c3aed" }}
+                    className="font-semibold"
+                    style={{
+                      fontSize: "3vw",
+                      color: "#a78bfa",
+                      background: "transparent",
+                      border: "none",
+                    }}
                   >
                     Max
                   </button>
@@ -780,20 +995,15 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
               </div>
             </div>
 
-            {/* Input */}
             <div
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all"
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
               style={{
-                borderColor: isInsufficientBalance
-                  ? "#ef4444"
-                  : parseFloat(amount) > 0
-                    ? "#7c3aed"
-                    : "#e5e7eb",
-                background: "#fafafa",
+                border: `2px solid ${isInsufficientBalance ? "#ef4444" : parseFloat(amount) > 0 ? ACCENT : DARK_BORDER}`,
+                background: "rgba(255,255,255,0.03)",
               }}
             >
               <CoinLogo symbol={selectedCoin} size={32} />
-              <div className="flex items-center gap-1 text-indigo-400">
+              <div className="flex items-center gap-1">
                 <ArrowsUpDown />
               </div>
               <input
@@ -803,33 +1013,42 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
                 onChange={(e) => {
                   const val = e.target.value;
                   setAmount(val);
-                  if (maxBalance > 0) {
+                  if (maxBalance > 0)
                     setSliderVal(
                       Math.min(100, (parseFloat(val) / maxBalance) * 100) || 0,
                     );
-                  }
                 }}
                 placeholder="0.00"
-                className="flex-1 bg-transparent text-gray-800 font-bold text-lg outline-none"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                className="flex-1 bg-transparent font-bold outline-none"
+                style={{ fontSize: "5vw", color: TEXT_PRIMARY }}
               />
-              <span className="text-gray-400 text-sm font-medium">
+              <span
+                style={{
+                  fontSize: "3.5vw",
+                  color: TEXT_MUTED,
+                  fontWeight: 500,
+                }}
+              >
                 {selectedCoin}
               </span>
             </div>
           </div>
 
-          {/* Balance status + recharge */}
+          {/* Insufficient / min-max */}
           <div className="flex items-center justify-between mb-5">
             {isInsufficientBalance ? (
               <div className="flex items-center justify-between w-full">
-                <p className="text-red-500 text-xs font-semibold">
+                <p
+                  className="font-semibold"
+                  style={{ fontSize: "3vw", color: "rgb(239,68,68)" }}
+                >
                   Insufficient balance
                 </p>
                 <button
                   onClick={handleRecharge}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-transform active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-white transition-transform active:scale-95"
                   style={{
+                    fontSize: "3vw",
                     background: "linear-gradient(90deg,#f472b6,#a855f7)",
                     boxShadow: "0 4px 12px rgba(168,85,247,0.3)",
                   }}
@@ -846,7 +1065,7 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
                 </button>
               </div>
             ) : (
-              <p className="text-gray-400 text-xs">
+              <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                 {pkg
                   ? `Min: ${Number(pkg.min_amount).toLocaleString()} · Max: ${Number(pkg.max_amount).toLocaleString()}`
                   : ""}
@@ -855,7 +1074,7 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
           </div>
 
           {/* Slider */}
-          <div className="mb-2">
+          <div className="mb-5">
             <input
               type="range"
               min={0}
@@ -869,32 +1088,20 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
               }}
               className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(90deg, #7c3aed ${sliderVal}%, #e5e7eb ${sliderVal}%)`,
-                accentColor: "#7c3aed",
+                background: `linear-gradient(90deg, ${ACCENT} ${sliderVal}%, rgba(255,255,255,0.1) ${sliderVal}%)`,
+                accentColor: ACCENT,
               }}
             />
-            <div className="flex justify-between text-xs text-gray-300 mt-1">
+            <div
+              className="flex justify-between mt-1"
+              style={{ fontSize: "3vw", color: TEXT_SUB }}
+            >
               <span>0%</span>
               <span>25%</span>
               <span>50%</span>
               <span>75%</span>
               <span>100%</span>
             </div>
-          </div>
-
-          {/* Balance status */}
-          <div className="flex items-center justify-between mb-5">
-            {isInsufficientBalance ? (
-              <p className="text-red-500 text-xs font-semibold">
-                Insufficient balance
-              </p>
-            ) : (
-              <p className="text-gray-400 text-xs">
-                {pkg
-                  ? `Min: ${Number(pkg.min_amount).toLocaleString()} · Max: ${Number(pkg.max_amount).toLocaleString()}`
-                  : ""}
-              </p>
-            )}
           </div>
 
           {/* Subscribe button */}
@@ -906,11 +1113,11 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
               parseFloat(amount) <= 0 ||
               isInsufficientBalance
             }
-            className="w-full py-4 rounded-2xl text-white font-extrabold text-base transition-transform active:scale-98 disabled:opacity-50"
+            className="w-full py-4 rounded-2xl text-white font-extrabold transition-transform active:scale-98 disabled:opacity-50"
             style={{
+              fontSize: "4.5vw",
               background: "linear-gradient(90deg,#f472b6,#a855f7)",
               boxShadow: "0 8px 24px rgba(168,85,247,0.4)",
-              fontFamily: "'DM Sans', sans-serif",
             }}
           >
             {submitting ? "Processing..." : "Hosting Now"}
@@ -919,15 +1126,29 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
       </div>
 
       {/* Benefits */}
-      <div className="mx-4 bg-white rounded-3xl shadow-sm border border-gray-100 px-5 py-5">
-        <p className="font-bold text-gray-800 text-sm mb-4">
+      <div
+        className="mx-4 rounded-3xl px-5 py-5"
+        style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+      >
+        <p
+          className="font-bold mb-4"
+          style={{ fontSize: "4vw", color: TEXT_PRIMARY }}
+        >
           Why choose AI Arbitrage?
         </p>
         <div className="flex flex-col gap-3">
           {benefits.map((b, i) => (
             <div key={i} className="flex items-start gap-3">
               <CheckIcon />
-              <p className="text-gray-600 text-sm leading-snug">{b}</p>
+              <p
+                style={{
+                  fontSize: "3.5vw",
+                  color: TEXT_MUTED,
+                  lineHeight: 1.6,
+                }}
+              >
+                {b}
+              </p>
             </div>
           ))}
         </div>
@@ -938,7 +1159,7 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
 
 /* ════════════════════════════════════════════════════════════════
    ROOT
-   ════════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════════ */
 export default function ArbitrageRoot() {
   const { user } = useUser();
   const { wallets } = useWallets(user?.id);
@@ -948,7 +1169,6 @@ export default function ArbitrageRoot() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // Filter only supported coins
   const supportedWallets =
     wallets?.filter((w) =>
       SUPPORTED_COINS.includes(w.coin_symbol?.toUpperCase()),
@@ -957,7 +1177,6 @@ export default function ArbitrageRoot() {
   useEffect(() => {
     fetchPackages();
   }, []);
-
   useEffect(() => {
     if (user?.id) fetchSubscriptions();
   }, [user?.id]);

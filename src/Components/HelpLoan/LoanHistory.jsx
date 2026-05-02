@@ -5,27 +5,41 @@ import { useUser } from "../../context/UserContext";
 import { getMyLoans } from "../../api/loan.api";
 import { API_BASE_URL } from "../../api/getApiURL";
 
+/* ─── Theme ── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_CARD2 = "#111118";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const DARK_BORDER2 = "rgba(255,255,255,0.06)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
 const TABS = [
-  { key: "all", label: "All", color: "#6366f1", bg: "#eef2ff", dot: "#6366f1" },
+  {
+    key: "all",
+    label: "All",
+    color: "#818cf8",
+    bg: "rgba(99,102,241,0.15)",
+    dot: "#6366f1",
+  },
   {
     key: "pending",
     label: "Pending",
-    color: "#f59e0b",
-    bg: "#fffbeb",
+    color: "#fbbf24",
+    bg: "rgba(245,158,11,0.15)",
     dot: "#f59e0b",
   },
   {
     key: "approved",
     label: "Approved",
-    color: "#10b981",
-    bg: "#ecfdf5",
+    color: "rgb(16,185,129)",
+    bg: "rgba(16,185,129,0.15)",
     dot: "#10b981",
   },
   {
     key: "rejected",
     label: "Rejected",
-    color: "#ef4444",
-    bg: "#fef2f2",
+    color: "rgb(239,68,68)",
+    bg: "rgba(239,68,68,0.15)",
     dot: "#ef4444",
   },
 ];
@@ -34,28 +48,29 @@ const StatusBadge = ({ status }) => {
   const map = {
     pending: {
       label: "Pending",
-      color: "#f59e0b",
-      bg: "#fffbeb",
-      border: "#fde68a",
+      color: "#fbbf24",
+      bg: "rgba(245,158,11,0.12)",
+      border: "rgba(245,158,11,0.25)",
     },
     approved: {
       label: "Approved",
-      color: "#10b981",
-      bg: "#ecfdf5",
-      border: "#6ee7b7",
+      color: "rgb(16,185,129)",
+      bg: "rgba(16,185,129,0.12)",
+      border: "rgba(16,185,129,0.25)",
     },
     rejected: {
       label: "Rejected",
-      color: "#ef4444",
-      bg: "#fef2f2",
-      border: "#fca5a5",
+      color: "rgb(239,68,68)",
+      bg: "rgba(239,68,68,0.12)",
+      border: "rgba(239,68,68,0.25)",
     },
   };
   const s = map[status] ?? map.pending;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold"
       style={{
+        fontSize: "3vw",
         color: s.color,
         background: s.bg,
         border: `1px solid ${s.border}`,
@@ -71,19 +86,37 @@ const StatusBadge = ({ status }) => {
 };
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-3xl p-5 shadow-sm animate-pulse">
+  <div
+    className="rounded-3xl p-5 animate-pulse"
+    style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+  >
     <div className="flex items-start justify-between mb-4">
       <div className="space-y-2">
-        <div className="w-24 h-3 bg-gray-200 rounded-full" />
-        <div className="w-36 h-4 bg-gray-200 rounded-full" />
+        <div
+          className="w-24 h-3 rounded-full"
+          style={{ background: "rgba(255,255,255,0.08)" }}
+        />
+        <div
+          className="w-36 h-4 rounded-full"
+          style={{ background: "rgba(255,255,255,0.08)" }}
+        />
       </div>
-      <div className="w-20 h-6 bg-gray-200 rounded-full" />
+      <div
+        className="w-20 h-6 rounded-full"
+        style={{ background: "rgba(255,255,255,0.08)" }}
+      />
     </div>
     <div className="grid grid-cols-3 gap-3">
       {[1, 2, 3].map((i) => (
         <div key={i} className="space-y-1.5">
-          <div className="w-12 h-2.5 bg-gray-200 rounded-full" />
-          <div className="w-16 h-3.5 bg-gray-200 rounded-full" />
+          <div
+            className="w-12 h-2.5 rounded-full"
+            style={{ background: "rgba(255,255,255,0.08)" }}
+          />
+          <div
+            className="w-16 h-3.5 rounded-full"
+            style={{ background: "rgba(255,255,255,0.08)" }}
+          />
         </div>
       ))}
     </div>
@@ -104,8 +137,7 @@ const LoanCard = ({ loan }) => {
   const dueDate =
     loan.created_at && loan.loan_period
       ? new Date(
-          new Date(loan.created_at).getTime() +
-            loan.loan_period * 24 * 60 * 60 * 1000,
+          new Date(loan.created_at).getTime() + loan.loan_period * 86400000,
         ).toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
@@ -115,16 +147,19 @@ const LoanCard = ({ loan }) => {
 
   return (
     <div
-      className="bg-white rounded-3xl shadow-sm overflow-hidden"
-      style={{ border: "1px solid #f3f4f6" }}
+      className="rounded-3xl overflow-hidden"
+      style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
     >
       <div className="p-5">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-gray-400 text-xs font-medium mb-0.5">
+            <p style={{ fontSize: "3vw", color: TEXT_MUTED, marginBottom: 2 }}>
               #{loan.id} · {date}
             </p>
-            <p className="text-gray-900 font-black text-xl">
+            <p
+              className="font-black"
+              style={{ fontSize: "5.5vw", color: TEXT_PRIMARY }}
+            >
               {parseFloat(loan.loan_amount || 0).toLocaleString()} USDT
             </p>
           </div>
@@ -143,8 +178,17 @@ const LoanCard = ({ loan }) => {
             { label: "Due Date", value: dueDate },
           ].map((item) => (
             <div key={item.label}>
-              <p className="text-gray-400 text-xs mb-0.5">{item.label}</p>
-              <p className="text-gray-800 font-bold text-xs">{item.value}</p>
+              <p
+                style={{ fontSize: "3vw", color: TEXT_MUTED, marginBottom: 2 }}
+              >
+                {item.label}
+              </p>
+              <p
+                className="font-bold"
+                style={{ fontSize: "3.2vw", color: TEXT_PRIMARY }}
+              >
+                {item.value}
+              </p>
             </div>
           ))}
         </div>
@@ -152,7 +196,13 @@ const LoanCard = ({ loan }) => {
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-gray-50 text-xs font-semibold text-gray-400 hover:text-purple-500 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 transition-colors"
+        style={{
+          fontSize: "3.2vw",
+          color: expanded ? "#a78bfa" : TEXT_MUTED,
+          borderTop: `1px solid ${DARK_BORDER2}`,
+          background: "transparent",
+        }}
       >
         {expanded ? "Hide details" : "View details"}
         <svg
@@ -177,10 +227,16 @@ const LoanCard = ({ loan }) => {
 
       {expanded && (
         <div
-          className="px-5 pb-5 space-y-3 border-t border-gray-50"
-          style={{ background: "#fafafa" }}
+          className="px-5 pb-5 space-y-3"
+          style={{
+            borderTop: `1px solid ${DARK_BORDER2}`,
+            background: "rgba(255,255,255,0.02)",
+          }}
         >
-          <p className="text-gray-500 text-xs font-bold pt-4 mb-2 uppercase tracking-wide">
+          <p
+            className="font-bold pt-4 mb-2 uppercase tracking-wide"
+            style={{ fontSize: "3vw", color: TEXT_MUTED }}
+          >
             Applicant Details
           </p>
           {[
@@ -191,7 +247,7 @@ const LoanCard = ({ loan }) => {
               label: "Total Repay",
               value: loan.total_repay
                 ? `${Number(loan.total_repay).toLocaleString()} USDT`
-                : "—",
+                : null,
             },
           ].map((row) =>
             row.value ? (
@@ -199,18 +255,25 @@ const LoanCard = ({ loan }) => {
                 key={row.label}
                 className="flex items-start justify-between gap-4"
               >
-                <span className="text-gray-400 text-xs flex-shrink-0">
+                <span
+                  style={{ fontSize: "3vw", color: TEXT_MUTED, flexShrink: 0 }}
+                >
                   {row.label}
                 </span>
-                <span className="text-gray-700 text-xs font-semibold text-right">
+                <span
+                  className="font-semibold text-right"
+                  style={{ fontSize: "3vw", color: TEXT_PRIMARY }}
+                >
                   {row.value}
                 </span>
               </div>
             ) : null,
           )}
 
-          {/* Documents */}
-          <p className="text-gray-500 text-xs font-bold pt-2 uppercase tracking-wide">
+          <p
+            className="font-bold pt-2 uppercase tracking-wide"
+            style={{ fontSize: "3vw", color: TEXT_MUTED }}
+          >
             Documents
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -228,9 +291,13 @@ const LoanCard = ({ loan }) => {
                 <img
                   src={`${API_BASE_URL}/${loan[doc.key]}`}
                   alt={doc.label}
-                  className="w-full h-16 object-cover rounded-xl border border-gray-100"
+                  className="w-full h-16 object-cover rounded-xl"
+                  style={{ border: `1px solid ${DARK_BORDER}` }}
                 />
-                <p className="text-xs text-gray-400 text-center mt-1">
+                <p
+                  className="text-center mt-1"
+                  style={{ fontSize: "3vw", color: TEXT_MUTED }}
+                >
                   {doc.label}
                 </p>
               </a>
@@ -240,24 +307,38 @@ const LoanCard = ({ loan }) => {
           {loan.status === "rejected" && loan.reject_reason && (
             <div
               className="rounded-2xl px-4 py-3 mt-2"
-              style={{ background: "#fef2f2", border: "1px solid #fca5a5" }}
+              style={{
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.2)",
+              }}
             >
-              <p className="text-red-500 text-xs font-bold mb-0.5">
+              <p
+                className="font-bold mb-0.5"
+                style={{ fontSize: "3vw", color: "rgb(239,68,68)" }}
+              >
                 Rejection Reason
               </p>
-              <p className="text-red-400 text-xs">{loan.reject_reason}</p>
+              <p style={{ fontSize: "3vw", color: "#fca5a5" }}>
+                {loan.reject_reason}
+              </p>
             </div>
           )}
 
           {loan.status === "approved" && (
             <div
               className="rounded-2xl px-4 py-3 mt-2"
-              style={{ background: "#ecfdf5", border: "1px solid #6ee7b7" }}
+              style={{
+                background: "rgba(16,185,129,0.1)",
+                border: "1px solid rgba(16,185,129,0.2)",
+              }}
             >
-              <p className="text-emerald-600 text-xs font-bold mb-0.5">
+              <p
+                className="font-bold mb-0.5"
+                style={{ fontSize: "3vw", color: "rgb(16,185,129)" }}
+              >
                 Approved
               </p>
-              <p className="text-emerald-500 text-xs">
+              <p style={{ fontSize: "3vw", color: "#6ee7b7" }}>
                 Your loan has been approved. Funds have been deposited to your
                 USDT balance.
               </p>
@@ -303,17 +384,8 @@ const LoanHistory = () => {
   return (
     <div
       className="flex flex-col overflow-hidden"
-      style={{
-        height: "100dvh",
-        background: "#f3f4f8",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
+      style={{ height: "100dvh", background: DARK_BG }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
-
       <div className="flex-shrink-0">
         <Header pageTitle="Loan History" />
       </div>
@@ -323,27 +395,43 @@ const LoanHistory = () => {
         className="flex-shrink-0 mx-4 mt-3 rounded-3xl p-5"
         style={{
           background:
-            "linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)",
+            "linear-gradient(135deg,#6366f1 0%,#a855f7 55%,#ec4899 100%)",
         }}
       >
-        <p className="text-white/70 text-xs font-semibold mb-3">
+        <p
+          className="text-white/70 font-semibold mb-3"
+          style={{ fontSize: "3vw" }}
+        >
           Loan Overview
         </p>
         <div className="grid grid-cols-3 gap-2">
           {[
             { label: "Total", value: counts.all, color: "white" },
-            { label: "Approved", value: counts.approved, color: "#6ee7b7" },
-            { label: "Pending", value: counts.pending, color: "#fde68a" },
+            {
+              label: "Approved",
+              value: counts.approved,
+              color: "rgb(110,231,183)",
+            },
+            {
+              label: "Pending",
+              value: counts.pending,
+              color: "rgb(253,230,138)",
+            },
           ].map((stat) => (
             <div
               key={stat.label}
               className="text-center rounded-2xl py-3"
               style={{ background: "rgba(255,255,255,0.12)" }}
             >
-              <p className="font-black text-2xl" style={{ color: stat.color }}>
+              <p
+                className="font-black"
+                style={{ fontSize: "6vw", color: stat.color }}
+              >
                 {loading ? "—" : stat.value}
               </p>
-              <p className="text-white/60 text-xs">{stat.label}</p>
+              <p className="text-white/60" style={{ fontSize: "3vw" }}>
+                {stat.label}
+              </p>
             </div>
           ))}
         </div>
@@ -351,15 +439,20 @@ const LoanHistory = () => {
 
       {/* Tab bar */}
       <div className="flex-shrink-0 px-4 pt-3">
-        <div className="bg-white rounded-2xl shadow-sm p-1 flex gap-1">
+        <div
+          className="rounded-2xl p-1 flex gap-1"
+          style={{ background: DARK_CARD2, border: `1px solid ${DARK_BORDER}` }}
+        >
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold transition-all duration-200"
               style={{
+                fontSize: "3.2vw",
                 background: activeTab === tab.key ? tab.bg : "transparent",
-                color: activeTab === tab.key ? tab.color : "#9ca3af",
+                color: activeTab === tab.key ? tab.color : TEXT_MUTED,
+                border: "none",
               }}
             >
               {tab.label}
@@ -368,7 +461,8 @@ const LoanHistory = () => {
                   className="w-4 h-4 rounded-full text-white flex items-center justify-center"
                   style={{
                     fontSize: 9,
-                    background: activeTab === tab.key ? tab.dot : "#d1d5db",
+                    background:
+                      activeTab === tab.key ? tab.dot : "rgba(255,255,255,0.1)",
                   }}
                 >
                   {counts[tab.key]}
@@ -383,15 +477,17 @@ const LoanHistory = () => {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {loading ? (
           <>
-            {" "}
-            <SkeletonCard /> <SkeletonCard /> <SkeletonCard />{" "}
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
           </>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div
               className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
               style={{
-                background: "linear-gradient(135deg, #f0f0ff, #fdf4ff)",
+                background: "rgba(124,58,237,0.12)",
+                border: `1px solid rgba(124,58,237,0.2)`,
               }}
             >
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
@@ -404,10 +500,16 @@ const LoanHistory = () => {
                 />
               </svg>
             </div>
-            <p className="text-gray-700 font-bold text-base mb-1">
+            <p
+              className="font-bold mb-1"
+              style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
+            >
               No loans found
             </p>
-            <p className="text-gray-400 text-sm text-center">
+            <p
+              className="text-center"
+              style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+            >
               {activeTab === "all"
                 ? "You haven't applied for any loans yet."
                 : `No ${activeTab} applications.`}
@@ -419,16 +521,39 @@ const LoanHistory = () => {
         <div className="h-4" />
       </div>
 
-      {/* Apply button */}
+      {/* Bottom buttons */}
       <div
-        className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100"
-        style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+        className="flex-shrink-0 px-4 py-4 flex gap-3"
+        style={{ background: DARK_BG, borderTop: `1px solid ${DARK_BORDER}` }}
       >
+        {/* Back to landing page */}
+        <button
+          onClick={() => navigate("/loan-landing")}
+          className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-transform active:scale-95"
+          style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+        >
+          <svg
+            width="18"
+            height="18"
+            fill="none"
+            stroke="#a78bfa"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        {/* Apply button */}
         <button
           onClick={() => navigate("/help-loan")}
-          className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-extrabold text-base text-white active:scale-95 transition-transform"
+          className="flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-2 font-extrabold text-white active:scale-95 transition-transform"
           style={{
-            background: "linear-gradient(90deg, #f472b6, #a855f7)",
+            fontSize: "4vw",
+            background: "linear-gradient(90deg,#f472b6,#a855f7)",
             boxShadow: "0 8px 24px rgba(168,85,247,0.35)",
           }}
         >

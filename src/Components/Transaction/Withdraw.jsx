@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from "react";
 import imgNoData from "../../Assets/images/img_nodata.png";
-import iconMenuArrow from "../../Assets/images/icon_menu_arrow.svg";
 import { useUser } from "../../context/UserContext";
-import { SlArrowLeft, SlArrowRight } from "react-icons/sl";
 import { API_BASE_URL } from "../../api/getApiURL";
+import { SlArrowLeft, SlArrowRight } from "react-icons/sl";
 import { useSocketContext } from "../../context/SocketContext";
 import toast from "react-hot-toast";
 
-const Withdraw = ({ openTransactionHistory }) => {
-  const [withdraws, setWithdraws] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const { setLoading, user } = useUser();
-  const { socket } = useSocketContext();
-  const [refreshWithdraw, setRefreshWithdraw] = useState(false);
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
 
-  const itemsPerPage = 10;
+const statusStyle = {
+  approved: { color: "rgb(16,185,129)", bg: "rgba(16,185,129,0.12)" },
+  pending: { color: "#fbbf24", bg: "rgba(245,158,11,0.12)" },
+  rejected: { color: "rgb(239,68,68)", bg: "rgba(239,68,68,0.12)" },
+};
 
-  const getFormattedDeliveryTime = (createdAt) => {
-    const date = new Date(createdAt);
-
-    // Convert date to local time string
-    const localDateTime = date.toLocaleString("en-US", {
+const fmt = (createdAt) =>
+  new Date(createdAt)
+    .toLocaleString("en-US", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -29,171 +27,208 @@ const Withdraw = ({ openTransactionHistory }) => {
       minute: "2-digit",
       second: "2-digit",
       hour12: true,
-    });
+    })
+    .replace(",", "");
 
-    return localDateTime.replace(",", "");
-  };
+const Withdraw = ({ openTransactionHistory }) => {
+  const [withdraws, setWithdraws] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [refreshWithdraw, setRefreshWithdraw] = useState(false);
+  const { setLoading, user } = useUser();
+  const { socket } = useSocketContext();
+  const itemsPerPage = 10;
 
   useEffect(() => {
     setLoading(true);
     if (user?.id) {
-      async function fetchMarketData() {
+      async function fetchData() {
         try {
-          const response = await fetch(
-            `${API_BASE_URL}/withdraws/user/${user?.id}`,
-          );
-          const data = await response.json();
-          if (response.status !== 404) {
-            setWithdraws(data);
-          }
-          setLoading(false);
-        } catch (error) {
-          console.error("Error fetching market data:", error);
+          const res = await fetch(`${API_BASE_URL}/withdraws/user/${user?.id}`);
+          const data = await res.json();
+          if (res.status !== 404) setWithdraws(data);
+        } catch (e) {
+          console.error(e);
+        } finally {
           setLoading(false);
         }
       }
-      fetchMarketData();
-      if (refreshWithdraw) {
-        fetchMarketData();
-      }
+      fetchData();
     }
   }, [setLoading, user, refreshWithdraw]);
 
-  // Filter deposits based on search term (coin symbol)
-  const filteredWithdraws = withdraws.filter((order) =>
-    order.coin_symbol.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  useEffect(() => {
+    const handler = (data) => {
+      if (data?.withdraw.status === "approved")
+        toast.success("Withdraw accepted");
+      else toast.error("Withdraw rejected");
+      if (["approved", "rejected"].includes(data?.withdraw.status))
+        setRefreshWithdraw((v) => !v);
+    };
+    socket?.on("updateWithdraw", handler);
+    return () => socket?.off("updateWithdraw", handler);
+  }, [socket, refreshWithdraw]);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredWithdraws.length / itemsPerPage);
-  const currentWithdraws = filteredWithdraws.slice(
+  const filtered = withdraws.filter((o) =>
+    o?.coin_symbol?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const current = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
 
-  // Handlers for pagination and search
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  };
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1); // Reset to first page on search
-  };
-
-  useEffect(() => {
-    const handleUpdateWithdraw = (data) => {
-      if (data?.withdraw.status === "approved") {
-        toast.success("Withdraw accepted");
-      } else {
-        toast.error("Withdraw rejected");
-      }
-      if (
-        data?.withdraw.status === "approved" ||
-        data?.withdraw.status === "rejected"
-      ) {
-        setRefreshWithdraw(!refreshWithdraw);
-      }
-    };
-
-    socket?.on("updateWithdraw", handleUpdateWithdraw);
-
-    return () => socket?.off("updateWithdraw", handleUpdateWithdraw);
-  }, [socket, setRefreshWithdraw, refreshWithdraw]);
-
   return (
-    <div id="profit-active_order">
-      <div className="main_container">
-        <div className="main_content">
-          <div className="title title-transaction">
-            <div className="left">
-              <span className="left_icon"></span>
-              <span>Deposit</span>
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={handleSearch}
-              className="border-2 px-4 py-2 rounded-md"
-            />
-          </div>
-          <div>
-            {currentWithdraws.length <= 0 ? (
-              <div
-                className="no_data_content ff_NunitoSemiBold"
-                style={{ minHeight: "calc(-260px + 100vh)" }}
-              >
-                <img src={imgNoData} alt="No Data" className="img_no_data" />
-                <div>No Data</div>
-              </div>
-            ) : (
-              <div className="profit-history">
-                {currentWithdraws.map((order) => {
-                  return (
-                    <div
-                      className="profit-content profit-content-pop"
-                      key={order.id}
-                      onClick={() => openTransactionHistory(order)}
-                    >
-                      <div className="profit-details">
-                        <div className="profit-coin-details">
-                          <img
-                            className="coin-symbol"
-                            src={`./assets/images/coins/${order?.coin_symbol.toLowerCase()}-logo.png`}
-                            alt={order.coin_name}
-                          />
-                          <span className="coin-name ff_NunitoSemiBold">
-                            {order.coin_symbol} Wallet
-                          </span>
-                          <span className="profit-date ff_NunitoRegular">
-                            {getFormattedDeliveryTime(order.created_at)}
-                          </span>
-                        </div>
-                        <div className="profit-details-amount">
-                          <div className="flex gap-5">
-                            <span className="text-[15px]">{order?.status}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="profit-icon">
-                        <img src={iconMenuArrow} alt="Details" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          {currentWithdraws.length > 0 && (
-            <div className="flex justify-center items-center mt-10 gap-5">
-              <span
-                className="bg-white text-black "
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                <SlArrowLeft size={15} />
-              </span>
-              <span className="mb-1">
-                Page {currentPage} of {totalPages}
-              </span>
-              <span
-                className="bg-white text-black"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                <SlArrowRight size={15} />
-              </span>
-            </div>
-          )}
-        </div>
+    <div className="px-4 py-4">
+      {/* Search */}
+      <div
+        className="flex items-center gap-2 rounded-2xl px-4 py-3 mb-4"
+        style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="flex-shrink-0"
+        >
+          <circle cx="7" cy="7" r="5" stroke="#475569" strokeWidth="1.5" />
+          <path
+            d="M11 11l3 3"
+            stroke="#475569"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search by coin…"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="flex-1 bg-transparent outline-none"
+          style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+        />
       </div>
+
+      {/* List */}
+      {current.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <img
+            src={imgNoData}
+            alt="No Data"
+            className="w-32 h-32 object-contain opacity-40"
+          />
+          <p style={{ fontSize: "3.8vw", color: TEXT_MUTED }}>
+            No withdrawals found
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {current.map((order) => {
+            const s =
+              statusStyle[order.status?.toLowerCase()] || statusStyle.pending;
+            return (
+              <button
+                key={order.id}
+                onClick={() => openTransactionHistory(order)}
+                className="w-full flex items-center justify-between p-4 rounded-2xl text-left transition-all active:scale-[0.98]"
+                style={{
+                  background: DARK_CARD,
+                  border: `1px solid ${DARK_BORDER}`,
+                }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={`./assets/images/coins/${order?.coin_symbol?.toLowerCase()}-logo.png`}
+                    alt={order.coin_symbol}
+                    className="w-10 h-10 rounded-full object-contain flex-shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p
+                      className="font-bold"
+                      style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                    >
+                      {order.coin_symbol} Wallet
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "3vw",
+                        color: TEXT_MUTED,
+                        marginTop: 2,
+                      }}
+                    >
+                      {fmt(order.created_at)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-3">
+                  <span
+                    className="px-2.5 py-0.5 rounded-full font-semibold"
+                    style={{
+                      fontSize: "2.8vw",
+                      color: s.color,
+                      background: s.bg,
+                    }}
+                  >
+                    {order.status}
+                  </span>
+                </div>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="ml-2 flex-shrink-0"
+                >
+                  <path
+                    d="M9 5l7 7-7 7"
+                    stroke="#334155"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {current.length > 0 && (
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+            style={{
+              background: DARK_CARD,
+              border: `1px solid ${DARK_BORDER}`,
+              color: TEXT_PRIMARY,
+            }}
+          >
+            <SlArrowLeft size={13} />
+          </button>
+          <span style={{ fontSize: "3.5vw", color: TEXT_MUTED }}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+            style={{
+              background: DARK_CARD,
+              border: `1px solid ${DARK_BORDER}`,
+              color: TEXT_PRIMARY,
+            }}
+          >
+            <SlArrowRight size={13} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

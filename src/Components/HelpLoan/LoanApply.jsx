@@ -5,6 +5,14 @@ import toast from "react-hot-toast";
 import { useUser } from "../../context/UserContext";
 import { getLoanPackages, submitLoan } from "../../api/loan.api";
 
+/* ─── Theme ── */
+const DARK_BG = "#0a0a0f";
+const DARK_CARD = "rgba(255,255,255,0.04)";
+const DARK_CARD2 = "#111118";
+const DARK_BORDER = "rgba(255,255,255,0.07)";
+const TEXT_PRIMARY = "#f1f5f9";
+const TEXT_MUTED = "#64748b";
+
 const STEPS = ["Personal", "Period", "Documents", "Amount"];
 
 const StepBar = ({ current, total }) => (
@@ -12,15 +20,16 @@ const StepBar = ({ current, total }) => (
     {Array.from({ length: total }).map((_, i) => (
       <React.Fragment key={i}>
         <div
-          className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+          className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-bold transition-all duration-300"
           style={{
+            fontSize: "3vw",
             background:
               i < current
                 ? "linear-gradient(135deg,#6366f1,#a855f7)"
                 : i === current
                   ? "linear-gradient(135deg,#f472b6,#a855f7)"
-                  : "#e5e7eb",
-            color: i <= current ? "white" : "#9ca3af",
+                  : "rgba(255,255,255,0.08)",
+            color: i <= current ? "white" : TEXT_MUTED,
           }}
         >
           {i < current ? (
@@ -44,7 +53,7 @@ const StepBar = ({ current, total }) => (
               background:
                 i < current
                   ? "linear-gradient(90deg,#6366f1,#a855f7)"
-                  : "#e5e7eb",
+                  : "rgba(255,255,255,0.08)",
             }}
           />
         )}
@@ -56,9 +65,14 @@ const StepBar = ({ current, total }) => (
 const SmartInput = ({ label, inputRef, nextRef, isLast = false, ...props }) => {
   const wrapRef = useRef(null);
   const handleFocus = useCallback(() => {
-    setTimeout(() => {
-      wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 320);
+    setTimeout(
+      () =>
+        wrapRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        }),
+      320,
+    );
   }, []);
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -69,15 +83,26 @@ const SmartInput = ({ label, inputRef, nextRef, isLast = false, ...props }) => {
   };
   return (
     <div ref={wrapRef}>
-      <p className="text-gray-500 text-xs font-semibold mb-1.5">{label}</p>
+      <p
+        className="font-semibold mb-1.5"
+        style={{ fontSize: "3.2vw", color: TEXT_MUTED }}
+      >
+        {label}
+      </p>
       <input
         ref={inputRef}
         {...props}
         enterKeyHint={isLast ? "done" : "next"}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
-        className="w-full px-4 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-800 text-sm font-medium outline-none transition-all placeholder-gray-300"
-        style={{ WebkitAppearance: "none", fontSize: 16 }}
+        className="w-full px-4 py-3.5 rounded-2xl outline-none transition-all placeholder-gray-600"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          border: `1px solid ${DARK_BORDER}`,
+          color: TEXT_PRIMARY,
+          fontSize: 16,
+          WebkitAppearance: "none",
+        }}
       />
     </div>
   );
@@ -87,15 +112,18 @@ const PhotoUpload = ({ label, sublabel, icon, preview, onChange }) => {
   const ref = useRef();
   return (
     <div>
-      <p className="text-gray-600 text-xs font-semibold mb-2">{label}</p>
+      <p
+        className="font-semibold mb-2"
+        style={{ fontSize: "3.2vw", color: TEXT_MUTED }}
+      >
+        {label}
+      </p>
       <label
         className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden"
         style={{
           height: 120,
-          borderColor: preview ? "#a855f7" : "#e0e7ff",
-          background: preview
-            ? "transparent"
-            : "linear-gradient(135deg,#f0f0ff,#fdf4ff)",
+          borderColor: preview ? "#a855f7" : "rgba(255,255,255,0.12)",
+          background: preview ? "transparent" : "rgba(99,102,241,0.06)",
         }}
       >
         {preview ? (
@@ -112,7 +140,12 @@ const PhotoUpload = ({ label, sublabel, icon, preview, onChange }) => {
             >
               {icon}
             </div>
-            <p className="text-gray-600 text-xs font-semibold">{sublabel}</p>
+            <p
+              className="font-semibold"
+              style={{ fontSize: "3.2vw", color: TEXT_MUTED }}
+            >
+              {sublabel}
+            </p>
           </div>
         )}
         <input
@@ -130,7 +163,13 @@ const PhotoUpload = ({ label, sublabel, icon, preview, onChange }) => {
             onChange({ target: { files: [] } });
             ref.current.value = "";
           }}
-          className="mt-1 text-xs text-indigo-400 font-medium w-full text-center"
+          className="mt-1 w-full text-center"
+          style={{
+            fontSize: "3vw",
+            color: "#818cf8",
+            background: "transparent",
+            border: "none",
+          }}
         >
           Change photo
         </button>
@@ -193,11 +232,11 @@ const HelpLoan = () => {
     set(previewKey, URL.createObjectURL(file));
   };
 
-  const nameRef = useRef(null);
-  const addressRef = useRef(null);
-  const phoneRef = useRef(null);
-  const amountRef = useRef(null);
-  const scrollRef = useRef(null);
+  const nameRef = useRef(null),
+    addressRef = useRef(null),
+    phoneRef = useRef(null),
+    amountRef = useRef(null),
+    scrollRef = useRef(null);
 
   const goStep = (next) => {
     setStep(next);
@@ -228,7 +267,6 @@ const HelpLoan = () => {
       toast.error(`Maximum amount is ${form.max_amount.toLocaleString()} USDT`);
       return;
     }
-
     setLoading(true);
     try {
       const fd = new FormData();
@@ -241,7 +279,6 @@ const HelpLoan = () => {
       fd.append("credit_front", form.creditFront);
       fd.append("credit_back", form.creditBack);
       fd.append("id_card", form.idCard);
-
       await submitLoan(fd);
       setLoading(false);
       toast.success("Loan application submitted successfully!");
@@ -262,36 +299,41 @@ const HelpLoan = () => {
         )
       : "—";
 
+  /* shared card style */
+  const card = {
+    background: DARK_CARD,
+    border: `1px solid ${DARK_BORDER}`,
+    borderRadius: "1.5rem",
+  };
+  const sectionIcon = (gradient) => ({
+    background: `linear-gradient(135deg,${gradient})`,
+  });
+
   return (
     <div
       className="flex flex-col overflow-hidden"
-      style={{
-        height: "100dvh",
-        background: "#f3f4f8",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
+      style={{ height: "100dvh", background: DARK_BG }}
     >
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
-        rel="stylesheet"
-      />
-
       <div className="flex-shrink-0">
         <Header pageTitle="Apply for Loan" />
       </div>
 
       {/* Step bar */}
       <div className="flex-shrink-0 px-4 pt-2 pb-1">
-        <div className="bg-white rounded-2xl shadow-sm">
+        <div
+          className="rounded-2xl"
+          style={{ background: DARK_CARD2, border: `1px solid ${DARK_BORDER}` }}
+        >
           <StepBar current={step} total={STEPS.length} />
           <div className="flex px-4 pb-2.5">
             {STEPS.map((s, i) => (
               <p
                 key={i}
-                className="flex-1 text-center text-xs font-semibold transition-colors"
+                className="flex-1 text-center font-semibold transition-colors"
                 style={{
+                  fontSize: "3vw",
                   color:
-                    i === step ? "#a855f7" : i < step ? "#6366f1" : "#9ca3af",
+                    i === step ? "#a855f7" : i < step ? "#818cf8" : TEXT_MUTED,
                 }}
               >
                 {s}
@@ -309,13 +351,11 @@ const HelpLoan = () => {
       >
         {/* STEP 0: Personal */}
         {step === 0 && (
-          <div className="bg-white rounded-3xl shadow-sm p-5 space-y-4">
+          <div className="p-5 space-y-4" style={card}>
             <div className="flex items-center gap-3 mb-1">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                }}
+                style={sectionIcon("#6366f1,#a855f7")}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <path
@@ -328,10 +368,13 @@ const HelpLoan = () => {
                 </svg>
               </div>
               <div>
-                <p className="text-gray-900 font-bold text-sm">
+                <p
+                  className="font-bold"
+                  style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                >
                   Personal Information
                 </p>
-                <p className="text-gray-400 text-xs">
+                <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                   Please fill in your real details
                 </p>
               </div>
@@ -371,13 +414,11 @@ const HelpLoan = () => {
 
         {/* STEP 1: Period */}
         {step === 1 && (
-          <div className="bg-white rounded-3xl shadow-sm p-5">
+          <div className="p-5" style={card}>
             <div className="flex items-center gap-3 mb-4">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                }}
+                style={sectionIcon("#6366f1,#a855f7")}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <rect
@@ -398,15 +439,22 @@ const HelpLoan = () => {
                 </svg>
               </div>
               <div>
-                <p className="text-gray-900 font-bold text-sm">Loan Period</p>
-                <p className="text-gray-400 text-xs">
+                <p
+                  className="font-bold"
+                  style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                >
+                  Loan Period
+                </p>
+                <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                   Select your repayment duration
                 </p>
               </div>
             </div>
-
             {loanPackages.length === 0 ? (
-              <p className="text-center text-gray-400 text-sm py-8">
+              <p
+                className="text-center py-8"
+                style={{ fontSize: "3.5vw", color: TEXT_MUTED }}
+              >
                 Loading packages...
               </p>
             ) : (
@@ -419,17 +467,17 @@ const HelpLoan = () => {
                       onClick={() => selectPackage(pkg)}
                       className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98]"
                       style={{
-                        borderColor: active ? "#a855f7" : "#e5e7eb",
+                        borderColor: active ? "#a855f7" : DARK_BORDER,
                         background: active
-                          ? "linear-gradient(135deg,#f5f3ff,#fdf4ff)"
-                          : "#f9fafb",
+                          ? "rgba(168,85,247,0.12)"
+                          : "rgba(255,255,255,0.03)",
                       }}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                           style={{
-                            borderColor: active ? "#a855f7" : "#d1d5db",
+                            borderColor: active ? "#a855f7" : TEXT_MUTED,
                             background: active ? "#a855f7" : "transparent",
                           }}
                         >
@@ -438,22 +486,30 @@ const HelpLoan = () => {
                           )}
                         </div>
                         <span
-                          className="font-bold text-sm"
-                          style={{ color: active ? "#7c3aed" : "#374151" }}
+                          className="font-bold"
+                          style={{
+                            fontSize: "3.8vw",
+                            color: active ? "#a78bfa" : TEXT_PRIMARY,
+                          }}
                         >
                           {pkg.period_days} Days
                         </span>
                       </div>
                       <div className="text-right">
                         <p
-                          className="text-xs font-semibold"
-                          style={{ color: active ? "#a855f7" : "#9ca3af" }}
+                          style={{
+                            fontSize: "3vw",
+                            color: active ? "#a78bfa" : TEXT_MUTED,
+                          }}
                         >
                           Interest
                         </p>
                         <p
-                          className="font-black text-base"
-                          style={{ color: active ? "#7c3aed" : "#374151" }}
+                          className="font-black"
+                          style={{
+                            fontSize: "4.5vw",
+                            color: active ? "#a78bfa" : TEXT_PRIMARY,
+                          }}
                         >
                           {pkg.interest_rate}%
                         </p>
@@ -469,13 +525,11 @@ const HelpLoan = () => {
         {/* STEP 2: Documents */}
         {step === 2 && (
           <div className="space-y-3">
-            <div className="bg-white rounded-3xl shadow-sm p-5">
+            <div className="p-5" style={card}>
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                  }}
+                  style={sectionIcon("#6366f1,#a855f7")}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <rect
@@ -491,10 +545,13 @@ const HelpLoan = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-gray-900 font-bold text-sm">
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                  >
                     Credit Card Photos
                   </p>
-                  <p className="text-gray-400 text-xs">
+                  <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                     Front and back of your card
                   </p>
                 </div>
@@ -542,14 +599,11 @@ const HelpLoan = () => {
                 />
               </div>
             </div>
-
-            <div className="bg-white rounded-3xl shadow-sm p-5">
+            <div className="p-5" style={card}>
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg,#f472b6,#a855f7)",
-                  }}
+                  style={sectionIcon("#f472b6,#a855f7")}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <rect
@@ -577,10 +631,13 @@ const HelpLoan = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-gray-900 font-bold text-sm">
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                  >
                     ID Card Photo
                   </p>
-                  <p className="text-gray-400 text-xs">
+                  <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                     Government issued ID required
                   </p>
                 </div>
@@ -617,7 +674,10 @@ const HelpLoan = () => {
                   </svg>
                 }
               />
-              <p className="text-gray-400 text-xs mt-3 text-center leading-relaxed">
+              <p
+                className="text-center mt-3 leading-relaxed"
+                style={{ fontSize: "3vw", color: TEXT_MUTED }}
+              >
                 Ensure all text and photo are clearly visible
               </p>
             </div>
@@ -627,13 +687,11 @@ const HelpLoan = () => {
         {/* STEP 3: Amount */}
         {step === 3 && (
           <div className="space-y-3">
-            <div className="bg-white rounded-3xl shadow-sm p-5">
+            <div className="p-5" style={card}>
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg,#6366f1,#a855f7)",
-                  }}
+                  style={sectionIcon("#6366f1,#a855f7")}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <circle
@@ -652,8 +710,13 @@ const HelpLoan = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-gray-900 font-bold text-sm">Loan Amount</p>
-                  <p className="text-gray-400 text-xs">
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: "3.8vw", color: TEXT_PRIMARY }}
+                  >
+                    Loan Amount
+                  </p>
+                  <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
                     {form.min_amount && form.max_amount
                       ? `${form.min_amount.toLocaleString()} – ${form.max_amount.toLocaleString()} USDT`
                       : "Enter the amount you need"}
@@ -665,11 +728,14 @@ const HelpLoan = () => {
               <div
                 className="rounded-2xl px-4 py-4 mb-4 flex items-center gap-3"
                 style={{
-                  background: "linear-gradient(135deg,#f5f3ff,#fdf4ff)",
-                  border: "2px solid #e9d5ff",
+                  background: "rgba(168,85,247,0.1)",
+                  border: "2px solid rgba(168,85,247,0.3)",
                 }}
               >
-                <span className="text-purple-400 font-black text-2xl flex-shrink-0">
+                <span
+                  className="font-black flex-shrink-0"
+                  style={{ fontSize: "6vw", color: "#a78bfa" }}
+                >
                   $
                 </span>
                 <input
@@ -690,20 +756,27 @@ const HelpLoan = () => {
                       320,
                     )
                   }
-                  className="flex-1 bg-transparent text-gray-900 font-black text-2xl outline-none placeholder-purple-200"
+                  className="flex-1 bg-transparent font-black outline-none"
                   style={{
                     minWidth: 0,
                     fontSize: 24,
+                    color: TEXT_PRIMARY,
                     WebkitAppearance: "none",
                   }}
                 />
-                <span className="text-purple-400 font-bold text-sm flex-shrink-0">
+                <span
+                  className="font-bold flex-shrink-0"
+                  style={{ fontSize: "3.5vw", color: "#a78bfa" }}
+                >
                   USDT
                 </span>
               </div>
 
               {/* Quick amounts */}
-              <p className="text-gray-400 text-xs font-semibold mb-2">
+              <p
+                className="font-semibold mb-2"
+                style={{ fontSize: "3vw", color: "white" }}
+              >
                 Quick select
               </p>
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -719,12 +792,14 @@ const HelpLoan = () => {
                         set("loanAmount", amt.toString());
                         amountRef.current?.blur();
                       }}
-                      className="py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+                      className="py-2.5 rounded-xl font-bold transition-all active:scale-95"
                       style={{
+                        fontSize: "3.2vw",
                         background: active
                           ? "linear-gradient(135deg,#6366f1,#a855f7)"
-                          : "#f3f4f6",
-                        color: active ? "white" : "#6b7280",
+                          : "rgba(255,255,255,0.06)",
+                        color: active ? "white" : "white",
+                        border: "none",
                       }}
                     >
                       {amt >= 1000 ? `${amt / 1000}K` : amt}
@@ -736,9 +811,15 @@ const HelpLoan = () => {
               {/* Summary */}
               <div
                 className="rounded-2xl p-4 space-y-2.5"
-                style={{ background: "#f9fafb", border: "1px solid #f0f0f0" }}
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: `1px solid ${DARK_BORDER}`,
+                }}
               >
-                <p className="text-gray-700 font-bold text-xs mb-2">
+                <p
+                  className="font-bold mb-2"
+                  style={{ fontSize: "3.2vw", color: TEXT_MUTED }}
+                >
                   Loan Summary
                 </p>
                 {[
@@ -765,8 +846,13 @@ const HelpLoan = () => {
                     key={row.label}
                     className="flex items-center justify-between"
                   >
-                    <span className="text-gray-500 text-xs">{row.label}</span>
-                    <span className="text-gray-800 font-bold text-xs">
+                    <span style={{ fontSize: "3.2vw", color: TEXT_MUTED }}>
+                      {row.label}
+                    </span>
+                    <span
+                      className="font-bold"
+                      style={{ fontSize: "3.2vw", color: TEXT_PRIMARY }}
+                    >
                       {row.value}
                     </span>
                   </div>
@@ -777,7 +863,10 @@ const HelpLoan = () => {
             {/* Terms */}
             <div
               className="rounded-2xl p-4 flex gap-3"
-              style={{ background: "#fff7ed", border: "1px solid #fed7aa" }}
+              style={{
+                background: "rgba(249,115,22,0.1)",
+                border: "1px solid rgba(249,115,22,0.25)",
+              }}
             >
               <svg
                 width="18"
@@ -799,7 +888,9 @@ const HelpLoan = () => {
                   strokeLinecap="round"
                 />
               </svg>
-              <p className="text-orange-700 text-xs leading-relaxed">
+              <p
+                style={{ fontSize: "3.2vw", color: "#fb923c", lineHeight: 1.6 }}
+              >
                 By submitting you agree to our loan terms. Data is confidential
                 and used only for processing.
               </p>
@@ -807,57 +898,56 @@ const HelpLoan = () => {
           </div>
         )}
 
-        <div style={{ height: "env(keyboard-inset-height, 80px)" }} />
+        <div style={{ height: "env(keyboard-inset-height,80px)" }} />
       </div>
 
       {/* Bottom nav */}
       <div
-        className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100"
-        style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+        className="flex-shrink-0 px-4 py-4 flex gap-3"
+        style={{ background: DARK_BG, borderTop: `1px solid ${DARK_BORDER}` }}
       >
-        <div className="flex gap-3">
-          <button
-            onClick={() =>
-              step === 0 ? navigate("/help-loan") : goStep(step - 1)
-            }
-            className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-gray-200 active:scale-95 transition-transform"
+        <button
+          onClick={() =>
+            step === 0 ? navigate("/loan-landing") : goStep(step - 1)
+          }
+          className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border-2 active:scale-95 transition-transform"
+          style={{ borderColor: DARK_BORDER, background: DARK_CARD }}
+        >
+          <svg
+            width="18"
+            height="18"
+            fill="none"
+            stroke="#a78bfa"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
           >
-            <svg
-              width="18"
-              height="18"
-              fill="none"
-              stroke="#6b7280"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <button
-            disabled={!canNext()}
-            onClick={() => {
-              document.activeElement?.blur();
-              if (step < STEPS.length - 1) goStep(step + 1);
-              else handleSubmit();
-            }}
-            className="flex-1 py-3.5 rounded-2xl font-extrabold text-base transition-all active:scale-95"
-            style={{
-              background: canNext()
-                ? "linear-gradient(90deg,#f472b6,#a855f7)"
-                : "#e5e7eb",
-              color: canNext() ? "white" : "#9ca3af",
-              boxShadow: canNext()
-                ? "0 8px 24px rgba(168,85,247,0.35)"
-                : "none",
-            }}
-          >
-            {step === STEPS.length - 1 ? "Submit Application" : "Continue →"}
-          </button>
-        </div>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        <button
+          disabled={!canNext()}
+          onClick={() => {
+            document.activeElement?.blur();
+            if (step < STEPS.length - 1) goStep(step + 1);
+            else handleSubmit();
+          }}
+          className="flex-1 py-3.5 rounded-2xl font-extrabold transition-all active:scale-95"
+          style={{
+            fontSize: "4vw",
+            background: canNext()
+              ? "linear-gradient(90deg,#f472b6,#a855f7)"
+              : "rgba(255,255,255,0.06)",
+            color: canNext() ? "white" : TEXT_MUTED,
+            boxShadow: canNext() ? "0 8px 24px rgba(168,85,247,0.35)" : "none",
+            border: "none",
+          }}
+        >
+          {step === STEPS.length - 1 ? "Submit Application" : "Continue →"}
+        </button>
       </div>
     </div>
   );
