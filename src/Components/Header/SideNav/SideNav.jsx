@@ -683,7 +683,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                   navigate("/face-verification");
                 }}
               />
-              {user?.is_referral > 0 && (
+              {/* {user?.is_referral > 0 && (
                 <>
                   <SettingsItem
                     gradient="linear-gradient(135deg,#f472b6,#ec4899)"
@@ -750,7 +750,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                     onClick={closeAll}
                   />
                 </>
-              )}
+              )} */}
             </div>
           </div>
         </div>

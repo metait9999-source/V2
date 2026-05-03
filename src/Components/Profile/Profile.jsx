@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Header from "../Header/Header";
 import { useUser } from "../../context/UserContext";
 import axios from "axios";
@@ -11,6 +11,13 @@ const DARK_BORDER = "rgba(255,255,255,0.07)";
 const DARK_BORDER2 = "rgba(255,255,255,0.06)";
 const TEXT_PRIMARY = "#f1f5f9";
 const TEXT_MUTED = "#64748b";
+
+// Add this helper near your constants at the top
+const getImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("blob:") || path.startsWith("http")) return path; // preview blob or already full URL
+  return `${API_BASE_URL}/${path.replace(/\\/g, "/")}`; // e.g. http://localhost:5000/uploads/xyz.jpg
+};
 
 const Field = ({
   label,
@@ -50,11 +57,52 @@ const Profile = (props) => {
   const { user, setLoading } = useUser();
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [profileImage, setProfileImage] = useState(user?.profile_image || null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setEmail(user?.email);
     setName(user?.name);
+    setProfileImage(
+      user?.profile_image ? getImageUrl(user.profile_image) : null,
+    );
   }, [user]);
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setProfileImage(previewUrl);
+
+    // Upload
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("documents", file);
+      formData.append("user_id", user?.id);
+
+      const res = await axios.post(
+        `${API_BASE_URL}/users/upload-profile-image`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+
+      setProfileImage(getImageUrl(res.data.profile_image));
+      toast.success("Profile picture updated!");
+    } catch (err) {
+      toast.error("Failed to upload image");
+      setProfileImage(
+        user?.profile_image ? getImageUrl(user.profile_image) : null,
+      );
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -73,6 +121,8 @@ const Profile = (props) => {
     }
   };
 
+  const initials = (name || user?.name || "U").charAt(0).toUpperCase();
+
   return (
     <div
       className="flex flex-col overflow-hidden"
@@ -85,17 +135,87 @@ const Profile = (props) => {
       <div className="flex-1 overflow-y-auto px-4 py-5">
         {/* Avatar section */}
         <div className="flex flex-col items-center mb-6">
+          {/* Tappable avatar */}
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center font-black mb-3"
-            style={{
-              background: "linear-gradient(135deg,#7c3aed,#a855f7)",
-              fontSize: "7vw",
-              color: "white",
-              boxShadow: "0 8px 24px rgba(124,58,237,0.4)",
-            }}
+            className="relative mb-3"
+            onClick={() => fileInputRef.current?.click()}
+            style={{ cursor: "pointer" }}
           >
-            {(name || user?.name || "U").charAt(0).toUpperCase()}
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-20 h-20 rounded-full object-cover"
+                style={{
+                  boxShadow: "0 8px 24px rgba(124,58,237,0.4)",
+                  border: "2px solid rgba(168,85,247,0.5)",
+                }}
+              />
+            ) : (
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center font-black"
+                style={{
+                  background: "linear-gradient(135deg,#7c3aed,#a855f7)",
+                  fontSize: "7vw",
+                  color: "white",
+                  boxShadow: "0 8px 24px rgba(124,58,237,0.4)",
+                }}
+              >
+                {initials}
+              </div>
+            )}
+
+            {/* Camera overlay */}
+            <div
+              className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg,#f472b6,#a855f7)",
+                border: "2px solid #0a0a0f",
+              }}
+            >
+              {imageUploading ? (
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="3"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    strokeDasharray="31"
+                    strokeDashoffset="10"
+                    style={{ animation: "spin 1s linear infinite" }}
+                  />
+                </svg>
+              ) : (
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2.5"
+                >
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+            </div>
           </div>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleImageChange}
+          />
+
           <p
             className="font-bold"
             style={{ fontSize: "4.5vw", color: TEXT_PRIMARY }}
@@ -105,6 +225,15 @@ const Profile = (props) => {
           <p style={{ fontSize: "3.2vw", color: TEXT_MUTED, marginTop: 2 }}>
             {email || user?.email || ""}
           </p>
+          <p
+            style={{
+              fontSize: "3vw",
+              color: "rgba(168,85,247,0.7)",
+              marginTop: 4,
+            }}
+          >
+            Tap photo to change
+          </p>
         </div>
 
         {/* Edit card */}
@@ -112,7 +241,6 @@ const Profile = (props) => {
           className="rounded-3xl overflow-hidden"
           style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
         >
-          {/* Card header */}
           <div
             className="flex items-center gap-2 px-5 py-4"
             style={{ borderBottom: `1px solid ${DARK_BORDER2}` }}
@@ -129,7 +257,6 @@ const Profile = (props) => {
             </span>
           </div>
 
-          {/* Fields */}
           <div className="px-5 py-5 flex flex-col gap-4">
             <Field label="UID" value={user?.uuid} disabled />
             <Field
@@ -169,6 +296,8 @@ const Profile = (props) => {
           Save Changes
         </button>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
