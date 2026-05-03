@@ -13,6 +13,7 @@ import {
   MdOutlineAdminPanelSettings,
   MdOutlineManageAccounts,
 } from "react-icons/md";
+import { createPortal } from "react-dom";
 
 // ── Color maps ────────────────────────────────────────────────
 const btnColor = {
@@ -47,7 +48,6 @@ const DropdownItem = ({ icon, label, color, onClick }) => (
   </button>
 );
 
-// ── Per-row action menu ───────────────────────────────────────
 const ActionMenu = ({
   user,
   isSuperAdmin,
@@ -56,6 +56,9 @@ const ActionMenu = ({
   onMore,
 }) => {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const btnRef = React.useRef(null);
+
   const showPermission = user?.role === "admin";
   const showMore = isSuperAdmin;
 
@@ -65,6 +68,18 @@ const ActionMenu = ({
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, [open]);
+
+  const handleOpen = (e) => {
+    e.stopPropagation();
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.right + window.scrollX - 176, // 176 = w-44
+      });
+    }
+    setOpen((p) => !p);
+  };
 
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -94,53 +109,62 @@ const ActionMenu = ({
         )}
       </div>
 
-      {/* Mobile/tablet dropdown */}
+      {/* Mobile/tablet trigger */}
       <div className="xl:hidden">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((p) => !p);
-          }}
+          ref={btnRef}
+          onClick={handleOpen}
           className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all"
         >
           <FiMoreVertical size={15} />
         </button>
 
-        {open && (
-          <div className="absolute right-0 top-9 z-50 w-44 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-            <DropdownItem
-              color="dark"
-              icon={<MdOutlineAccountBalanceWallet size={14} />}
-              label="Balance"
-              onClick={() => {
-                onBalance();
-                setOpen(false);
+        {open &&
+          createPortal(
+            <div
+              style={{
+                position: "absolute",
+                top: dropPos.top,
+                left: dropPos.left,
+                zIndex: 9999,
               }}
-            />
-            {showPermission && (
+              className="w-44 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <DropdownItem
-                color="indigo"
-                icon={<MdOutlineAdminPanelSettings size={14} />}
-                label="Permissions"
+                color="dark"
+                icon={<MdOutlineAccountBalanceWallet size={14} />}
+                label="Balance"
                 onClick={() => {
-                  onPermission();
+                  onBalance();
                   setOpen(false);
                 }}
               />
-            )}
-            {showMore && (
-              <DropdownItem
-                color="violet"
-                icon={<MdOutlineManageAccounts size={14} />}
-                label="More Actions"
-                onClick={() => {
-                  onMore();
-                  setOpen(false);
-                }}
-              />
-            )}
-          </div>
-        )}
+              {showPermission && (
+                <DropdownItem
+                  color="indigo"
+                  icon={<MdOutlineAdminPanelSettings size={14} />}
+                  label="Permissions"
+                  onClick={() => {
+                    onPermission();
+                    setOpen(false);
+                  }}
+                />
+              )}
+              {showMore && (
+                <DropdownItem
+                  color="violet"
+                  icon={<MdOutlineManageAccounts size={14} />}
+                  label="More Actions"
+                  onClick={() => {
+                    onMore();
+                    setOpen(false);
+                  }}
+                />
+              )}
+            </div>,
+            document.body,
+          )}
       </div>
     </div>
   );

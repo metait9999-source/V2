@@ -3,9 +3,9 @@ import { API_BASE_URL } from "../../../api/getApiURL";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { IoClose } from "react-icons/io5";
-import { FiSave } from "react-icons/fi";
-import { PiHandDepositFill } from "react-icons/pi";
-import { PiHandWithdrawFill } from "react-icons/pi";
+import { FiSave, FiTrash2 } from "react-icons/fi";
+import { PiHandDepositFill, PiHandWithdrawFill } from "react-icons/pi";
+import { useUser } from "../../../context/UserContext";
 
 const inputCls =
   "w-full px-3.5 py-2.5 text-[13.5px] bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400 focus:bg-white transition-all";
@@ -23,14 +23,19 @@ const FormField = ({ label, children }) => (
 );
 
 const DepositModal = ({ isOpen, onClose, details, onUpdateSuccess, title }) => {
+  const { adminUser } = useUser();
+  const isSuperAdmin = adminUser?.role === "superadmin";
+
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState("");
   const [transHash, setTransHash] = useState("");
+  const [removeDoc, setRemoveDoc] = useState(false);
 
   useEffect(() => {
     setAmount(details?.amount || "");
     setStatus(details?.status || "");
     setTransHash(details?.trans_hash || "");
+    setRemoveDoc(false);
   }, [details]);
 
   const handleUpdate = async (e) => {
@@ -40,6 +45,7 @@ const DepositModal = ({ isOpen, onClose, details, onUpdateSuccess, title }) => {
         await axios.put(`${API_BASE_URL}/deposits/${details.id}`, {
           amount,
           status,
+          ...(removeDoc && { documents: null }),
         });
         toast.success("Deposit updated successfully");
       } else {
@@ -60,6 +66,7 @@ const DepositModal = ({ isOpen, onClose, details, onUpdateSuccess, title }) => {
   if (!isOpen) return null;
 
   const isWithdraw = title === "Withdraw";
+  const hasDoc = !!details?.documents && !removeDoc;
   const Icon = isWithdraw ? PiHandWithdrawFill : PiHandDepositFill;
 
   return (
@@ -134,6 +141,54 @@ const DepositModal = ({ isOpen, onClose, details, onUpdateSuccess, title }) => {
                     placeholder="Enter transaction hash"
                     className={inputCls}
                   />
+                </FormField>
+              </div>
+            )}
+
+            {/* ── Document image — deposit only, superadmin can remove ── */}
+            {!isWithdraw && details?.documents && (
+              <div className="sm:col-span-2">
+                <FormField label="Document Image">
+                  {hasDoc ? (
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-shrink-0">
+                        <img
+                          src={`${API_BASE_URL}/${details.documents}`}
+                          alt="document"
+                          className="w-16 h-16 object-cover rounded-xl border border-gray-200"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <p className="text-[12px] text-gray-500">
+                          Current document image
+                        </p>
+                        {/* Only superadmin sees the remove button */}
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setRemoveDoc(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors w-fit"
+                          >
+                            <FiTrash2 size={11} />
+                            Remove Image
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-200">
+                      <span className="text-red-600 text-[12.5px] font-medium">
+                        Image will be removed on save
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setRemoveDoc(false)}
+                        className="text-red-400 hover:text-red-600 text-[12px] font-semibold underline underline-offset-2"
+                      >
+                        Undo
+                      </button>
+                    </div>
+                  )}
                 </FormField>
               </div>
             )}

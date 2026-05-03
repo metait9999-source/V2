@@ -497,8 +497,8 @@ const TradePopup = ({
       toast.success("Trade order placed successfully!");
       setAmount("");
       onClose();
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Failed to trade order");
     } finally {
       setLoading(false);
     }

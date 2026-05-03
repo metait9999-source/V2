@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { API_BASE_URL } from "../../../api/getApiURL";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -16,6 +17,7 @@ import {
   MdOutlineTrendingUp,
   MdOutlineManageAccounts,
 } from "react-icons/md";
+import { FreezeToggle } from "./FreezeToogle";
 
 /* ── Face Image Modal ─────────────────────────────────────── */
 const FaceImageModal = ({ user, onClose }) => {
@@ -29,7 +31,6 @@ const FaceImageModal = ({ user, onClose }) => {
         className="relative bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <p className="font-bold text-gray-800 text-sm">
@@ -44,8 +45,6 @@ const FaceImageModal = ({ user, onClose }) => {
             <IoClose size={17} />
           </button>
         </div>
-
-        {/* Face Image */}
         <div className="p-4">
           {user.face_image ? (
             <>
@@ -100,8 +99,6 @@ const FaceImageModal = ({ user, onClose }) => {
             </div>
           )}
         </div>
-
-        {/* User info */}
         <div className="px-4 pb-4">
           <div className="bg-gray-50 rounded-xl p-3 divide-y divide-gray-100">
             {[
@@ -115,11 +112,7 @@ const FaceImageModal = ({ user, onClose }) => {
                 label: "Status",
                 value: (
                   <span
-                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
-                      user.status === "active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${user.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
                   >
                     {user.status}
                   </span>
@@ -129,11 +122,7 @@ const FaceImageModal = ({ user, onClose }) => {
                 label: "Face Verify",
                 value: (
                   <span
-                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
-                      user.face_image
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${user.face_image ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
                   >
                     {user.face_image ? "Submitted" : "Not submitted"}
                   </span>
@@ -161,165 +150,7 @@ const FaceImageModal = ({ user, onClose }) => {
   );
 };
 
-/* ── Action Menu ──────────────────────────────────────────── */
-const ActionMenu = ({
-  user,
-  onBalance,
-  onRefUpdate,
-  onProfitUpdate,
-  onMore,
-  onFace,
-  showMore,
-}) => {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = () => setOpen(false);
-    document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
-  }, [open]);
-
-  return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
-      {/* Desktop */}
-      <div className="hidden xl:flex flex-wrap gap-1.5">
-        <ActionButton
-          color="dark"
-          onClick={onBalance}
-          icon={<MdOutlineAccountBalanceWallet size={11} />}
-          label="Balance"
-        />
-        <ActionButton
-          color={user.is_referral === 1 ? "red" : "gray"}
-          onClick={onRefUpdate}
-          icon={<MdOutlinePeople size={11} />}
-          label={user.is_referral === 1 ? "Disable Ref" : "Active Ref"}
-        />
-        <ActionButton
-          color={user.is_profit === 1 ? "red" : "green"}
-          onClick={onProfitUpdate}
-          icon={<MdOutlineTrendingUp size={11} />}
-          label={user.is_profit === 1 ? "Lose" : "Profit"}
-        />
-        <ActionButton
-          color={user.face_image ? "green" : "gray"}
-          onClick={onFace}
-          icon={
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle
-                cx="12"
-                cy="12"
-                r="3"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-            </svg>
-          }
-          label="Face"
-        />
-        {showMore && (
-          <ActionButton
-            color="indigo"
-            onClick={onMore}
-            icon={<MdOutlineManageAccounts size={11} />}
-            label="More"
-          />
-        )}
-      </div>
-
-      {/* Mobile dropdown */}
-      <div className="xl:hidden">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((p) => !p);
-          }}
-          className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all"
-        >
-          <FiMoreVertical size={15} />
-        </button>
-
-        {open && (
-          <div className="absolute right-0 top-9 z-50 w-44 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-            <DropdownItem
-              icon={<MdOutlineAccountBalanceWallet size={14} />}
-              label="Balance"
-              color="gray"
-              onClick={() => {
-                onBalance();
-                setOpen(false);
-              }}
-            />
-            <DropdownItem
-              icon={<MdOutlinePeople size={14} />}
-              label={
-                user.is_referral === 1 ? "Disable Referral" : "Active Referral"
-              }
-              color={user.is_referral === 1 ? "red" : "gray"}
-              onClick={() => {
-                onRefUpdate();
-                setOpen(false);
-              }}
-            />
-            <DropdownItem
-              icon={<MdOutlineTrendingUp size={14} />}
-              label={user.is_profit === 1 ? "Set Lose" : "Set Profit"}
-              color={user.is_profit === 1 ? "red" : "green"}
-              onClick={() => {
-                onProfitUpdate();
-                setOpen(false);
-              }}
-            />
-            <DropdownItem
-              icon={
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="3"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-              }
-              label="Face Image"
-              color={user.face_image ? "green" : "gray"}
-              onClick={() => {
-                onFace();
-                setOpen(false);
-              }}
-            />
-            {showMore && (
-              <DropdownItem
-                icon={<MdOutlineManageAccounts size={14} />}
-                label="More Actions"
-                color="indigo"
-                onClick={() => {
-                  onMore();
-                  setOpen(false);
-                }}
-              />
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
+/* ── Shared styles ────────────────────────────────────────── */
 const colorMap = {
   dark: "bg-gray-800 text-white hover:bg-gray-700 border-transparent",
   gray: "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100",
@@ -356,6 +187,171 @@ const DropdownItem = ({ icon, label, color, onClick }) => (
   </button>
 );
 
+/* ── Action Menu ──────────────────────────────────────────── */
+const ActionMenu = ({
+  user,
+  onBalance,
+  onRefUpdate,
+  onProfitUpdate,
+  onMore,
+  onFace,
+  showMore,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = () => setOpen(false);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [open]);
+
+  const handleOpen = (e) => {
+    e.stopPropagation();
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.right + window.scrollX - 176, // 176px = w-44
+      });
+    }
+    setOpen((p) => !p);
+  };
+
+  const faceIcon = (size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      {/* Desktop inline buttons */}
+      <div className="hidden xl:flex flex-wrap gap-1.5">
+        <ActionButton
+          color="dark"
+          onClick={onBalance}
+          icon={<MdOutlineAccountBalanceWallet size={11} />}
+          label="Balance"
+        />
+        <ActionButton
+          color={user.is_referral === 1 ? "red" : "gray"}
+          onClick={onRefUpdate}
+          icon={<MdOutlinePeople size={11} />}
+          label={user.is_referral === 1 ? "Disable Ref" : "Active Ref"}
+        />
+        <ActionButton
+          color={user.is_profit === 1 ? "red" : "green"}
+          onClick={onProfitUpdate}
+          icon={<MdOutlineTrendingUp size={11} />}
+          label={user.is_profit === 1 ? "Lose" : "Profit"}
+        />
+        <ActionButton
+          color={user.face_image ? "green" : "gray"}
+          onClick={onFace}
+          icon={faceIcon(11)}
+          label="Face"
+        />
+        {showMore && (
+          <ActionButton
+            color="indigo"
+            onClick={onMore}
+            icon={<MdOutlineManageAccounts size={11} />}
+            label="More"
+          />
+        )}
+      </div>
+
+      {/* Mobile/tablet trigger */}
+      <div className="xl:hidden">
+        <button
+          ref={btnRef}
+          onClick={handleOpen}
+          className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all"
+        >
+          <FiMoreVertical size={15} />
+        </button>
+
+        {/* ✅ Portal renders outside table — no overflow clipping */}
+        {open &&
+          createPortal(
+            <div
+              style={{
+                position: "absolute",
+                top: dropPos.top,
+                left: dropPos.left,
+                zIndex: 9999,
+              }}
+              className="w-44 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownItem
+                icon={<MdOutlineAccountBalanceWallet size={14} />}
+                label="Balance"
+                color="gray"
+                onClick={() => {
+                  onBalance();
+                  setOpen(false);
+                }}
+              />
+              <DropdownItem
+                icon={<MdOutlinePeople size={14} />}
+                label={
+                  user.is_referral === 1
+                    ? "Disable Referral"
+                    : "Active Referral"
+                }
+                color={user.is_referral === 1 ? "red" : "gray"}
+                onClick={() => {
+                  onRefUpdate();
+                  setOpen(false);
+                }}
+              />
+              <DropdownItem
+                icon={<MdOutlineTrendingUp size={14} />}
+                label={user.is_profit === 1 ? "Set Lose" : "Set Profit"}
+                color={user.is_profit === 1 ? "red" : "green"}
+                onClick={() => {
+                  onProfitUpdate();
+                  setOpen(false);
+                }}
+              />
+              <DropdownItem
+                icon={faceIcon(14)}
+                label="Face Image"
+                color={user.face_image ? "green" : "gray"}
+                onClick={() => {
+                  onFace();
+                  setOpen(false);
+                }}
+              />
+              {showMore && (
+                <DropdownItem
+                  icon={<MdOutlineManageAccounts size={14} />}
+                  label="More Actions"
+                  color="indigo"
+                  onClick={() => {
+                    onMore();
+                    setOpen(false);
+                  }}
+                />
+              )}
+            </div>,
+            document.body,
+          )}
+      </div>
+    </div>
+  );
+};
+
 /* ── Main Component ───────────────────────────────────────── */
 const AdminUsers = () => {
   const { adminUser, setLoading } = useUser();
@@ -370,7 +366,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchEmployee, setSearchEmployee] = useState("");
   const [page, setPage] = useState(1);
-  const [faceUser, setFaceUser] = useState(null); // ✅ face modal state
+  const [faceUser, setFaceUser] = useState(null);
   const tradesPerPage = 25;
 
   useEffect(() => {
@@ -456,7 +452,6 @@ const AdminUsers = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Face Image Modal */}
       {faceUser && (
         <FaceImageModal user={faceUser} onClose={() => setFaceUser(null)} />
       )}
@@ -532,6 +527,7 @@ const AdminUsers = () => {
                   ...(isSuperAdmin ? ["Mobile"] : []),
                   "Trade Limit",
                   ...(isSuperAdmin ? ["Status"] : []),
+                  "Freeze",
                   "Registered",
                   "Actions",
                 ].map((h) => (
@@ -548,7 +544,7 @@ const AdminUsers = () => {
               {currentUsers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={14}
+                    colSpan={15}
                     className="py-16 text-center text-gray-400 text-[13px]"
                   >
                     No users found.
@@ -558,7 +554,7 @@ const AdminUsers = () => {
                 currentUsers.map((user) => (
                   <tr
                     key={user.id}
-                    className="hover:bg-gray-50/60 transition-colors"
+                    className={`hover:bg-gray-50/60 transition-colors ${user.is_frozen ? "bg-red-50/40" : ""}`}
                   >
                     <td className="px-4 py-3 font-mono text-[11.5px] text-gray-500 whitespace-nowrap">
                       {user.uuid}
@@ -573,7 +569,6 @@ const AdminUsers = () => {
                       {user?.note || "—"}
                     </td>
 
-                    {/* ✅ Face image cell */}
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setFaceUser(user)}
@@ -623,17 +618,14 @@ const AdminUsers = () => {
                         {user?.email}
                       </td>
                     )}
-
                     <td className="px-4 py-3 font-mono text-[11.5px] text-gray-500 whitespace-nowrap">
                       {formatWalletAddress(user?.user_wallet)}
                     </td>
-
                     {isSuperAdmin && (
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                         {user?.mobile}
                       </td>
                     )}
-
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                       {user?.trade_limit}
                     </td>
@@ -641,11 +633,7 @@ const AdminUsers = () => {
                     {isSuperAdmin && (
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border ${
-                            user.status === "active"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-gray-100 text-gray-500 border-gray-200"
-                          }`}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border ${user.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-500 border-gray-200"}`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-emerald-500" : "bg-gray-400"}`}
@@ -654,6 +642,13 @@ const AdminUsers = () => {
                         </span>
                       </td>
                     )}
+
+                    <td className="px-4 py-3">
+                      <FreezeToggle
+                        user={user}
+                        onSuccess={() => setIsUpdateSuccess((p) => !p)}
+                      />
+                    </td>
 
                     <td className="px-4 py-3 text-gray-500 text-[11.5px] whitespace-nowrap">
                       {getFormattedDate(user?.user_registered)}
@@ -685,7 +680,6 @@ const AdminUsers = () => {
       </div>
 
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
-
       <BalanceModal
         isOpen={isBalanceModalOpen}
         onClose={() => {

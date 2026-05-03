@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import imgWallet from "../../Assets/images/img_wallet.png";
 import Header from "../Header/Header";
 import { Link } from "react-router-dom";
 import useWallets from "../../hooks/useWallets";
@@ -75,57 +74,76 @@ function Account() {
 
       {/* ── Banner ── */}
       <div
-        className="relative overflow-hidden px-5 pt-6 pb-6 mx-4 mt-4 rounded-3xl"
+        className="relative px-5 pt-6 pb-6 mx-4 mt-4 rounded-3xl"
         style={{
+          zIndex: 0,
           background:
-            "linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#ec4899 100%)",
+            "linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#4c1d95 100%)",
+          border: "1px solid rgba(139,92,246,0.25)",
+          boxShadow:
+            "0 8px 32px rgba(99,102,241,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
+        {/* Glow blobs */}
         <div
-          className="absolute bottom-0 left-0 w-56 h-40 rounded-full opacity-20"
+          className="absolute bottom-0 left-0 w-56 h-40 rounded-full opacity-30"
           style={{
-            background: "#a5b4fc",
-            filter: "blur(40px)",
+            background: "#6366f1",
+            filter: "blur(50px)",
             transform: "translate(-20%,30%)",
           }}
         />
         <div
           className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-20"
           style={{
-            background: "#f9a8d4",
-            filter: "blur(36px)",
+            background: "#a78bfa",
+            filter: "blur(40px)",
             transform: "translate(20%,-20%)",
           }}
         />
+        {/* Subtle grid overlay */}
+        <div
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
 
-        <div className="relative z-10 flex items-start justify-between">
-          <div className="flex-1 pr-2">
+        <div className="relative z-10 flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <p
+              className="text-violet-300 font-semibold uppercase tracking-widest mb-1"
+              style={{ fontSize: "2.6vw" }}
+            >
+              Your Portfolio
+            </p>
             <h1
-              className="text-white font-extrabold leading-tight mb-0.5"
-              style={{ fontSize: "5.5vw" }}
+              className="text-white font-extrabold leading-tight mb-4"
+              style={{ fontSize: "5.2vw" }}
             >
               Send Crypto Now
             </h1>
-            <p
-              className="text-white/80 leading-snug mb-4"
-              style={{ fontSize: "3.5vw" }}
-            >
-              Choose a wallet to send crypto from
-            </p>
 
             {/* Balance card */}
             <div
               className="rounded-2xl px-4 py-3"
               style={{
-                background: "rgba(255,255,255,0.15)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(255,255,255,0.07)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.10)",
               }}
             >
-              <div className="flex items-center gap-1.5 mb-1">
+              <div className="flex items-center gap-1.5 mb-2">
+                <div
+                  className="rounded-full flex items-center justify-center"
+                  style={{ width: 6, height: 6, background: "#34d399" }}
+                />
                 <span
-                  className="text-white/70 font-semibold uppercase tracking-wider"
-                  style={{ fontSize: "2.8vw" }}
+                  className="text-violet-300 font-semibold uppercase tracking-widest"
+                  style={{ fontSize: "2.6vw" }}
                 >
                   Total Balance
                 </span>
@@ -133,27 +151,28 @@ function Account() {
                   onClick={toggleBalance}
                   aria-label={balanceVisible ? "Hide balance" : "Show balance"}
                   style={{
-                    background: "rgba(255,255,255,0.22)",
-                    border: "none",
+                    background: "rgba(139,92,246,0.25)",
+                    border: "1px solid rgba(139,92,246,0.3)",
                     borderRadius: "50%",
-                    width: 27,
-                    height: 22,
+                    width: 24,
+                    height: 24,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
                     flexShrink: 0,
                     padding: 0,
-                    transition: "background 0.2s, transform 0.15s",
+                    transition: "all 0.2s",
+                    marginLeft: "auto",
                   }}
                 >
                   {balanceVisible ? (
                     <svg
-                      width="12"
-                      height="12"
+                      width="11"
+                      height="11"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="white"
+                      stroke="#a78bfa"
                       strokeWidth="2.2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -163,11 +182,11 @@ function Account() {
                     </svg>
                   ) : (
                     <svg
-                      width="12"
-                      height="12"
+                      width="11"
+                      height="11"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="white"
+                      stroke="#a78bfa"
                       strokeWidth="2.2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -179,31 +198,103 @@ function Account() {
                   )}
                 </button>
               </div>
+
               <p
                 className="text-white font-extrabold leading-none select-none"
                 style={{
-                  fontSize: "1.2rem",
-                  letterSpacing: "-0.02em",
+                  fontSize: "1.35rem",
+                  letterSpacing: "-0.03em",
                   ...blurStyle,
                 }}
               >
                 ${totalBalance.toFixed(2)}
+                <span
+                  className="text-violet-300 font-semibold ml-1"
+                  style={{ fontSize: "3vw" }}
+                >
+                  USDT
+                </span>
               </p>
-              <p className="text-white/55 mt-1.5" style={{ fontSize: "3vw" }}>
-                {wallets?.length ?? 0} wallet{wallets?.length !== 1 ? "s" : ""}
-              </p>
+
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-violet-400" style={{ fontSize: "2.8vw" }}>
+                  {wallets?.length ?? 0} wallet
+                  {wallets?.length !== 1 ? "s" : ""}
+                </p>
+                <div
+                  className="rounded-full px-2 py-0.5 flex items-center gap-1"
+                  style={{
+                    background: "rgba(52,211,153,0.12)",
+                    border: "1px solid rgba(52,211,153,0.2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      background: "#34d399",
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: "#34d399",
+                      fontSize: "2.4vw",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Active
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <img
-            src={imgWallet}
-            alt="Wallet"
-            className="w-28 h-24 object-contain flex-shrink-0"
-            style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.4))" }}
-          />
+          {/* Wallet Icon replacing image */}
+          <div
+            className="flex-shrink-0 flex items-center justify-center rounded-2xl"
+            style={{
+              width: "18vw",
+              height: "18vw",
+              maxWidth: 72,
+              maxHeight: 72,
+              background:
+                "linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(99,102,241,0.2) 100%)",
+              border: "1px solid rgba(139,92,246,0.4)",
+              boxShadow:
+                "0 4px 24px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            {/* RiWallet3Fill from react-icons/ri */}
+            <svg
+              viewBox="0 0 24 24"
+              fill="url(#walletGrad)"
+              style={{
+                width: "10vw",
+                height: "10vw",
+                maxWidth: 40,
+                maxHeight: 40,
+              }}
+            >
+              <defs>
+                <linearGradient
+                  id="walletGrad"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor="#c4b5fd" />
+                  <stop offset="100%" stopColor="#818cf8" />
+                </linearGradient>
+              </defs>
+              {/* RiWallet3Fill path */}
+              <path d="M2 7a2 2 0 012-2h16a2 2 0 012 2v1H2V7zm0 3h20v9a2 2 0 01-2 2H4a2 2 0 01-2-2v-9zm13 3a1 1 0 000 2h2a1 1 0 000-2h-2z" />
+            </svg>
+          </div>
         </div>
       </div>
-
       {/* ── Select + Search ── */}
       <div className="px-4 py-4 flex items-center gap-3">
         <h2
@@ -244,7 +335,6 @@ function Account() {
           />
         </div>
       </div>
-
       {/* ── Wallet list ── */}
       <div
         className="px-4 mx-4 rounded-3xl overflow-hidden"
@@ -304,7 +394,6 @@ function Account() {
           </Link>
         ))}
       </div>
-
       {/* bottom spacing */}
       <div className="h-8" />
     </div>

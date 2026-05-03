@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useUser } from "../../context/UserContext";
 import { format } from "date-fns";
@@ -27,7 +27,6 @@ const ACCENT = "#7c3aed";
 const SUPPORTED_COINS = ["USDT", "BTC", "ETH"];
 const COIN_COLORS = { USDT: "#26a17b", BTC: "#f7931a", ETH: "#627eea" };
 
-/* ─── Status badge styles (dark-friendly) ── */
 const statusStyle = {
   active: {
     background: "rgba(16,185,129,0.12)",
@@ -44,6 +43,77 @@ const statusStyle = {
     color: "rgb(239,68,68)",
     border: "1px solid rgba(239,68,68,0.2)",
   },
+};
+
+/* ─── Countdown Timer ── */
+const CountdownTimer = ({ endDate }) => {
+  const calc = useCallback(() => {
+    const diff = new Date(endDate) - new Date();
+    if (diff <= 0) return null;
+    return {
+      d: Math.floor(diff / 86400000),
+      h: Math.floor((diff % 86400000) / 3600000),
+      m: Math.floor((diff % 3600000) / 60000),
+      s: Math.floor((diff % 60000) / 1000),
+    };
+  }, [endDate]);
+
+  const [time, setTime] = useState(calc);
+
+  useEffect(() => {
+    setTime(calc()); // sync immediately on mount / endDate change
+    const t = setInterval(() => setTime(calc()), 1000);
+    return () => clearInterval(t);
+  }, [calc]);
+
+  if (!time)
+    return (
+      <span
+        style={{ fontSize: "2.6vw", color: "rgb(239,68,68)", fontWeight: 600 }}
+      >
+        Ending soon
+      </span>
+    );
+
+  return (
+    <div
+      className="flex items-center gap-1"
+      style={{
+        background: "rgba(251,191,36,0.10)",
+        border: "1px solid rgba(251,191,36,0.2)",
+        borderRadius: 8,
+        padding: "3px 8px",
+        display: "inline-flex",
+      }}
+    >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{ flexShrink: 0 }}
+      >
+        <circle cx="12" cy="12" r="10" stroke="#fbbf24" strokeWidth="2" />
+        <path
+          d="M12 6v6l4 2"
+          stroke="#fbbf24"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+      <span
+        style={{
+          fontSize: "2.8vw",
+          color: "#fbbf24",
+          fontWeight: 700,
+          letterSpacing: "0.02em",
+        }}
+      >
+        {time.d}d {String(time.h).padStart(2, "0")}h{" "}
+        {String(time.m).padStart(2, "0")}m {String(time.s).padStart(2, "0")}s
+      </span>
+    </div>
+  );
 };
 
 /* ─── Icons ── */
@@ -235,6 +305,7 @@ const HostingWorkPage = ({
   const totalEarned = subscriptions
     .reduce((sum, s) => sum + parseFloat(s.total_earned || 0), 0)
     .toFixed(4);
+
   const todayEarned = subscriptions
     .filter(
       (s) =>
@@ -246,6 +317,7 @@ const HostingWorkPage = ({
       0,
     )
     .toFixed(4);
+
   const activeCount = subscriptions.filter((s) => s.status === "active").length;
 
   return (
@@ -258,15 +330,9 @@ const HostingWorkPage = ({
         style={{
           background:
             "linear-gradient(145deg,#7c3aed 0%,#a855f7 45%,#ec4899 100%)",
+          zIndex: 0,
         }}
       >
-        <div
-          style={{
-            background: "#fff",
-            filter: "blur(48px)",
-            transform: "translate(30%,-30%)",
-          }}
-        />
         <div
           className="pointer-events-none absolute rounded-full"
           style={{
@@ -277,6 +343,19 @@ const HostingWorkPage = ({
             background: "#a5b4fc",
             filter: "blur(36px)",
             transform: "translate(-20%,40%)",
+            opacity: 0.15,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute rounded-full"
+          style={{
+            top: 0,
+            right: 0,
+            width: "30vw",
+            height: "30vw",
+            background: "#f9a8d4",
+            filter: "blur(32px)",
+            transform: "translate(20%,-30%)",
             opacity: 0.15,
           }}
         />
@@ -293,10 +372,7 @@ const HostingWorkPage = ({
         >
           ${totalEarned}
         </div>
-        <p
-          className="text-white/60 relative z-10 mb-6"
-          style={{ fontSize: "3vw" }}
-        >
+        <p className="text-white/60 relative z-10" style={{ fontSize: "3vw" }}>
           {activeCount} active subscription{activeCount !== 1 ? "s" : ""}
         </p>
       </div>
@@ -547,6 +623,7 @@ const HostingWorkPage = ({
                       {sub.status}
                     </span>
                   </div>
+
                   <div
                     className="grid grid-cols-3 gap-3 pt-3"
                     style={{ borderTop: `1px solid ${DARK_BORDER2}` }}
@@ -603,13 +680,19 @@ const HostingWorkPage = ({
                       </p>
                     </div>
                   </div>
+
                   <div
                     className="flex items-center justify-between mt-3 pt-3"
                     style={{ borderTop: `1px solid ${DARK_BORDER2}` }}
                   >
-                    <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
-                      Ends {format(new Date(sub.end_date), "dd MMM yyyy")}
-                    </p>
+                    <div className="flex flex-col gap-1">
+                      <p style={{ fontSize: "3vw", color: TEXT_MUTED }}>
+                        Ends {format(new Date(sub.end_date), "dd MMM yyyy")}
+                      </p>
+                      {sub.status === "active" && (
+                        <CountdownTimer endDate={sub.end_date} />
+                      )}
+                    </div>
                     {sub.status === "active" && (
                       <button
                         onClick={() => onCancelSubscription(sub.id)}
@@ -631,6 +714,8 @@ const HostingWorkPage = ({
           </div>
         )}
       </div>
+
+      <div className="h-8" />
     </div>
   );
 };
@@ -638,7 +723,13 @@ const HostingWorkPage = ({
 /* ════════════════════════════════════════════════════════════════
    ARBITRAGE DETAIL PAGE
 ════════════════════════════════════════════════════════════════ */
-const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
+const ArbitragePage = ({
+  onBack,
+  selectedPackage,
+  onSubscribed,
+  onWalletsRefresh,
+  wallets,
+}) => {
   const { user } = useUser();
   const [amount, setAmount] = useState("");
   const [sliderVal, setSliderVal] = useState(0);
@@ -686,7 +777,7 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
         amount: parseFloat(amount),
       });
       toast.success("Subscribed successfully!");
-      onSubscribed();
+      await Promise.all([onSubscribed(), onWalletsRefresh()]);
       onBack();
     } catch (err) {
       toast.error(err?.response?.data?.error || "Failed to subscribe");
@@ -706,7 +797,7 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
 
   return (
     <div className="min-h-screen pb-8" style={{ background: DARK_BG }}>
-      {/* Custom header with onBack wired to hosting page */}
+      {/* Custom header */}
       <div
         className="flex items-center justify-between px-4 py-3 sticky top-0 z-10"
         style={{
@@ -1162,7 +1253,8 @@ const ArbitragePage = ({ onBack, selectedPackage, onSubscribed, wallets }) => {
 ════════════════════════════════════════════════════════════════ */
 export default function ArbitrageRoot() {
   const { user } = useUser();
-  const { wallets } = useWallets(user?.id);
+  // Expects useWallets to expose a refreshWallets fn — see note below
+  const { wallets, refreshWallets } = useWallets(user?.id);
   const [page, setPage] = useState("hosting");
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [packages, setPackages] = useState([]);
@@ -1211,7 +1303,7 @@ export default function ArbitrageRoot() {
     try {
       await cancelSubscription({ subscriptionId, userId: user.id });
       toast.success("Subscription cancelled — principal returned to balance");
-      fetchSubscriptions();
+      await Promise.all([fetchSubscriptions(), refreshWallets()]);
     } catch (err) {
       toast.error(err?.response?.data?.error || "Failed to cancel");
     }
@@ -1223,6 +1315,7 @@ export default function ArbitrageRoot() {
         onBack={() => setPage("hosting")}
         selectedPackage={selectedPackage}
         onSubscribed={fetchSubscriptions}
+        onWalletsRefresh={refreshWallets}
         wallets={supportedWallets}
       />
     );

@@ -9,7 +9,7 @@ import { useUser } from "../../../context/UserContext";
 import Pagination from "../../Pagination/Pagination";
 import { useSocketContext } from "../../../context/SocketContext";
 import { PiHandDepositFill } from "react-icons/pi";
-import { FiSearch, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiSearch, FiEdit2, FiTrash2, FiImage } from "react-icons/fi";
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -36,7 +36,9 @@ const StatusBadge = ({ status }) => {
 
 const Deposits = () => {
   const [deposits, setDeposits] = useState([]);
-  const { setLoading } = useUser();
+  const { setLoading, adminUser } = useUser();
+  const isSuperAdmin = adminUser?.role === "superadmin";
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDepositId, setSelectedDepositId] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -122,9 +124,14 @@ const Deposits = () => {
   const formatWalletAddress = (address) =>
     address ? `${address.slice(0, 8)}…${address.slice(-6)}` : "—";
 
+  const openEdit = (deposit) => {
+    setDepositDetail(deposit);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="flex flex-col gap-5">
-      {/* ── Page header ── */}
+      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 flex-shrink-0">
@@ -154,7 +161,7 @@ const Deposits = () => {
         </div>
       </div>
 
-      {/* ── Table card ── */}
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-[13px]">
@@ -214,21 +221,27 @@ const Deposits = () => {
                       {deposit?.amount}
                     </td>
 
-                    {/* Thumbnail — click to open full viewer */}
+                    {/* Thumbnail */}
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => {
-                          setDepositDetail(deposit);
-                          setIsImgView(true);
-                        }}
-                        className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 hover:border-indigo-300 hover:shadow-md transition-all flex-shrink-0 block"
-                      >
-                        <img
-                          src={`${API_BASE_URL}/${deposit?.documents}`}
-                          alt="doc"
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
+                      {deposit?.documents ? (
+                        <button
+                          onClick={() => {
+                            setDepositDetail(deposit);
+                            setIsImgView(true);
+                          }}
+                          className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 hover:border-indigo-300 hover:shadow-md transition-all flex-shrink-0 block"
+                        >
+                          <img
+                            src={`${API_BASE_URL}/${deposit?.documents}`}
+                            alt="doc"
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center">
+                          <FiImage size={14} className="text-gray-300" />
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-4 py-3 font-mono text-[11.5px] text-gray-500 whitespace-nowrap">
@@ -245,28 +258,43 @@ const Deposits = () => {
 
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
+                        {/* Edit — pending only */}
                         {deposit.status === "pending" && (
                           <button
-                            onClick={() => {
-                              setDepositDetail(deposit);
-                              setIsDetailsModalOpen(true);
-                            }}
+                            onClick={() => openEdit(deposit)}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors whitespace-nowrap"
                           >
                             <FiEdit2 size={11} />
                             Edit
                           </button>
                         )}
-                        <button
-                          onClick={() => {
-                            setSelectedDepositId(deposit.id);
-                            setIsModalOpen(true);
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors whitespace-nowrap"
-                        >
-                          <FiTrash2 size={11} />
-                          Delete
-                        </button>
+
+                        {/* ✅ Image remove — approved + has doc + superadmin only */}
+                        {deposit.status === "approved" &&
+                          deposit.documents &&
+                          isSuperAdmin && (
+                            <button
+                              onClick={() => openEdit(deposit)}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors whitespace-nowrap"
+                            >
+                              <FiTrash2 size={11} />
+                              Del Image
+                            </button>
+                          )}
+
+                        {/* Delete row — superadmin only */}
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => {
+                              setSelectedDepositId(deposit.id);
+                              setIsModalOpen(true);
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors whitespace-nowrap"
+                          >
+                            <FiTrash2 size={11} />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

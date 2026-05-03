@@ -277,11 +277,11 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                     background: "linear-gradient(90deg,#7c3aed,#6366f1)",
                   }}
                 >
-                  Credit: {user?.credit || 0}
+                  UID: {user?.uuid || "—"}
                 </div>
               </div>
 
-              <p
+              {/* <p
                 style={{
                   color: SECTION_LABEL,
                   fontSize: "0.8rem",
@@ -289,7 +289,7 @@ const SideNav = ({ toggleMenu, setToggleMenu }) => {
                 }}
               >
                 UID: {user?.uuid || "—"}
-              </p>
+              </p> */}
 
               {/* Balance */}
               <div className="mt-4">

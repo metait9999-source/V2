@@ -8,23 +8,35 @@ import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 const PermissionModal = ({ isOpen, onClose, onUpdateSuccess, details }) => {
   const { setLoading: setLoader } = useUser();
-  const [permissions, setPermissions] = useState(null);
+  const [permissions, setPermissions] = useState([]);
+  const [userPermissionIds, setUserPermissionIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchPermissions = async () => {
+    if (!isOpen || !details?.id) return;
+
+    const fetchAll = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/permissions`);
-        setPermissions(response.data);
+        // Both requests fire in parallel — only 2 API calls total
+        const [allPermsRes, userPermsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/permissions`),
+          axios.get(`${API_BASE_URL}/permissions/user/${details.id}`),
+        ]);
+
+        setPermissions(allPermsRes.data);
+        setUserPermissionIds(
+          new Set(userPermsRes.data.permissions.map((p) => p.permissionId)),
+        );
       } catch {
         console.error("Error fetching permissions");
       } finally {
         setLoading(false);
       }
     };
-    fetchPermissions();
-  }, [details]);
+
+    fetchAll();
+  }, [isOpen, details?.id]);
 
   useEffect(() => {
     setLoader(loading);
@@ -65,17 +77,18 @@ const PermissionModal = ({ isOpen, onClose, onUpdateSuccess, details }) => {
             <div className="py-10 text-center text-gray-400 text-[13px]">
               Loading permissions…
             </div>
-          ) : permissions?.length === 0 ? (
+          ) : permissions.length === 0 ? (
             <div className="py-10 text-center text-gray-400 text-[13px]">
               No permissions found.
             </div>
           ) : (
-            permissions?.map((permission) => (
+            permissions.map((permission) => (
               <PermissionToggle
                 key={permission.id}
                 userId={details?.id}
                 permissionName={permission.label}
                 permissionId={permission.id}
+                initialHasPermission={userPermissionIds.has(permission.id)}
               />
             ))
           )}

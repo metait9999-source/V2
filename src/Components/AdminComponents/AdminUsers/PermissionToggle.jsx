@@ -1,27 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../../../api/getApiURL";
 
-const PermissionToggle = ({ userId, permissionId, permissionName }) => {
-  const [hasPermission, setHasPermission] = useState(false);
+const PermissionToggle = ({
+  userId,
+  permissionId,
+  permissionName,
+  initialHasPermission,
+}) => {
+  const [hasPermission, setHasPermission] = useState(initialHasPermission);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchPermissionStatus = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/permissions/user/${userId}`,
-        );
-        const permissionExists = response.data.permissions.some(
-          (p) => p.permissionId === permissionId,
-        );
-        setHasPermission(permissionExists);
-      } catch {
-        console.error("Error fetching permissions");
-      }
-    };
-    fetchPermissionStatus();
-  }, [userId, permissionId]);
 
   const handleToggle = async () => {
     setLoading(true);
@@ -44,7 +32,6 @@ const PermissionToggle = ({ userId, permissionId, permissionName }) => {
         {permissionName}
       </span>
 
-      {/* Toggle switch */}
       <button
         onClick={handleToggle}
         disabled={loading}

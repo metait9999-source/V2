@@ -302,8 +302,8 @@ const Funds = () => {
       setPreview(null);
       refetch();
       setRechargeModal(false);
-    } catch (error) {
-      console.error("Error uploading data:", error);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Failed to deposit request");
       setLoading(false);
     }
   };
@@ -341,9 +341,10 @@ const Funds = () => {
       const withdraw_balance = new Decimal(parseFloat(withdrawAmount));
       const new_balance = main_balance.d[0] - withdraw_balance.d[0];
       updateUserBalance(user?.id, wallet?.coin_id, new_balance);
-    } catch (error) {
+    } catch (err) {
       setLoading(false);
-      console.error(error);
+      toast.error(err?.response?.data?.error || "Failed to trade order");
+      // console.error(error);
     }
   };
 
@@ -354,6 +355,10 @@ const Funds = () => {
   };
 
   const handleConvertSubmit = async () => {
+    if (user.is_frozen) {
+      toast.error("Account is frozen. Please contact support.");
+      return;
+    }
     if (!convertAmount || parseFloat(convertAmount) <= 0) {
       toast.error("Enter a valid amount");
       return;
