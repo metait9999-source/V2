@@ -12,11 +12,10 @@ const DARK_BORDER2 = "rgba(255,255,255,0.06)";
 const TEXT_PRIMARY = "#f1f5f9";
 const TEXT_MUTED = "#64748b";
 
-// Add this helper near your constants at the top
 const getImageUrl = (path) => {
   if (!path) return null;
-  if (path.startsWith("blob:") || path.startsWith("http")) return path; // preview blob or already full URL
-  return `${API_BASE_URL}/${path.replace(/\\/g, "/")}`; // e.g. http://localhost:5000/uploads/xyz.jpg
+  if (path.startsWith("blob:") || path.startsWith("http")) return path;
+  return `${API_BASE_URL}/${path.replace(/\\/g, "/")}`;
 };
 
 const Field = ({
