@@ -8,6 +8,13 @@ import { useUser } from "../../../context/UserContext";
 import { FaWallet } from "react-icons/fa";
 import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
 
+// Resolves coin_logo to a displayable URL (uploaded file or external CDN)
+const resolveLogoSrc = (coinLogo) => {
+  if (!coinLogo) return null;
+  if (coinLogo.startsWith("uploads/")) return `${API_BASE_URL}/${coinLogo}`;
+  return coinLogo; // CDN URL or full http
+};
+
 const Wallets = () => {
   const [wallets, setWallets] = useState([]);
   const { setLoading } = useUser();
@@ -89,6 +96,7 @@ const Wallets = () => {
               <tr className="bg-gray-50 border-b border-gray-200">
                 {[
                   "#",
+                  "Logo",
                   "Symbol",
                   "Coin Name",
                   "Network",
@@ -110,7 +118,7 @@ const Wallets = () => {
               {wallets.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="py-16 text-center text-gray-400 text-[13px]"
                   >
                     No wallets found. Add one to get started.
@@ -125,6 +133,33 @@ const Wallets = () => {
                     {/* # */}
                     <td className="px-4 py-3 text-gray-400 font-medium">
                       {index + 1}
+                    </td>
+
+                    {/* Coin Logo */}
+                    <td className="px-4 py-3">
+                      <div className="w-8 h-8 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {resolveLogoSrc(wallet.coin_logo) ? (
+                          <img
+                            src={resolveLogoSrc(wallet.coin_logo)}
+                            alt={wallet.coin_name}
+                            className="w-full h-full object-contain p-0.5"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <span
+                          className="text-[10px] font-bold text-gray-400 hidden"
+                          style={{
+                            display: resolveLogoSrc(wallet.coin_logo)
+                              ? "none"
+                              : "flex",
+                          }}
+                        >
+                          {wallet.coin_symbol?.slice(0, 2)}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Symbol */}
@@ -154,11 +189,15 @@ const Wallets = () => {
                     {/* QR Code */}
                     <td className="px-4 py-3">
                       <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
-                        <img
-                          src={`${API_BASE_URL}/${wallet?.wallet_qr}`}
-                          className="w-full h-full object-cover"
-                          alt="QR"
-                        />
+                        {wallet?.wallet_qr ? (
+                          <img
+                            src={`${API_BASE_URL}/${wallet.wallet_qr}`}
+                            className="w-full h-full object-cover"
+                            alt="QR"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-gray-300">—</span>
+                        )}
                       </div>
                     </td>
 
@@ -173,7 +212,11 @@ const Wallets = () => {
                         }`}
                       >
                         <span
-                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${wallet.status === "active" ? "bg-emerald-500" : "bg-gray-400"}`}
+                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                            wallet.status === "active"
+                              ? "bg-emerald-500"
+                              : "bg-gray-400"
+                          }`}
                         />
                         {wallet.status}
                       </span>

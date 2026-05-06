@@ -22,7 +22,6 @@ const FormField = ({ label, children }) => (
   </div>
 );
 
-// Reusable image upload field with preview
 const ImageUploadField = ({
   label,
   icon: Icon,
@@ -40,6 +39,9 @@ const ImageUploadField = ({
           src={previewSrc}
           alt={label}
           className="w-full h-36 object-contain p-2"
+          onError={(e) => {
+            e.target.style.display = "none";
+          }}
         />
         <button
           type="button"
@@ -85,6 +87,7 @@ const AddNewWallet = () => {
     wallet_network: "",
     coin_symbol: "",
     wallet_address: "",
+    wallet_qr: null,
   });
 
   useEffect(() => {
@@ -107,6 +110,28 @@ const AddNewWallet = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleCoinChange = (e) => {
+    const { value } = e.target;
+    const coin = coinsData.find((c) => c.id === value);
+    if (!coin) return;
+    setSelectedCoin(coin);
+
+    // Auto-set logo preview from CoinLore CDN
+    const cdnLogoUrl = `https://www.coinlore.com/img/${coin.nameid}.png`;
+    setLogoPreview(cdnLogoUrl);
+
+    setFormData((prev) => ({
+      ...prev,
+      coin_id: coin.id,
+      coin_name: coin.name || "",
+      coin_logo: cdnLogoUrl, // store CDN URL as default; overridden if user uploads a file
+      wallet_network: coin.nameid,
+      coin_symbol: coin.symbol,
+      wallet_address: "",
+      wallet_qr: null,
+    }));
+  };
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -117,29 +142,33 @@ const AddNewWallet = () => {
   const handleQrChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setFormData((prev) => ({ ...prev, documents: file }));
+    setFormData((prev) => ({ ...prev, wallet_qr: file }));
     setQrPreview(URL.createObjectURL(file));
-  };
-
-  const handleCoinChange = (e) => {
-    const { value } = e.target;
-    const coin = coinsData.find((c) => c.id === value);
-    setSelectedCoin(coin);
-    setFormData((prev) => ({
-      ...prev,
-      coin_id: coin.id,
-      coin_name: coin?.name || "",
-      coin_logo: "",
-      wallet_network: coin.nameid,
-      coin_symbol: coin.symbol,
-      wallet_address: "",
-    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/wallets`, formData, {
+      const payload = new FormData();
+      payload.append("coin_id", formData.coin_id);
+      payload.append("coin_name", formData.coin_name);
+      payload.append("wallet_network", formData.wallet_network);
+      payload.append("coin_symbol", formData.coin_symbol);
+      payload.append("wallet_address", formData.wallet_address);
+
+      // coin_logo: file upload OR CDN URL string
+      if (formData.coin_logo instanceof File) {
+        payload.append("coin_logo", formData.coin_logo);
+      } else if (formData.coin_logo) {
+        payload.append("coin_logo", formData.coin_logo); // plain URL string
+      }
+
+      // wallet_qr: file upload only
+      if (formData.wallet_qr instanceof File) {
+        payload.append("wallet_qr", formData.wallet_qr);
+      }
+
+      await axios.post(`${API_BASE_URL}/wallets`, payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("Wallet added successfully");
@@ -249,10 +278,10 @@ const AddNewWallet = () => {
               />
             </FormField>
 
-            {/* empty spacer to keep grid aligned */}
+            {/* empty spacer */}
             <div className="hidden sm:block" />
 
-            {/* ── Image uploads with preview ── */}
+            {/* Coin Logo — auto-filled from CDN, replaceable by upload */}
             <ImageUploadField
               label="Coin Logo"
               icon={FiUpload}
@@ -265,17 +294,18 @@ const AddNewWallet = () => {
               }}
             />
 
+            {/* Wallet QR Code */}
             <ImageUploadField
               label="Wallet QR Code"
               icon={MdOutlineQrCode2}
               previewSrc={qrPreview}
-              inputName="documents"
+              inputName="wallet_qr" // ← renamed from "documents"
               accept="image/*"
               required
               onChange={handleQrChange}
               onClear={() => {
                 setQrPreview(null);
-                setFormData((p) => ({ ...p, documents: undefined }));
+                setFormData((p) => ({ ...p, wallet_qr: null }));
               }}
             />
           </div>

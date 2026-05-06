@@ -6,6 +6,28 @@ import { useUser } from "../../context/UserContext";
 import useCryptoTradeConverter from "../../hooks/userCryptoTradeConverter";
 import axios from "axios";
 import { API_BASE_URL } from "../../api/getApiURL";
+import { MdVerified } from "react-icons/md";
+
+const VerifiedBadge = () => (
+  <MdVerified
+    size={15}
+    style={{
+      flexShrink: 0,
+      color: "#1877F2",
+      filter: "drop-shadow(0 0 0 white)",
+    }}
+  />
+);
+
+// ── Coin logo: resolves uploaded file, CDN URL, or local asset ───────────────
+const resolveLogoSrc = (wallet) => {
+  const { coin_logo, coin_symbol } = wallet;
+  if (coin_logo) {
+    if (coin_logo.startsWith("uploads/")) return `${API_BASE_URL}/${coin_logo}`;
+    if (coin_logo.startsWith("http")) return coin_logo; // CDN URL
+  }
+  return `/assets/images/coins/${coin_symbol.toLowerCase()}-logo.png`; // local fallback
+};
 
 function Account() {
   const { user, setUser } = useUser();
@@ -250,7 +272,7 @@ function Account() {
             </div>
           </div>
 
-          {/* Wallet Icon replacing image */}
+          {/* Wallet Icon */}
           <div
             className="flex-shrink-0 flex items-center justify-center rounded-2xl"
             style={{
@@ -266,7 +288,6 @@ function Account() {
               backdropFilter: "blur(8px)",
             }}
           >
-            {/* RiWallet3Fill from react-icons/ri */}
             <svg
               viewBox="0 0 24 24"
               fill="url(#walletGrad)"
@@ -289,12 +310,12 @@ function Account() {
                   <stop offset="100%" stopColor="#818cf8" />
                 </linearGradient>
               </defs>
-              {/* RiWallet3Fill path */}
               <path d="M2 7a2 2 0 012-2h16a2 2 0 012 2v1H2V7zm0 3h20v9a2 2 0 01-2 2H4a2 2 0 01-2-2v-9zm13 3a1 1 0 000 2h2a1 1 0 000-2h-2z" />
             </svg>
           </div>
         </div>
       </div>
+
       {/* ── Select + Search ── */}
       <div className="px-4 py-4 flex items-center gap-3">
         <h2
@@ -335,6 +356,7 @@ function Account() {
           />
         </div>
       </div>
+
       {/* ── Wallet list ── */}
       <div
         className="px-4 mx-4 rounded-3xl overflow-hidden"
@@ -343,36 +365,86 @@ function Account() {
           border: "1px solid rgba(255,255,255,0.07)",
         }}
       >
-        {filtered?.map((wallet) => (
+        {filtered?.map((wallet, idx) => (
           <Link
             key={wallet.id}
             to="/funds"
             state={{ wallet, coinAmount: coinValues[wallet.coin_id] }}
             className="flex items-center justify-between py-4 no-underline"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            style={{
+              borderBottom:
+                idx < filtered.length - 1
+                  ? "1px solid rgba(255,255,255,0.06)"
+                  : "none",
+            }}
           >
+            {/* Left: logo + name */}
             <div className="flex items-center gap-3">
-              <img
-                className="w-10 h-10 rounded-full object-contain"
-                src={`/assets/images/coins/${wallet.coin_symbol.toLowerCase()}-logo.png`}
-                alt={wallet.coin_symbol}
-              />
-              <div>
-                <p
-                  className="font-bold leading-tight"
-                  style={{ color: "#f1f5f9", fontSize: "3.8vw" }}
+              <div className="relative flex-shrink-0">
+                <img
+                  className="rounded-full object-contain"
+                  style={{
+                    width: "10vw",
+                    height: "10vw",
+                    maxWidth: 40,
+                    maxHeight: 40,
+                  }}
+                  src={resolveLogoSrc(wallet)}
+                  alt={wallet.coin_symbol}
+                  onError={(e) => {
+                    // fallback: show symbol initials
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
+                  }}
+                />
+                {/* Initials fallback */}
+                <div
+                  style={{
+                    display: "none",
+                    width: "10vw",
+                    height: "10vw",
+                    maxWidth: 40,
+                    maxHeight: 40,
+                    borderRadius: "50%",
+                    background: "rgba(139,92,246,0.25)",
+                    border: "1px solid rgba(139,92,246,0.4)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#a78bfa",
+                    fontWeight: 700,
+                    fontSize: "3vw",
+                  }}
                 >
-                  {wallet.coin_symbol} Wallet
-                </p>
+                  {wallet.coin_symbol?.slice(0, 2)}
+                </div>
+              </div>
+
+              <div>
+                {/* Coin name + bluetick inline */}
+                <div className="flex items-center gap-1 leading-tight">
+                  <p
+                    className="font-bold"
+                    style={{
+                      color: "#f1f5f9",
+                      fontSize: "3.8vw",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {wallet.coin_symbol} Wallet
+                  </p>
+                  {/* ── Bluetick verified badge ── */}
+                  <VerifiedBadge />
+                </div>
                 <p
                   className="mt-0.5"
                   style={{ color: "#64748b", fontSize: "3.2vw" }}
                 >
-                  {wallet.coin_symbol} Coin
+                  {wallet.coin_name}
                 </p>
               </div>
             </div>
 
+            {/* Right: balance */}
             <div className="text-right">
               <p
                 className="font-semibold"
@@ -393,7 +465,29 @@ function Account() {
             </div>
           </Link>
         ))}
+
+        {/* Empty state */}
+        {filtered?.length === 0 && (
+          <div
+            className="flex flex-col items-center justify-center py-10 gap-2"
+            style={{ color: "#475569" }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#334155"
+              strokeWidth="1.5"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+            </svg>
+            <p style={{ fontSize: "3.4vw" }}>No wallets match your search</p>
+          </div>
+        )}
       </div>
+
       {/* bottom spacing */}
       <div className="h-8" />
     </div>

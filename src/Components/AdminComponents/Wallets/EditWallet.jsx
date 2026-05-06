@@ -22,7 +22,6 @@ const FormField = ({ label, children }) => (
   </div>
 );
 
-// Reusable image upload field with preview
 const ImageUploadField = ({
   label,
   icon: Icon,
@@ -40,6 +39,9 @@ const ImageUploadField = ({
           src={previewSrc}
           alt={label}
           className="w-full h-36 object-contain p-2"
+          onError={(e) => {
+            e.target.style.display = "none";
+          }}
         />
         <button
           type="button"
@@ -78,11 +80,14 @@ const EditWallet = () => {
   const navigate = useNavigate();
   const [coinsData, setCoinsData] = useState([]);
 
-  // Pre-fill previews from existing wallet data
+  const resolveLogoPreview = (coinLogo) => {
+    if (!coinLogo) return null;
+    if (coinLogo.startsWith("uploads/")) return `${API_BASE_URL}/${coinLogo}`;
+    return coinLogo;
+  };
+
   const [logoPreview, setLogoPreview] = useState(
-    existingWallet.coin_logo
-      ? `${API_BASE_URL}/${existingWallet.coin_logo}`
-      : null,
+    resolveLogoPreview(existingWallet.coin_logo),
   );
   const [qrPreview, setQrPreview] = useState(
     existingWallet.wallet_qr
@@ -93,11 +98,11 @@ const EditWallet = () => {
   const [formData, setFormData] = useState({
     coin_id: existingWallet.coin_id,
     coin_name: existingWallet.coin_name,
-    coin_logo: existingWallet.coin_logo,
+    coin_logo: existingWallet.coin_logo, // existing path or URL string
     wallet_network: existingWallet.wallet_network,
     coin_symbol: existingWallet.coin_symbol,
     wallet_address: existingWallet.wallet_address,
-    wallet_qr: existingWallet.wallet_qr,
+    wallet_qr: existingWallet.wallet_qr, // existing path string
     status: existingWallet.status,
   });
 
@@ -124,27 +129,45 @@ const EditWallet = () => {
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setFormData((prev) => ({ ...prev, coin_logo: file }));
+    setFormData((prev) => ({ ...prev, coin_logo: file })); // new File overrides old
     setLogoPreview(URL.createObjectURL(file));
   };
 
   const handleQrChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setFormData((prev) => ({ ...prev, documents: file }));
+    setFormData((prev) => ({ ...prev, wallet_qr: file })); // ← field name: wallet_qr
     setQrPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(
-        `${API_BASE_URL}/wallets/${existingWallet.id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const payload = new FormData();
+      payload.append("coin_id", formData.coin_id);
+      payload.append("coin_name", formData.coin_name);
+      payload.append("wallet_network", formData.wallet_network);
+      payload.append("coin_symbol", formData.coin_symbol);
+      payload.append("wallet_address", formData.wallet_address);
+      payload.append("status", formData.status);
+
+      // coin_logo: new File upload OR keep existing path/URL as string
+      if (formData.coin_logo instanceof File) {
+        payload.append("coin_logo", formData.coin_logo);
+      } else if (formData.coin_logo) {
+        payload.append("coin_logo", formData.coin_logo);
+      }
+
+      // wallet_qr: new File upload OR keep existing path string
+      if (formData.wallet_qr instanceof File) {
+        payload.append("wallet_qr", formData.wallet_qr);
+      } else if (formData.wallet_qr) {
+        payload.append("wallet_qr", formData.wallet_qr);
+      }
+
+      await axios.put(`${API_BASE_URL}/wallets/${existingWallet.id}`, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       toast.success("Wallet updated successfully");
       navigate("/panel/wallets");
     } catch {
@@ -191,7 +214,7 @@ const EditWallet = () => {
 
         <form onSubmit={handleSubmit} className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* Coin list — disabled */}
+            {/* Coin locked */}
             <FormField label="Coin (locked)">
               <select
                 value={formData.coin_name}
@@ -267,7 +290,7 @@ const EditWallet = () => {
               </select>
             </FormField>
 
-            {/* ── Image uploads with preview ── */}
+            {/* Coin Logo */}
             <ImageUploadField
               label="Coin Logo"
               icon={FiUpload}
@@ -280,16 +303,17 @@ const EditWallet = () => {
               }}
             />
 
+            {/* Wallet QR Code */}
             <ImageUploadField
               label="Wallet QR Code"
               icon={MdOutlineQrCode2}
               previewSrc={qrPreview}
-              inputName="documents"
+              inputName="wallet_qr" // ← renamed from "documents"
               accept="image/*"
               onChange={handleQrChange}
               onClear={() => {
                 setQrPreview(null);
-                setFormData((p) => ({ ...p, documents: undefined }));
+                setFormData((p) => ({ ...p, wallet_qr: null }));
               }}
             />
           </div>

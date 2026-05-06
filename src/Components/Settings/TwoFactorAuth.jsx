@@ -20,7 +20,7 @@ const TwoFactorAuth = () => {
   const [qrCode, setQrCode] = useState("");
   const [secret, setSecret] = useState("");
   const [connected, setConnected] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
+  const [showSecret, setShowSecret] = useState(true);
   const [token, setToken] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);

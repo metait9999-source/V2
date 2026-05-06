@@ -15,6 +15,17 @@ import { useSocketContext } from "../../context/SocketContext";
 import useWallets from "../../hooks/useWallets";
 import { MdOutlineWatchLater } from "react-icons/md";
 
+// ── Resolve coin logo from uploaded file, CDN URL, or local asset fallback ──
+const resolveLogoSrc = (wallet) => {
+  if (!wallet) return null;
+  const { coin_logo, coin_symbol } = wallet;
+  if (coin_logo) {
+    if (coin_logo.startsWith("uploads/")) return `${API_BASE_URL}/${coin_logo}`;
+    if (coin_logo.startsWith("http")) return coin_logo;
+  }
+  return `/assets/images/coins/${coin_symbol?.toLowerCase()}-logo.png`;
+};
+
 const fundsStyles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
 
@@ -55,57 +66,84 @@ const fundsStyles = `
     100% { transform: translateX(200%); }
   }
 
-  .funds-tab-btn {
-    transition: all 0.2s ease !important;
-  }
-  .funds-tab-btn:active {
-    transform: scale(0.97);
-  }
+  .funds-tab-btn { transition: all 0.2s ease !important; }
+  .funds-tab-btn:active { transform: scale(0.97); }
 
   .funds-input-wrap:focus-within {
     border-color: rgba(124,58,237,0.45) !important;
     box-shadow: 0 0 0 3px rgba(124,58,237,0.08) !important;
   }
 
-  .funds-action-btn {
-    transition: all 0.18s ease !important;
-  }
+  .funds-action-btn { transition: all 0.18s ease !important; }
   .funds-action-btn:not(:disabled):hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 30px rgba(124,58,237,0.4) !important;
   }
-  .funds-action-btn:not(:disabled):active {
-    transform: scale(0.98);
-  }
+  .funds-action-btn:not(:disabled):active { transform: scale(0.98); }
 
-  .funds-copy-btn:hover {
-    color: #c4b5fd !important;
-  }
+  .funds-copy-btn:hover { color: #c4b5fd !important; }
+  .funds-max-btn:hover { color: #c4b5fd !important; }
+  .funds-card { animation: funds-fade-in 0.25s ease-out; }
 
-  .funds-max-btn:hover {
-    color: #c4b5fd !important;
-  }
-
-  .funds-card {
-    animation: funds-fade-in 0.25s ease-out;
-  }
-
-  .funds-root input::placeholder {
-    color: var(--text-muted) !important;
-  }
-
+  .funds-root input::placeholder { color: var(--text-muted) !important; }
   .funds-root input {
     color: var(--text-primary);
     background: transparent;
     border: none;
     outline: none;
   }
-
   .funds-root input[type=number]::-webkit-inner-spin-button,
   .funds-root input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
   }
 `;
+
+// ── Coin logo img with initials fallback ─────────────────────────────────────
+const CoinLogo = ({ wallet, size = 22, style = {} }) => {
+  const [failed, setFailed] = useState(false);
+  const src = resolveLogoSrc(wallet);
+  const symbol = wallet?.coin_symbol || "";
+
+  if (failed || !src) {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          background: "rgba(124,58,237,0.25)",
+          border: "1px solid rgba(124,58,237,0.4)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          fontSize: size * 0.35,
+          fontWeight: 700,
+          color: "#a78bfa",
+          ...style,
+        }}
+      >
+        {symbol.slice(0, 2)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        flexShrink: 0,
+        objectFit: "contain",
+        ...style,
+      }}
+      src={src}
+      alt={symbol}
+      onError={() => setFailed(true)}
+    />
+  );
+};
 
 const Funds = () => {
   const location = useLocation();
@@ -344,7 +382,6 @@ const Funds = () => {
     } catch (err) {
       setLoading(false);
       toast.error(err?.response?.data?.error || "Failed to trade order");
-      // console.error(error);
     }
   };
 
@@ -470,8 +507,9 @@ const Funds = () => {
       : coinSymbol === "ETH"
         ? "#627eea"
         : "#26a17b";
-
   const tabs = ["receive", "send", "convert"];
+
+  const usdtWalletObj = wallets?.find((w) => w.coin_symbol === "USDT");
 
   return (
     <div
@@ -496,7 +534,6 @@ const Funds = () => {
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        {/* Glow orb */}
         <div
           style={{
             position: "absolute",
@@ -527,11 +564,8 @@ const Funds = () => {
             zIndex: 1,
           }}
         >
-          <img
-            style={{ width: "22px", height: "22px", borderRadius: "50%" }}
-            src={`/assets/images/coins/${coinSymbol.toLowerCase()}-logo.png`}
-            alt={coinSymbol}
-          />
+          {/* ← resolveLogoSrc used here */}
+          <CoinLogo wallet={wallet} size={22} />
           <span
             style={{
               color: "var(--text-secondary)",
@@ -835,6 +869,63 @@ const Funds = () => {
                 </div>
               )}
 
+              {/* Address */}
+              <div
+                style={{
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-default)",
+                  borderRadius: "14px",
+                  padding: "14px 16px",
+                  marginBottom: "4px",
+                }}
+              >
+                <p
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    letterSpacing: "0.07em",
+                    textTransform: "uppercase",
+                    margin: "0 0 6px",
+                  }}
+                >
+                  Wallet Address
+                </p>
+                <p
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    margin: "0 0 12px",
+                    wordBreak: "break-all",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {wallet?.wallet_address
+                    ? `${wallet.wallet_address.slice(0, 16)}...${wallet.wallet_address.slice(-14)}`
+                    : "—"}
+                </p>
+                <button
+                  onClick={handleCopyAddress}
+                  className="funds-copy-btn"
+                  style={{
+                    width: "100%",
+                    padding: "9px 0",
+                    borderRadius: "10px",
+                    background: "var(--accent-subtle)",
+                    border: "1px solid var(--accent-border)",
+                    color: "var(--accent2)",
+                    fontWeight: 700,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    transition: "color 0.15s",
+                  }}
+                >
+                  Copy Address
+                </button>
+              </div>
+
               {/* QR */}
               <div
                 style={{
@@ -920,63 +1011,6 @@ const Funds = () => {
                     </p>
                   </div>
                 )}
-              </div>
-
-              {/* Address */}
-              <div
-                style={{
-                  background: "var(--bg-elevated)",
-                  border: "1px solid var(--border-default)",
-                  borderRadius: "14px",
-                  padding: "14px 16px",
-                  marginBottom: "4px",
-                }}
-              >
-                <p
-                  style={{
-                    color: "var(--text-muted)",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                    letterSpacing: "0.07em",
-                    textTransform: "uppercase",
-                    margin: "0 0 6px",
-                  }}
-                >
-                  Wallet Address
-                </p>
-                <p
-                  style={{
-                    color: "var(--text-secondary)",
-                    fontSize: "12.5px",
-                    fontWeight: 500,
-                    margin: "0 0 12px",
-                    wordBreak: "break-all",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {wallet?.wallet_address
-                    ? `${wallet.wallet_address.slice(0, 16)}...${wallet.wallet_address.slice(-14)}`
-                    : "—"}
-                </p>
-                <button
-                  onClick={handleCopyAddress}
-                  className="funds-copy-btn"
-                  style={{
-                    width: "100%",
-                    padding: "9px 0",
-                    borderRadius: "10px",
-                    background: "var(--accent-subtle)",
-                    border: "1px solid var(--accent-border)",
-                    color: "var(--accent2)",
-                    fontWeight: 700,
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    transition: "color 0.15s",
-                  }}
-                >
-                  Copy Address
-                </button>
               </div>
             </div>
 
@@ -1107,15 +1141,7 @@ const Funds = () => {
                     placeholder="Enter receiving address"
                     value={withdrawAddress}
                     onChange={(e) => setWithdrawAddress(e.target.value)}
-                    style={{
-                      flex: 1,
-                      fontSize: "13.5px",
-                      minWidth: 0,
-                      color: "var(--text-primary)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                    }}
+                    style={{ flex: 1, fontSize: "13.5px", minWidth: 0 }}
                   />
                   {withdrawAddress && (
                     <button
@@ -1178,16 +1204,8 @@ const Funds = () => {
                     transition: "all 0.2s",
                   }}
                 >
-                  <img
-                    style={{
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      flexShrink: 0,
-                    }}
-                    src={`/assets/images/coins/${coinSymbol.toLowerCase()}-logo.png`}
-                    alt={coinSymbol}
-                  />
+                  {/* ← resolveLogoSrc used here */}
+                  <CoinLogo wallet={wallet} size={24} />
                   <input
                     type="number"
                     placeholder="0.00"
@@ -1198,10 +1216,6 @@ const Funds = () => {
                       fontSize: "15px",
                       fontWeight: 700,
                       minWidth: 0,
-                      color: "var(--text-primary)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
                     }}
                   />
                   <span
@@ -1349,16 +1363,8 @@ const Funds = () => {
                     transition: "all 0.2s",
                   }}
                 >
-                  <img
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      flexShrink: 0,
-                    }}
-                    src={`/assets/images/coins/${coinSymbol.toLowerCase()}-logo.png`}
-                    alt={coinSymbol}
-                  />
+                  {/* ← resolveLogoSrc used here */}
+                  <CoinLogo wallet={wallet} size={28} />
                   <span
                     style={{
                       color: "var(--text-primary)",
@@ -1379,10 +1385,6 @@ const Funds = () => {
                       textAlign: "right",
                       fontWeight: 800,
                       fontSize: "18px",
-                      color: "var(--text-primary)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
                       minWidth: 0,
                     }}
                   />
@@ -1450,7 +1452,7 @@ const Funds = () => {
                 </div>
               </div>
 
-              {/* To */}
+              {/* To — USDT */}
               <div>
                 <p
                   style={{
@@ -1475,15 +1477,12 @@ const Funds = () => {
                     background: "var(--bg-elevated)",
                   }}
                 >
-                  <img
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      flexShrink: 0,
-                    }}
-                    src="/assets/images/coins/usdt-logo.png"
-                    alt="USDT"
+                  {/* ← resolveLogoSrc used here for USDT */}
+                  <CoinLogo
+                    wallet={
+                      usdtWalletObj || { coin_symbol: "USDT", coin_logo: null }
+                    }
+                    size={28}
                   />
                   <span
                     style={{
@@ -1600,7 +1599,6 @@ const Funds = () => {
               borderBottom: "none",
             }}
           >
-            {/* Handle */}
             <div
               style={{
                 width: "36px",
@@ -1610,7 +1608,6 @@ const Funds = () => {
                 margin: "0 auto 20px",
               }}
             />
-
             <div
               style={{
                 display: "flex",
@@ -1654,7 +1651,6 @@ const Funds = () => {
               </button>
             </div>
 
-            {/* Info rows */}
             {[
               { label: "Currency", value: wallet?.coin_symbol },
               { label: "Network", value: wallet?.wallet_network },
@@ -1697,7 +1693,6 @@ const Funds = () => {
               </div>
             ))}
 
-            {/* Amount */}
             <div
               className="funds-input-wrap"
               style={{
@@ -1731,7 +1726,6 @@ const Funds = () => {
                   background: "transparent",
                   border: "none",
                   outline: "none",
-                  color: "var(--text-primary)",
                   fontSize: "14px",
                   fontWeight: 700,
                   textAlign: "right",
@@ -1751,7 +1745,6 @@ const Funds = () => {
               Minimum Deposit: US$ {settings?.deposit_limit}
             </p>
 
-            {/* Upload */}
             <p
               style={{
                 color: "var(--text-secondary)",
@@ -1908,7 +1901,6 @@ const Funds = () => {
               />
             </svg>
           </button>
-
           <p
             style={{
               color: "rgba(255,255,255,0.6)",
@@ -1919,7 +1911,6 @@ const Funds = () => {
           >
             Long press the QR code to save
           </p>
-
           <div
             style={{
               padding: "14px",
@@ -1943,7 +1934,6 @@ const Funds = () => {
               }}
             />
           </div>
-
           <p
             style={{
               color: "rgba(255,255,255,0.3)",
