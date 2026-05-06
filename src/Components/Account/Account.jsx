@@ -382,7 +382,7 @@ function Account() {
             <div className="flex items-center gap-3">
               <div className="relative flex-shrink-0">
                 <img
-                  className="rounded-full object-contain"
+                  className="rounded-full object-contain bg-white"
                   style={{
                     width: "10vw",
                     height: "10vw",
@@ -392,7 +392,6 @@ function Account() {
                   src={resolveLogoSrc(wallet)}
                   alt={wallet.coin_symbol}
                   onError={(e) => {
-                    // fallback: show symbol initials
                     e.target.style.display = "none";
                     e.target.nextSibling.style.display = "flex";
                   }}

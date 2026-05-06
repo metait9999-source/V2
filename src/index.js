@@ -4,7 +4,7 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 // Change BrowserRouter to HashRouter
-import { HashRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { UserProvider } from "./context/UserContext";
 import { SocketContextProvider } from "./context/SocketContext";
 
@@ -13,13 +13,13 @@ root.render(
   <React.StrictMode>
     {/* Use HashRouter instead of BrowserRouter */}
     <UserProvider>
-      <HashRouter>
+      <BrowserRouter>
         <SocketContextProvider>
           <App />
         </SocketContextProvider>
-      </HashRouter>
+      </BrowserRouter>
     </UserProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 
 reportWebVitals();

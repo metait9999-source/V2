@@ -40,13 +40,13 @@ import { IoClose } from "react-icons/io5";
 import { FaWhatsapp, FaTelegram } from "react-icons/fa";
 import InlineLiveChat from "./Components/ChatComponent/InlineLivechat";
 import ChangePasscode from "./Components/Passcode/ChangePasscode";
+import AboutUs from "./Components/Settings/About";
 
 const WALLET_DETECT_TIMEOUT = 5000;
 const WALLET_RETRY_INTERVAL = 300;
 const SESSION_KEY = "passcode_verified";
 const LOCK_TIMEOUT_MS = 0;
 
-/* ─── Contact menu option ── */
 const ContactMenuOption = ({ href, icon, label, sublabel, gradient }) => {
   if (!href) return null;
   return (
@@ -103,7 +103,6 @@ const ContactMenuOption = ({ href, icon, label, sublabel, gradient }) => {
   );
 };
 
-/* ─── Draggable chat button ── */
 const DraggableChatButton = ({ user, isPasscodeScreen }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -488,9 +487,6 @@ const DraggableChatButton = ({ user, isPasscodeScreen }) => {
   );
 };
 
-/* ══════════════════════════════════════════════════════════
-   APP
-══════════════════════════════════════════════════════════ */
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState(null);
@@ -593,8 +589,6 @@ function App() {
   }, [connectWallet]);
 
   useEffect(() => {
-    if (!window.location.hash)
-      window.location.replace(`${window.location.href}#/`);
     detectAndConnect();
     const handleEthereumReady = () => {
       if (!hasConnectedRef.current) connectWallet();
@@ -734,6 +728,7 @@ function App() {
             <Route path="/face-verification" element={<FaceVerification />} />
             <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
             <Route path="/change-passcode" element={<ChangePasscode />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/*" element={<NotFound />} />
           </Routes>
         ) : (

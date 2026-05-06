@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import CryptoMarket from "../CryptoMarket/CryptoMarket";
 import ForexMarket from "../ForexMarket/ForexMarket";
@@ -7,6 +7,288 @@ import TopMarket from "../TopMarket/TopMarket";
 import SideNav from "../Header/SideNav/SideNav";
 import belIcon from "../../Assets/images/icon_bell.svg";
 import menuIcon from "../../Assets/images/icon_menu.svg";
+
+const SLIDES = [
+  { id: 1, src: "/assets/banner1.webp", alt: "Banner 1" },
+  { id: 2, src: "/assets/banner2.webp", alt: "Banner 2" },
+  {
+    id: 3,
+    src: "https://miro.medium.com/v2/resize:fit:1400/1*xJXiEZKZEiXLOsXGH90sgg.jpeg",
+    alt: "Banner 3",
+  },
+  { id: 4, src: "/assets/banner4.jpg", alt: "Banner 4" },
+];
+
+const AUTO_PLAY_INTERVAL = 3500;
+
+function HeroBannerSlider({ onMenuClick }) {
+  const [current, setCurrent] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragDelta, setDragDelta] = useState(0);
+  const timerRef = useRef(null);
+  const total = SLIDES.length;
+
+  const goTo = useCallback(
+    (index) => setCurrent((index + total) % total),
+    [total],
+  );
+  const next = useCallback(() => goTo(current + 1), [current, goTo]);
+  const resetTimer = useCallback(() => {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(next, AUTO_PLAY_INTERVAL);
+  }, [next]);
+
+  useEffect(() => {
+    resetTimer();
+    return () => clearInterval(timerRef.current);
+  }, [resetTimer]);
+
+  const onDragStart = (clientX) => {
+    clearInterval(timerRef.current);
+    setDragging(true);
+    setDragStartX(clientX);
+    setDragDelta(0);
+  };
+  const onDragMove = (clientX) => {
+    if (!dragging) return;
+    setDragDelta(clientX - dragStartX);
+  };
+  const onDragEnd = () => {
+    if (!dragging) return;
+    setDragging(false);
+    if (dragDelta < -40) next();
+    else if (dragDelta > 40) goTo(current - 1);
+    setDragDelta(0);
+    resetTimer();
+  };
+
+  const iconBtnStyle = {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(10, 10, 15, 0.55)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+    flexShrink: 0,
+    cursor: "pointer",
+  };
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        overflow: "hidden",
+        borderRadius: "0 0 7vw 7vw",
+        background: "#0a0a0f",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+      }}
+      onTouchStart={(e) => onDragStart(e.touches[0].clientX)}
+      onTouchMove={(e) => onDragMove(e.touches[0].clientX)}
+      onTouchEnd={onDragEnd}
+      onMouseDown={(e) => onDragStart(e.clientX)}
+      onMouseMove={(e) => onDragMove(e.clientX)}
+      onMouseUp={onDragEnd}
+      onMouseLeave={onDragEnd}
+    >
+      {/* ── Top bar ── */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 14px",
+        }}
+      >
+        <Link
+          to="/notification"
+          style={{ ...iconBtnStyle, textDecoration: "none" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <img
+            src={belIcon}
+            alt="Notifications"
+            style={{ width: 18, height: 18, filter: "brightness(0) invert(1)" }}
+          />
+        </Link>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            background: "rgba(10, 10, 15, 0.55)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+            borderRadius: 99,
+            padding: "6px 14px 6px 8px",
+          }}
+        >
+          <svg
+            viewBox="0 0 40 40"
+            fill="none"
+            style={{ width: 26, height: 26, flexShrink: 0 }}
+          >
+            <path
+              d="M20 4L36 13V27L20 36L4 27V13L20 4Z"
+              fill="rgba(255,255,255,0.25)"
+              stroke="white"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M20 4L36 13L20 22L4 13L20 4Z"
+              fill="rgba(255,255,255,0.55)"
+            />
+            <path d="M20 22L36 13V27L20 36V22Z" fill="rgba(255,255,255,0.35)" />
+            <path d="M20 22L4 13V27L20 36V22Z" fill="rgba(255,255,255,0.2)" />
+          </svg>
+          <span
+            style={{
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 15,
+              letterSpacing: "-0.01em",
+              lineHeight: 1,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Trust Pro
+          </span>
+        </div>
+
+        <button
+          onClick={onMenuClick}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          style={{ ...iconBtnStyle, border: "none" }}
+        >
+          <img
+            src={menuIcon}
+            alt="Menu"
+            style={{ width: 18, height: 18, filter: "brightness(0) invert(1)" }}
+          />
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          transition: dragging
+            ? "none"
+            : "transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94)",
+          transform: `translateX(calc(${-current * 100}% + ${dragDelta}px))`,
+          willChange: "transform",
+        }}
+      >
+        {SLIDES.map((slide) => (
+          <div
+            key={slide.id}
+            style={{
+              minWidth: "100%",
+              position: "relative",
+              aspectRatio: "16/10",
+              overflow: "hidden",
+              background: "#1a1a2e",
+            }}
+          >
+            <img
+              src={slide.src}
+              alt={slide.alt}
+              draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "35%",
+                background:
+                  "linear-gradient(to top, rgba(10,10,15,0.65) 0%, transparent 100%)",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 14,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          gap: 6,
+          zIndex: 20,
+        }}
+      >
+        {SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={() => {
+              goTo(i);
+              resetTimer();
+            }}
+            style={{
+              width: i === current ? 22 : 7,
+              height: 7,
+              borderRadius: 99,
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              background: i === current ? "#a78bfa" : "rgba(255,255,255,0.35)",
+              transition:
+                "width 0.35s cubic-bezier(0.34,1.56,0.64,1), background 0.25s",
+            }}
+          />
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 14,
+          right: 16,
+          zIndex: 20,
+          background: "rgba(0,0,0,0.45)",
+          backdropFilter: "blur(6px)",
+          borderRadius: 99,
+          padding: "3px 10px",
+          color: "rgba(255,255,255,0.75)",
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+        }}
+      >
+        {current + 1} / {total}
+      </div>
+    </div>
+  );
+}
 
 const TABS = [
   { key: "crypto", label: "Digital Currency" },
@@ -20,156 +302,12 @@ function Home() {
   const [toggleMenu, setToggleMenu] = useState(false);
 
   return (
-    /* ── Page root: dark background ── */
     <div className="min-h-screen" style={{ background: "#0a0a0f" }}>
-      {/* ════════════════════════════════════════
-          HEADER  — purple-gradient pill, same
-          hue family as SideNav accents
-      ════════════════════════════════════════ */}
-      <div
-        className="relative overflow-hidden px-4 pt-6 pb-6"
-        style={{
-          background:
-            "linear-gradient(145deg,#5b21b6 0%,#7c3aed 55%,#a78bfa 100%)",
-          borderRadius: "0 0 8vw 8vw",
-        }}
-      >
-        {/* decorative blobs */}
-        <div
-          className="pointer-events-none absolute rounded-full"
-          style={{
-            top: "-25%",
-            right: "-15%",
-            width: "55vw",
-            height: "55vw",
-            background: "rgba(196,132,252,0.2)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute rounded-full"
-          style={{
-            bottom: "-30%",
-            left: "-10%",
-            width: "45vw",
-            height: "45vw",
-            background: "rgba(109,40,217,0.3)",
-          }}
-        />
-
-        {/* top bar */}
-        <div className="relative z-10 flex items-center justify-between mb-5">
-          <Link to="/notification" className="p-2">
-            <img
-              src={belIcon}
-              alt="Notifications"
-              className="w-5 brightness-0 invert"
-            />
-          </Link>
-
-          {/* brand */}
-          <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
-            <svg viewBox="0 0 40 40" fill="none" className="w-9 h-9">
-              <path
-                d="M20 4L36 13V27L20 36L4 27V13L20 4Z"
-                fill="rgba(255,255,255,0.25)"
-                stroke="white"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M20 4L36 13L20 22L4 13L20 4Z"
-                fill="rgba(255,255,255,0.55)"
-              />
-              <path
-                d="M20 22L36 13V27L20 36V22Z"
-                fill="rgba(255,255,255,0.35)"
-              />
-              <path d="M20 22L4 13V27L20 36V22Z" fill="rgba(255,255,255,0.2)" />
-            </svg>
-            <span>Trust Pro</span>
-          </div>
-
-          <button className="p-2" onClick={() => setToggleMenu(!toggleMenu)}>
-            <img
-              src={menuIcon}
-              alt="Menu"
-              className="w-5 brightness-0 invert"
-            />
-          </button>
-        </div>
-
-        {/* hero banner */}
-        <div
-          className="relative z-10 flex items-center justify-between rounded-3xl overflow-hidden"
-          style={{
-            background:
-              "linear-gradient(135deg,rgba(46,7,100,0.75) 0%,rgba(76,29,149,0.85) 100%)",
-            padding: "5vw 4vw 5vw 5vw",
-            minHeight: "34vw",
-          }}
-        >
-          <div className="flex-1 z-10">
-            <h2
-              className="text-white font-bold leading-snug"
-              style={{ fontSize: "5.5vw" }}
-            >
-              Encryption tools for everyone Intelligently
-            </h2>
-          </div>
-
-          <div
-            className="flex-shrink-0 relative"
-            style={{ width: "36vw", height: "28vw" }}
-          >
-            {/* dot accents */}
-            <div
-              className="absolute rounded-full bg-violet-400 opacity-70"
-              style={{ width: "4vw", height: "4vw", top: "-2vw", left: "4vw" }}
-            />
-            <div
-              className="absolute rounded-full bg-emerald-400 opacity-80"
-              style={{
-                width: "2.5vw",
-                height: "2.5vw",
-                bottom: "1vw",
-                right: "2vw",
-              }}
-            />
-            {/* screen mockup */}
-            <div
-              className="absolute right-0 top-0 flex items-center justify-around rounded-2xl"
-              style={{
-                width: "32vw",
-                height: "24vw",
-                background: "linear-gradient(135deg,#3730a3 0%,#4c1d95 100%)",
-                border: "0.4vw solid rgba(196,132,252,0.55)",
-                padding: "2vw",
-                boxShadow: "0 4px 20px rgba(109,40,217,0.4)",
-              }}
-            >
-              <span
-                className="bg-violet-700 text-white font-bold rounded-xl"
-                style={{ fontSize: "3.5vw", padding: "1.5vw 3vw" }}
-              >
-                DeFi
-              </span>
-              <span
-                className="text-amber-400 font-bold"
-                style={{ fontSize: "7.5vw" }}
-              >
-                ₿
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <HeroBannerSlider onMenuClick={() => setToggleMenu((prev) => !prev)} />
 
       <SideNav toggleMenu={toggleMenu} setToggleMenu={setToggleMenu} />
 
-      {/* ════════════════════════════════════════
-          MARKET SECTION
-      ════════════════════════════════════════ */}
       <div className="px-4 pt-6 pb-2">
-        {/* title */}
         <div className="flex items-center gap-3 mb-4">
           <span
             className="inline-block rounded-full flex-shrink-0"
@@ -179,8 +317,6 @@ function Home() {
             Market
           </span>
         </div>
-
-        {/* tabs */}
         <div className="flex gap-2 flex-wrap mb-4">
           {TABS.map(({ key, label }) => (
             <button
@@ -199,8 +335,6 @@ function Home() {
             </button>
           ))}
         </div>
-
-        {/* market lists */}
         <div id="crypto-market">
           {activeTab === "crypto" && <CryptoMarket />}
         </div>
@@ -209,11 +343,7 @@ function Home() {
         <div id="top-market"> {activeTab === "top" && <TopMarket />}</div>
       </div>
 
-      {/* ════════════════════════════════════════
-          FEATURE CARDS
-      ════════════════════════════════════════ */}
       <div className="px-4 pt-4 pb-2 flex flex-col gap-4">
-        {/* AI Smart Arbitrage */}
         <div
           className="flex items-center justify-between rounded-3xl overflow-hidden relative"
           style={{
@@ -298,7 +428,6 @@ function Home() {
           </div>
         </div>
 
-        {/* Leveraged Trading */}
         <div
           className="flex items-center justify-between rounded-3xl overflow-hidden relative"
           style={{
@@ -345,7 +474,6 @@ function Home() {
                 bottom: 0,
               }}
             />
-            {/* floating BTC coin */}
             <div
               className="absolute rounded-full flex items-center justify-center text-white font-bold z-30"
               style={{
@@ -365,9 +493,6 @@ function Home() {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════
-          INVITE FRIENDS
-      ════════════════════════════════════════ */}
       <div className="px-4 py-4">
         <div className="flex items-center gap-3 mb-4">
           <span
@@ -381,7 +506,6 @@ function Home() {
             Invite friends
           </h3>
         </div>
-
         <div
           className="flex items-center rounded-3xl overflow-hidden relative"
           style={{
@@ -392,7 +516,6 @@ function Home() {
             boxShadow: "0 4px 20px rgba(168,85,247,0.3)",
           }}
         >
-          {/* blob */}
           <div
             className="pointer-events-none absolute rounded-full"
             style={{
@@ -403,8 +526,6 @@ function Home() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-
-          {/* coins */}
           <div
             className="flex-shrink-0 relative"
             style={{ width: "32vw", height: "28vw" }}
@@ -452,7 +573,6 @@ function Home() {
               ◎
             </div>
           </div>
-
           <div className="flex-1 text-right z-10">
             <h3
               className="text-white font-bold"
@@ -464,9 +584,6 @@ function Home() {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════
-          NEWS
-      ════════════════════════════════════════ */}
       <div className="px-4 pb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -497,7 +614,6 @@ function Home() {
         </div>
       </div>
 
-      {/* float-coin keyframe */}
       <style>{`
         @keyframes floatCoin {
           0%,100% { transform: translateY(0); }

@@ -13,7 +13,7 @@ const TEXT_MUTED = "#64748b";
 
 const FaceVerification = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const fileInputRef = useRef(null);
 
   const [step, setStep] = useState("intro");
@@ -61,6 +61,9 @@ const FaceVerification = () => {
       await axios.post(`${API_BASE_URL}/users/face-verify`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
+      await refreshUser(user?.id);
+
       setStep("done");
     } catch {
       setErrorMsg("Upload failed. Please check your connection and try again.");
@@ -68,7 +71,6 @@ const FaceVerification = () => {
     }
   };
 
-  /* shared button styles */
   const btnPrimary = {
     fontSize: "4.5vw",
     background: "linear-gradient(90deg,#10b981,#0d9488)",
@@ -96,7 +98,6 @@ const FaceVerification = () => {
       />
 
       <div className="flex-1 flex flex-col px-4 py-5">
-        {/* ── ALREADY VERIFIED ── */}
         {step === "already_verified" && (
           <div className="flex flex-col items-center">
             <div
@@ -113,7 +114,7 @@ const FaceVerification = () => {
                   transform: "translate(30%,-30%)",
                 }}
               />
-              <div className="w-28 h-28 rounded-full mb-4 overflow-hidden border-4 border-white/40 shadow-xl relative z-10">
+              <div className="w-28 h-28 rounded-full mb-4 overflow-hidden border-4 border-white/40 shadow-xl">
                 <img
                   src={`${API_BASE_URL}/${user.face_image}`}
                   alt="Face"
@@ -536,7 +537,6 @@ const FaceVerification = () => {
           </div>
         )}
 
-        {/* ── PREVIEW ── */}
         {step === "preview" && capturedImage && (
           <div className="flex flex-col">
             <div

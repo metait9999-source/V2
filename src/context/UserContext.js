@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import axios from "axios";
+import { API_BASE_URL } from "../api/getApiURL";
 
 const UserContext = createContext();
 
@@ -15,19 +23,44 @@ export const UserProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(false);
 
+  // Keep localStorage in sync whenever user changes
   useEffect(() => {
-    localStorage.setItem("user", JSON.stringify(user));
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
+    }
   }, [user]);
 
   useEffect(() => {
-    sessionStorage.setItem("adminUser", JSON.stringify(adminUser));
+    if (adminUser) {
+      sessionStorage.setItem("adminUser", JSON.stringify(adminUser));
+    } else {
+      sessionStorage.removeItem("adminUser");
+    }
   }, [adminUser]);
+
+  const refreshUser = useCallback(
+    async (userId) => {
+      if (!userId) return null;
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/users/${userId}`);
+        setUser(data);
+        return data;
+      } catch (err) {
+        console.error("[refreshUser] failed:", err);
+        return null;
+      }
+    },
+    [setUser],
+  );
 
   const logout = () => {
     setUser(null);
     setAdminUser(null);
     localStorage.removeItem("user");
     sessionStorage.removeItem("adminUser");
+    sessionStorage.removeItem("passcode_verified");
   };
 
   return (
@@ -39,6 +72,7 @@ export const UserProvider = ({ children }) => {
         setAdminUser,
         loading,
         setLoading,
+        refreshUser,
         logout,
       }}
     >

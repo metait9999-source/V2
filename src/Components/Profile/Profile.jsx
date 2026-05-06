@@ -53,10 +53,12 @@ const Field = ({
 );
 
 const Profile = (props) => {
-  const { user, setLoading } = useUser();
+  const { user, setLoading, refreshUser } = useUser(); // ← added refreshUser
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
-  const [profileImage, setProfileImage] = useState(user?.profile_image || null);
+  const [profileImage, setProfileImage] = useState(
+    user?.profile_image ? getImageUrl(user.profile_image) : null,
+  );
   const [imageUploading, setImageUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -72,29 +74,26 @@ const Profile = (props) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview immediately
-    const previewUrl = URL.createObjectURL(file);
-    setProfileImage(previewUrl);
-
-    // Upload
+    // Instant preview
+    setProfileImage(URL.createObjectURL(file));
     setImageUploading(true);
+
     try {
       const formData = new FormData();
       formData.append("documents", file);
       formData.append("user_id", user?.id);
 
-      const res = await axios.post(
-        `${API_BASE_URL}/users/upload-profile-image`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      await axios.post(`${API_BASE_URL}/users/upload-profile-image`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      setProfileImage(getImageUrl(res.data.profile_image));
+      const fresh = await refreshUser(user?.id);
+      setProfileImage(getImageUrl(fresh?.profile_image));
+
       toast.success("Profile picture updated!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to upload image");
+
       setProfileImage(
         user?.profile_image ? getImageUrl(user.profile_image) : null,
       );
@@ -111,9 +110,13 @@ const Profile = (props) => {
           name,
           email,
         });
+
+        await refreshUser(user?.id);
+
         toast.success(res?.data?.message);
       } catch (err) {
         console.log(err);
+        toast.error("Failed to save changes");
       } finally {
         setLoading(false);
       }
@@ -164,7 +167,6 @@ const Profile = (props) => {
               </div>
             )}
 
-            {/* Camera overlay */}
             <div
               className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center"
               style={{
@@ -206,7 +208,6 @@ const Profile = (props) => {
             </div>
           </div>
 
-          {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"

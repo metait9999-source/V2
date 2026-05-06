@@ -9,6 +9,7 @@ import { BiDollar, BiWallet } from "react-icons/bi";
 import { MdOutlineShowChart } from "react-icons/md";
 import { GiMining } from "react-icons/gi";
 import { TbChartBar } from "react-icons/tb";
+import { FaInfoCircle } from "react-icons/fa";
 
 const appName = "Trust Pro";
 
@@ -62,6 +63,13 @@ const navItems = [
     icon: "/assets/images/menu/transaction.png",
     iconBg: "linear-gradient(135deg,#f97316,#ef4444)",
     iconStyle: { width: 22, height: 22 },
+  },
+  {
+    label: "About Us",
+    to: "/about",
+    iconBg: "linear-gradient(135deg,#14b8a6,#0891b2)",
+    reactIcon: <FaInfoCircle />,
+    reactIconStyle: { fontSize: 22, color: "#fff" },
   },
 ];
 
