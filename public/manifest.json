@@ -8,12 +8,12 @@
       "type": "image/x-icon"
     },
     {
-      "src": "https://www.svgrepo.com/show/424916/meta-logo-facebook.svg",
+      "src": "meta.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://www.svgrepo.com/show/424916/meta-logo-facebook.svg",
+      "src": "meta.png",
       "type": "image/png",
       "sizes": "512x512"
     }
