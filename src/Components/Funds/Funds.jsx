@@ -400,27 +400,36 @@ const Funds = () => {
       toast.error("Enter a valid amount");
       return;
     }
+
     const coinAmt = parseFloat(convertAmount);
     const price = coinPriceRef.current;
+
     if (!price) {
       toast.error("Price data not loaded yet, please try again");
       return;
     }
+
     const availableCoinAmt = parseFloat(availableBalance || 0);
     if (coinAmt > availableCoinAmt) {
       toast.error("Amount exceeds available balance");
       return;
     }
-    const usdtEquivalent = coinAmt * price;
-    setIsConverting(true);
-    const newCoinWalletBalance = displayBalance - usdtEquivalent;
+
+    const isMax = coinAmt >= availableCoinAmt;
+
+    const usdtEquivalent = isMax ? displayBalance : coinAmt * price;
+    const newCoinWalletBalance = isMax ? 0 : displayBalance - usdtEquivalent;
     const newUSDTBalance =
       parseFloat(usdtWallet?.coin_amount || 0) + usdtEquivalent;
+
+    setIsConverting(true);
     let convertSuccess = false;
+
     try {
       await updateBalanceDirect(user.id, wallet?.coin_id, newCoinWalletBalance);
-      if (usdtWallet)
+      if (usdtWallet) {
         await updateBalanceDirect(user.id, usdtWallet.coin_id, newUSDTBalance);
+      }
       convertSuccess = true;
     } catch (err) {
       console.error("Convert error:", err);
@@ -428,6 +437,7 @@ const Funds = () => {
     } finally {
       setIsConverting(false);
     }
+
     if (convertSuccess) {
       setLocalCoinBalance(newCoinWalletBalance);
       setConvertAmount("");
