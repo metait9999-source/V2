@@ -189,6 +189,7 @@ const Withdraws = () => {
                 {[
                   "#",
                   "UUID",
+                  "Employee",
                   "Coin",
                   "Amount",
                   "Wallet To",
@@ -210,7 +211,7 @@ const Withdraws = () => {
               {currentWithdraws.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="py-16 text-center text-gray-400 text-[13px]"
                   >
                     No withdrawals found.
@@ -228,6 +229,10 @@ const Withdraws = () => {
 
                     <td className="px-4 py-3 font-mono text-[11.5px] text-gray-500 whitespace-nowrap">
                       {withdraw?.user_uuid}
+                    </td>
+
+                    <td className="px-4 py-3 text-[12px] text-gray-700 font-medium whitespace-nowrap">
+                      {withdraw?.employee ?? "—"}
                     </td>
 
                     <td className="px-4 py-3">
