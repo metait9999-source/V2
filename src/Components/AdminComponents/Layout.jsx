@@ -18,6 +18,7 @@ import MiningDashboard from "./Mining/MiningDashboard";
 import Loans from "./Loan/Loans";
 import ChatFAQs from "./ChatFaq/ChatFaq";
 import DepositToast from "./Sidebar/DepositToast";
+import WithdrawToast from "./Sidebar/WithdrawToast";
 
 const Layout = () => {
   const { adminUser } = useUser();
@@ -124,6 +125,7 @@ const Layout = () => {
       </div>
 
       <DepositToast />
+      <WithdrawToast />
     </div>
   );
 };

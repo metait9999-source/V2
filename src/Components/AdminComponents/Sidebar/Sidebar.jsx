@@ -20,7 +20,8 @@ const Sidebar = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [unreadConv, setUnreadConv] = useState(0);
-  const [newDepositCount, setNewDepositCount] = useState(0); // NEW
+  const [newDepositCount, setNewDepositCount] = useState(0);
+  const [newWithdrawCount, setNewWithdrawCount] = useState(0);
   const { socket } = useSocketContext();
   const manualOverride = useRef(false);
 
@@ -43,7 +44,6 @@ const Sidebar = () => {
     }
   };
 
-  // NEW: fetch unseen deposit count on mount
   const fetchUnseenDeposits = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/deposits/unseen-count`);
@@ -53,29 +53,46 @@ const Sidebar = () => {
     }
   };
 
+  const fetchUnseenWithdraws = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/withdraws/unseen-count`);
+      setNewWithdrawCount(res.data.count);
+    } catch (err) {
+      console.error("Error fetching unseen withdrawals:", err);
+    }
+  };
+
   useEffect(() => {
     fetchConversations();
-    fetchUnseenDeposits(); // NEW
+    fetchUnseenDeposits();
+    fetchUnseenWithdraws();
 
     const msgHandler = (msg) =>
       setUnreadConv(msg?.unreadConversationsCount || 0);
     socket?.on("getUnreadMessage", msgHandler);
 
-    // NEW: real-time deposit count from socket
     const depositHandler = (data) => setNewDepositCount(data?.unseenCount || 0);
     socket?.on("newDeposit", depositHandler);
 
+    const withdrawHandler = (data) =>
+      setNewWithdrawCount(data?.unseenCount || 0);
+    socket?.on("newWithdraw", withdrawHandler);
+
     return () => {
       socket?.off("getUnreadMessage", msgHandler);
-      socket?.off("newDeposit", depositHandler); // NEW
+      socket?.off("newDeposit", depositHandler);
+      socket?.off("newWithdraw", withdrawHandler);
     };
   }, [socket]);
 
-  // NEW: mark deposits seen when admin visits the deposits page
   useEffect(() => {
     if (location.pathname === "/panel/deposits") {
       axios.put(`${API_BASE_URL}/deposits/mark-seen`).catch(() => {});
       setNewDepositCount(0);
+    }
+    if (location.pathname === "/panel/withdraws") {
+      axios.put(`${API_BASE_URL}/withdraws/mark-seen`).catch(() => {});
+      setNewWithdrawCount(0);
     }
     setIsMobileOpen(false);
   }, [location.pathname]);
@@ -140,7 +157,7 @@ const Sidebar = () => {
       label: "Live Support Inbox",
       icon: <IoIosChatboxes size={19} />,
       permission: "Inbox",
-      badge: unreadConv, // moved to badge prop
+      badge: unreadConv,
     },
     {
       to: "/panel/wallets",
@@ -172,6 +189,7 @@ const Sidebar = () => {
       label: "Withdraws",
       icon: <PiHandWithdrawFill size={19} />,
       permission: "Withdraws",
+      badge: newWithdrawCount, // NEW
     },
   ];
 
