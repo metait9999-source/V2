@@ -10,12 +10,10 @@ import toast from "react-hot-toast";
 import { useUpdateUserBalance } from "../../hooks/useUpdateUserBalance";
 import useCryptoTradeConverter from "../../hooks/userCryptoTradeConverter";
 import useSettings from "../../hooks/useSettings";
-import Decimal from "decimal.js";
 import { useSocketContext } from "../../context/SocketContext";
 import useWallets from "../../hooks/useWallets";
 import { MdOutlineWatchLater } from "react-icons/md";
 
-// ── Resolve coin logo from uploaded file, CDN URL, or local asset fallback ──
 const resolveLogoSrc = (wallet) => {
   if (!wallet) return null;
   const { coin_logo, coin_symbol } = wallet;
@@ -372,16 +370,23 @@ const Funds = () => {
         },
         { headers: { "Content-Type": "application/json" } },
       );
-      setLoading(false);
+
+      const newBalance = displayBalance - parseFloat(withdrawAmount);
+      setLocalCoinBalance(newBalance);
+      const newAvailableCoin = await convertUSDTToCoin(
+        newBalance,
+        wallet?.coin_id,
+      );
+      setAvailableBalance(newAvailableCoin);
+      updateUserBalance(user?.id, wallet?.coin_id, newBalance);
+
       setWithdrawAmount("");
       setWithdrawAddress("");
-      const main_balance = new Decimal(displayBalance);
-      const withdraw_balance = new Decimal(parseFloat(withdrawAmount));
-      const new_balance = main_balance.d[0] - withdraw_balance.d[0];
-      updateUserBalance(user?.id, wallet?.coin_id, new_balance);
+      toast.success("Withdrawal request submitted");
     } catch (err) {
-      setLoading(false);
       toast.error(err?.response?.data?.error || "Failed to trade order");
+    } finally {
+      setLoading(false);
     }
   };
 
